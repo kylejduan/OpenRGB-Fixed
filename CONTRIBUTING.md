@@ -5,6 +5,18 @@ For this fork, open issues and pull requests at
 upstream license notices, and run the [regression and application build checks](Documentation/Building-Fixed.md).
 Report physical hardware tests separately from software-only CI results.
 
+Before committing, configure the public name and email you intend to publish.
+For GitHub, use your account's no-reply email if you want to keep your personal
+email private. Check both `git var GIT_AUTHOR_IDENT` and
+`git var GIT_COMMITTER_IDENT`; repository settings and environment variables can
+override global defaults. Before pushing, review the author, committer, and
+message trailers of every outgoing commit with `git log --format=fuller` over
+the outgoing range. Source-file scans and `.gitignore` do not protect commit
+metadata. See [GitHub's commit email instructions](https://docs.github.com/en/account-and-profile/how-tos/email-preferences/setting-your-commit-email-address).
+
+If your clone predates the September 2026 metadata cleanup, follow the
+[history replacement notes](Documentation/Repository-History.md) before pushing.
+
 The following original guidelines describe contributing directly to upstream
 OpenRGB. Their GitLab destinations and upstream history conventions apply when
 sending changes to that upstream project.
