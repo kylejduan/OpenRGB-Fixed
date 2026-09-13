@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <map>
 #include <memory>
 #include <vector>
@@ -309,9 +310,11 @@ public:
 private:
     std::map<uint8_t, logitech_led> leds;
     std::shared_ptr<std::mutex> mutex;
+    std::chrono::steady_clock::time_point rgb_ready_after{};
 
     // Callers hold the shared receiver mutex across preparation and painting.
     int                         sendLightingRequest(hid_device* dev, longFAPrequest& request, blankFAPmessage& response, bool match_selector = false);
+    int                         ensure8071Control(hid_device* dev);
     int                         prepare8071Lighting(hid_device* dev);
     int                         set8071Effects(uint8_t events);
     hid_device*                 getDevice(uint8_t usage_index);

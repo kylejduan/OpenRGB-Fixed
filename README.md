@@ -33,7 +33,8 @@ regression tests. Hardware compatibility still depends on upstream device suppor
   work such as startup profile application.
 - **Legacy Logitech lighting recovery:** explicit color updates reacquire lost
   `0x8071` software control and RGB power, use an explicit static-color parameter,
-  and validate receiver replies. See the [lighting RCCA](Documentation/Logitech-Lighting-RCCA.md).
+  allow the RGB engine to settle after power recovery, and validate receiver
+  replies. See the [lighting RCCA](Documentation/Logitech-Lighting-RCCA.md).
 
 Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.md).
 
@@ -80,4 +81,4 @@ OpenRGB Fixed preserves OpenRGB's **GPL-2.0-or-later** licensing and original
 copyright notices. See [LICENSE](LICENSE) and
 [third-party notices](THIRD_PARTY_NOTICES.md). OpenRGB and its device support are
 the work of [the upstream project and contributors](README.upstream.md); this
-fork carries the focused lifetime repairs and its own release tooling.
+fork carries focused receiver and lighting repairs and its own release tooling.

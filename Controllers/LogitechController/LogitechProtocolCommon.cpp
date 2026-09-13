@@ -11,6 +11,7 @@
 
 #include <LogitechProtocolCommon.h>
 #include <chrono>
+#include <thread>
 
 const char* logitech_led_locations[] =
 {
@@ -695,7 +696,9 @@ int logitech_device::sendLightingRequest(hid_device* dev, longFAPrequest& reques
         return -1;
     }
 
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(LOGITECH_PROTOCOL_TIMEOUT);
+    // A post-wake wireless color reply took about 487 ms in hardware testing.
+    // Keep lighting transactions bounded without rejecting that valid reply.
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
     while(std::chrono::steady_clock::now() < deadline)
     {
         const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now()).count();
@@ -741,7 +744,7 @@ int logitech_device::sendLightingRequest(hid_device* dev, longFAPrequest& reques
     return -1;
 }
 
-int logitech_device::prepare8071Lighting(hid_device* dev)
+int logitech_device::ensure8071Control(hid_device* dev)
 {
     // Re-query actual state: firmware or another host can release our claim
     // after detection. Do not reset a claim that is already held.
@@ -767,7 +770,15 @@ int logitech_device::prepare8071Lighting(hid_device* dev)
             return -1;
         }
     }
+    return result;
+}
 
+int logitech_device::prepare8071Lighting(hid_device* dev)
+{
+    int result = ensure8071Control(dev);
+    if(result < 0) return result;
+    longFAPrequest request;
+    blankFAPmessage response;
     request.init(device_index, RGB_feature_index, LOGITECH_FP8071_PWR_MODE);
     result = sendLightingRequest(dev, request, response, true);
     if(result < 0) return result;
@@ -777,15 +788,36 @@ int logitech_device::prepare8071Lighting(hid_device* dev)
         request.data[0] = 1;
         request.data[1] = 1; // An explicit color command wakes the RGB engine.
         result = sendLightingRequest(dev, request, response, true);
+        // A failed ACK does not prove the device ignored the power write.
+        // Preserve the guard for the next update, including an immediate
+        // LED update following a failed GUI mode change.
+        rgb_ready_after = std::chrono::steady_clock::now() + std::chrono::seconds(1);
         if(result < 0) return result;
+    }
+
+    if(rgb_ready_after != std::chrono::steady_clock::time_point{})
+    {
+        // A G502 through Powerplay ACKed immediate post-wake frames without
+        // displaying them, including with the vendor lighting service off.
+        // Single frames sent after one second worked in repeated trials.
+        // Power readback is not a render-ready signal. This bounded interval
+        // is an empirical accommodation, not a documented firmware deadline.
+        LOG_DEBUG("[%s] Waiting for RGB engine after power recovery", device_name.c_str());
+        std::this_thread::sleep_until(rgb_ready_after);
+
+        // Another host or firmware may change state during the interval.
+        // Check again under the same shared receiver lock before painting.
         request.init(device_index, RGB_feature_index, LOGITECH_FP8071_PWR_MODE);
         result = sendLightingRequest(dev, request, response, true);
         if(result < 0) return result;
         if(response.data[0] != 0 || response.data[1] != 1)
         {
-            LOG_WARNING("[%s] RGB power mode was not restored", device_name.c_str());
+            LOG_WARNING("[%s] RGB power changed during wake settling", device_name.c_str());
             return -1;
         }
+        result = ensure8071Control(dev);
+        if(result < 0) return result;
+        rgb_ready_after = {};
     }
     return result;
 }

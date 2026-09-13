@@ -24,8 +24,10 @@ Select the mouse's whole lighting zone, choose Direct or Static mode, and apply
 a clearly different color. Confirm the physical LEDs change.
 
 On builds containing the lighting recovery fix, applying a color or loading a
-profile reacquires lost legacy `0x8071` control. Wake a sleeping mouse and apply
-the color again. If it still ignores the change, check the log for a rejected or
+profile reacquires lost legacy `0x8071` control. When the driver restores RGB
+power, it allows a one-second settling interval and checks state again before
+painting. Wake a sleeping mouse and apply the color again. If it still ignores
+the change, check the log for a rejected or
 timed-out lighting transaction, then rescan and reload your profile.
 
 Check whether another RGB application or Windows Dynamic

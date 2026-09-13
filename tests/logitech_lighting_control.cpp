@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <deque>
@@ -12,6 +13,7 @@
 #include <future>
 #include <memory>
 #include <string>
+#include <thread>
 
 using Packet = std::array<unsigned char, 20>;
 std::mutex stall_mutex;
@@ -33,6 +35,15 @@ struct hid_device_
     bool timeout = false;
     bool short_replies = false;
     bool wrong_selector_first = false;
+    bool asynchronous_wake = false;
+    bool wake_pending = false;
+    bool release_during_wake = false;
+    bool power_loss_during_wake = false;
+    std::chrono::steady_clock::time_point rgb_ready_at{};
+    std::array<unsigned char, 3> rendered_rgb{};
+    bool slow_color_reply = false;
+    bool short_wake_ack_once = false;
+    std::chrono::steady_clock::time_point reply_available_at{};
 };
 
 extern "C" void hid_close(hid_device*) {}
@@ -57,6 +68,12 @@ extern "C" int hid_write(hid_device* dev, const unsigned char* bytes, size_t siz
     Packet reply = request;
     std::fill(reply.begin() + 4, reply.end(), 0);
     const auto fn = request[3] & 0xF0;
+    if(dev->wake_pending && std::chrono::steady_clock::now() >= dev->rgb_ready_at)
+    {
+        dev->wake_pending = false;
+        if(dev->release_during_wake) dev->control = 0;
+        if(dev->power_loss_during_wake) dev->power = 3;
+    }
     if(request[2] == 0)
     {
         const unsigned page = (request[4] << 8) | request[5];
@@ -101,9 +118,25 @@ extern "C" int hid_write(hid_device* dev, const unsigned char* bytes, size_t siz
     else if(fn == 0x80)
     {
         if(dev->page == 0x8070) dev->control = request[4];
-        else if(request[4] == 1) dev->power = request[5];
+        else if(request[4] == 1)
+        {
+            if(dev->asynchronous_wake && dev->power != 1 && request[5] == 1)
+            {
+                // Report full power immediately, but ignore rendering during
+                // a modeled transition. Hardware ACKed early frames without
+                // showing them; this duration is a fixture, not firmware data.
+                dev->rgb_ready_at = std::chrono::steady_clock::now() + std::chrono::milliseconds(500);
+                dev->wake_pending = true;
+            }
+            dev->power = request[5];
+        }
         reply[4] = request[4];
         reply[5] = dev->power;
+    }
+    else if(fn == 0x10 && dev->page == 0x8071 && dev->power == 1 &&
+            dev->control == 3 && std::chrono::steady_clock::now() >= dev->rgb_ready_at)
+    {
+        std::copy_n(request.begin() + 6, 3, dev->rendered_rgb.begin());
     }
     if(dev->unrelated_first)
     {
@@ -132,17 +165,31 @@ extern "C" int hid_write(hid_device* dev, const unsigned char* bytes, size_t siz
         wrong[4] ^= 1; // Same function/ID, but a stale set reply for a getter (or reverse).
         dev->replies.push_back(wrong);
     }
+    dev->reply_available_at = dev->slow_color_reply && fn == 0x10
+                           ? std::chrono::steady_clock::now() + std::chrono::milliseconds(450)
+                           : std::chrono::steady_clock::time_point{};
     dev->replies.push_back(reply);
     return static_cast<int>(size);
 }
-extern "C" int hid_read_timeout(hid_device* dev, unsigned char* bytes, size_t size, int)
+extern "C" int hid_read_timeout(hid_device* dev, unsigned char* bytes, size_t size, int timeout_ms)
 {
     if(dev->replies.empty()) return 0;
+    if(std::chrono::steady_clock::now() < dev->reply_available_at)
+    {
+        const auto wait = std::chrono::duration_cast<std::chrono::milliseconds>(dev->reply_available_at - std::chrono::steady_clock::now()) + std::chrono::milliseconds(1);
+        std::this_thread::sleep_for(std::min(wait, std::chrono::milliseconds(timeout_ms)));
+        if(std::chrono::steady_clock::now() < dev->reply_available_at) return 0;
+    }
     Packet reply = dev->replies.front();
     dev->replies.pop_front();
     size_t count = std::min(size, reply.size());
     if(dev->short_replies) { reply[0] = 0x10; count = 7; }
     if(dev->short_control && (reply[3] & 0xF0) == 0x50) count = 4;
+    if(dev->short_wake_ack_once && (reply[3] & 0xF0) == 0x80 && reply[4] == 1)
+    {
+        dev->short_wake_ack_once = false;
+        count = 4;
+    }
     std::copy_n(reply.begin(), count, bytes);
     return static_cast<int>(count);
 }
@@ -225,11 +272,46 @@ int main(int argc, char** argv)
         f.device->setMode(1, 0, 0, 0, 0, 255, 100);
         assert(f.count(0x50, 1) == 0 && "Do not repeatedly reset an existing software claim");
     }
-    else if(test == "power")
+    else if(test == "power" || test == "power_control" || test == "power_changed")
     {
         f.hid.power = 3;
-        f.device->setMode(1, 0, 0, 0, 255, 0, 100);
-        assert(f.hid.power == 1 && "An explicit color update must wake the RGB engine");
+        f.hid.asynchronous_wake = true;
+        f.hid.release_during_wake = test == "power_control";
+        f.hid.power_loss_during_wake = test == "power_changed";
+        const int result = f.device->setMode(1, 0, 0, 0, 255, 0, 100);
+        if(test == "power_changed")
+        {
+            assert(result < 0 && "Reject a power-state change during wake settling");
+            assert(f.count(0x10) == 0 && "Do not paint after failed power verification");
+        }
+        else
+        {
+            assert(result > 0 && f.hid.power == 1 && f.hid.control == 3);
+            const std::array<unsigned char, 3> green{0, 255, 0};
+            assert(f.hid.rendered_rgb == green && "Power readback alone does not prove readiness to paint");
+            assert(f.count(0x10) == 1 && "Recovery must apply the first requested frame");
+        }
+    }
+    else if(test == "power_retry")
+    {
+        // A bad wake ACK can return early even though hardware already
+        // changed power. GUI mode application immediately follows with LEDs.
+        f.hid.power = 3;
+        f.hid.asynchronous_wake = true;
+        f.hid.short_wake_ack_once = true;
+        assert(f.device->setDirectMode(true) < 0 && f.hid.power == 1);
+        assert(f.device->setMode(1, 0, 0, 0, 255, 0, 100) > 0);
+        const std::array<unsigned char, 3> green{0, 255, 0};
+        assert(f.hid.rendered_rgb == green && "A failed ACK must not discard pending wake settling");
+        assert(f.count(0x10) == 1);
+    }
+    else if(test == "slow_ack")
+    {
+        // A matched post-wake hardware reply arrived about 487 ms after
+        // its write. Keep a bounded response window that accommodates it.
+        f.hid.slow_color_reply = true;
+        assert(f.device->setMode(1, 0, 0, 255, 0, 0, 100) > 0);
+        assert(f.count(0x10) == 1);
     }
     else if(test == "replies")
     {
