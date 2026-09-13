@@ -167,8 +167,26 @@ rescanning, or restarting between the injected fault and color update.
 
 The temporary SDK listener was closed for the normal startup-task test. Both
 Logitech services remained running with automatic startup. Full Windows reboot,
-sleep/resume, RGB power-save transitions, and future Logitech driver updates
-still need separate physical tests.
+sleep/hibernation/resume, receiver reconnection, RGB power-save transitions, and
+future Logitech driver updates still need separate physical tests.
+
+### Resume configuration follow-up, 2026-09-13
+
+The existing **Set Profile on Resume** setting was disabled in the tested
+installation, matching its default. It was enabled for the saved profile, then
+OpenRGB was cleanly restarted through the same elevated login task. The setting
+persisted, the saved profile was unchanged, and the startup log recorded profile
+loading for all five controllers. This verifies configuration persistence and
+startup loading; no physical Windows sleep/wake or hibernation test was run.
+
+This is a local configuration choice, not a change to the fixed.2 binary or its
+defaults. The existing Windows resume handler requests the configured profile
+once per notification; it does not add receiver reconnection or readiness
+retries. Users can enable it with the
+[resume setup instructions](Troubleshooting-Fixed.md#sleep-hibernation-and-resume).
+The installed binary retains the checksum above. Release packages rebuilt after
+commit identity cleanup have new source identifiers and checksums; the application
+code and the scope of physical acceptance are unchanged.
 
 ## Protocol references
 

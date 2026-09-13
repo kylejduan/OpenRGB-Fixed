@@ -45,16 +45,21 @@ background reconnect or idle/wake monitor. Another application continuously
 writing to the same device can still interfere. The historical trigger for the
 original loss of control remains unconfirmed.
 
-Reboot, sleep/resume, and future driver-update behavior need physical testing on
-your hardware. The application does not disable Logitech services or Windows
-Dynamic Lighting for you.
+Full Windows reboot, sleep/hibernation/resume, receiver reconnection, and future
+driver-update behavior need physical testing on your hardware. The application
+does not disable Logitech services or Windows Dynamic Lighting for you.
 
 ## Setup, startup, and updates
 
 See [Troubleshooting and persistence](Documentation/Troubleshooting-Fixed.md)
 for missing RAM, ignored colors, elevated startup, and rollback. Save your own
-profile and use only one startup entry. This portable fork does not automatically
-replace its executable; updates are intentional downloads from this repository.
+profile and use only one startup entry. To request saved colors after Windows
+wakes, enable **Set Profile on Resume** using the
+[resume setup instructions](Documentation/Troubleshooting-Fixed.md#sleep-hibernation-and-resume).
+That setting is separate from login startup and is disabled by default.
+
+This portable fork does not automatically replace its executable; updates are
+intentional downloads from this repository.
 
 ## Build and test
 
@@ -71,8 +76,9 @@ ctest --test-dir build/regression -C Debug --output-on-failure
 
 ## Contributing and license
 
-Report fork-specific bugs and submit pull requests
-[here on GitHub](https://github.com/kylejduan/OpenRGB-Fixed/issues).
+Report fork-specific bugs with the
+[bug-report template](https://github.com/kylejduan/OpenRGB-Fixed/issues/new?template=bug_report.md)
+and submit [pull requests](https://github.com/kylejduan/OpenRGB-Fixed/pulls).
 Include the build revision, OS, device model, connection type, reproduction
 steps, and relevant log excerpts. Remove personal device paths and serials
 before posting logs. See [Contributing](CONTRIBUTING.md).

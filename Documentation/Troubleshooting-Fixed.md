@@ -53,7 +53,29 @@ executable's folder and arguments to:
 Replace the profile name with one you saved. Use a single startup entry; if a
 scheduled task owns startup, turn off the application's separate startup option.
 Verify that the saved profile is physically applied at the next login.
-Sleep/resume and receiver reconnects require separate physical testing.
+
+## Sleep, hibernation, and resume
+
+The login task does not run again merely because Windows wakes from sleep.
+OpenRGB has a separate **Set Profile on Resume** option, disabled by default:
+
+1. Save a profile with the colors you want restored.
+2. In OpenRGB's Settings page, enable **Set Profile on Resume** and choose that
+   saved profile in the adjacent list.
+3. Restart OpenRGB and confirm the option and profile selection remain set.
+4. When convenient, test an actual sleep/wake cycle and check the physical LEDs.
+
+On a Windows resume notification, the existing handler requests that profile.
+The repaired Logitech driver then prepares lighting control and RGB power as
+part of its color updates. This option does not add an automatic device rescan
+or retry loop if a receiver is unavailable when the notification arrives.
+If colors are wrong after wake, wake the mouse and reload the profile. If a
+device is still missing or unresponsive, rescan and reload the profile.
+
+In the recorded fixed.2 setup, enabling a saved resume profile persisted through
+an application restart. Actual Windows sleep/resume, hibernation, full reboot,
+and receiver reconnection were not physically tested. The RGB power-off recovery
+experiment is a separate test and does not establish OS sleep compatibility.
 
 ## Updates and rollback
 
