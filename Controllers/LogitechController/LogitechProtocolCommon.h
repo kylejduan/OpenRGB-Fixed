@@ -12,6 +12,7 @@
 #pragma once
 
 #include <map>
+#include <memory>
 #include <vector>
 #include <hidapi.h>
 #include "LogManager.h"
@@ -256,7 +257,8 @@ struct logitech_fx
         LOGITECH_DEVICE_MODE            mode;
 };
 
-typedef std::map<uint8_t, hid_device*>  usages;
+// Receiver slots share HID handles; the last owner closes each handle.
+typedef std::map<uint8_t, std::shared_ptr<hid_device>> usages;
 typedef std::map<uint16_t, uint8_t>     features;
 typedef std::map<uint8_t, uint16_t>     rvrse_features;
 typedef std::map<uint16_t, uint8_t>     wireless_map;

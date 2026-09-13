@@ -394,6 +394,7 @@ public:
     void                    SaveMode();
 
     void                    DeviceCallThreadFunction();
+    void                    StopDeviceThread();
 
     void                    ClearSegments(int zone);
     void                    AddSegment(int zone, segment new_segment);

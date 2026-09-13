@@ -1032,7 +1032,7 @@ REGISTER_HID_DETECTOR_IPU("Logitech X56 Rhino Hotas Throttle",              Dete
 
 void CreateLogitechLightspeedDevice(char *path, usages device_usages, uint8_t device_index, uint16_t pid, bool wireless, std::shared_ptr<std::mutex> mutex_ptr)
 {
-    LogitechLightspeedController* controller                = new LogitechLightspeedController(device_usages.find(2)->second, path);
+    LogitechLightspeedController* controller                = new LogitechLightspeedController(device_usages.find(2)->second.get(), path);
     bool lightspeedDeviceIsValid                            = false;
     int retryCount                                          = 0;
 
@@ -1041,10 +1041,15 @@ void CreateLogitechLightspeedDevice(char *path, usages device_usages, uint8_t de
         std::this_thread::sleep_for(50ms);
         controller->lightspeed                              = new logitech_device(path, device_usages, device_index, wireless, mutex_ptr);
         lightspeedDeviceIsValid                             = controller->lightspeed->is_valid();
+        if(!lightspeedDeviceIsValid)
+        {
+            delete controller->lightspeed;
+            controller->lightspeed = nullptr;
+        }
         retryCount++;
     }
 
-    if (retryCount < LOGITECH_LIGHTSPEED_DETECT_MAX_RETRY)
+    if (lightspeedDeviceIsValid)
     {
         RGBController_LogitechLightspeed* rgb_controller    = new RGBController_LogitechLightspeed(controller);
         rgb_controller->pid                                 = pid;
@@ -1072,7 +1077,7 @@ void DetectLogitechWired(hid_device_info* info, const std::string& /*name*/)
     if(dev)
     {
         LOG_DEBUG("Adding Usage %i for device @ path %s", info->usage, info->path);
-        device_usages.emplace((uint8_t)info->usage, dev);
+        device_usages.emplace((uint8_t)info->usage, std::shared_ptr<hid_device>(dev, hid_close));
     }
     else
     {
@@ -1119,7 +1124,7 @@ usages BundleLogitechUsages(hid_device_info* info)
             if(dev)
             {
                 LOG_DEBUG("Success! Adding Usage %i for device @ path %s", temp_info->usage, temp_info->path);
-                temp_usages.emplace((uint8_t)temp_info->usage, dev);
+                temp_usages.emplace((uint8_t)temp_info->usage, std::shared_ptr<hid_device>(dev, hid_close));
             }
             else
             {
@@ -1193,7 +1198,7 @@ void DetectLogitechWireless(hid_device_info* info, const std::string& /*name*/)
     if(dev)
     {
         LOG_DEBUG("Adding Usage %i for device @ path %s", info->usage, info->path);
-        device_usages.emplace((uint8_t)info->usage, dev);
+        device_usages.emplace((uint8_t)info->usage, std::shared_ptr<hid_device>(dev, hid_close));
     }
     else
     {

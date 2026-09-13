@@ -50,7 +50,7 @@ int getWirelessDevice(usages device_usages, uint16_t pid, wireless_map *wireless
     }
     else
     {
-        dev_use1 = find_usage->second;
+        dev_use1 = find_usage->second.get();
         /*-----------------------------------------------------------------*\
         | Create a buffer for reads                                         |
         \*-----------------------------------------------------------------*/
@@ -151,13 +151,7 @@ logitech_device::logitech_device(char *path, usages _usages, uint8_t _device_ind
     initialiseDevice();
 }
 
-logitech_device::~logitech_device()
-{
-    for(usages::iterator dev = device_usages.begin(); dev != device_usages.end(); dev++)
-    {
-        hid_close(dev->second);
-    }
-}
+logitech_device::~logitech_device() = default;
 
 void logitech_device::initialiseDevice()
 {
@@ -298,7 +292,7 @@ void logitech_device::flushReadQueue()
 
         while( result > 0 )
         {
-            result = hid_read_timeout(dev->second, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+            result = hid_read_timeout(dev->second.get(), response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
             if (result > 0)
             {
                 flushed++;
@@ -329,7 +323,7 @@ hid_device* logitech_device::getDevice(uint8_t usage_index)
     }
     else
     {
-        return(find_usage->second);
+        return(find_usage->second.get());
     }
 }
 
@@ -811,6 +805,11 @@ uint8_t logitech_device::setMode(uint8_t mode, uint16_t speed, uint8_t zone, uin
             result = hid_write(dev_use2, set_mode.buffer, set_mode.size());
             result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
         }
+
+        LOG_DEBUG("[%s] LED command: zone=%i mode=%i RGB=%02X%02X%02X request=%02X/%02X/%02X reply=%02X/%02X/%02X bytes=%i",
+                  device_name.c_str(), zone, mode, red, green, blue,
+                  set_mode.device_index, set_mode.feature_index, set_mode.feature_command,
+                  response.device_index, response.feature_index, response.feature_command, result);
     }
 
      return result;

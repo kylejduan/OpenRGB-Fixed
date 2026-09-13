@@ -65,8 +65,7 @@ RGBController::RGBController()
 
 RGBController::~RGBController()
 {
-    DeviceThreadRunning = false;
-    DeviceCallThread->join();
+    StopDeviceThread();
     delete DeviceCallThread;
 
     leds.clear();
@@ -2145,6 +2144,15 @@ void RGBController::DeviceCallThreadFunction()
         {
            std::this_thread::sleep_for(1ms);
         }
+    }
+}
+
+void RGBController::StopDeviceThread()
+{
+    DeviceThreadRunning = false;
+    if(DeviceCallThread->joinable())
+    {
+        DeviceCallThread->join();
     }
 }
 

@@ -870,6 +870,12 @@ const char *ResourceManager::GetDetectionString()
 
 void ResourceManager::Cleanup()
 {
+    // Startup profile application also uses controllers after detection ends.
+    std::unique_lock<std::mutex> background_lock(BackgroundThreadStateMutex, std::defer_lock);
+    if(std::this_thread::get_id() != DetectDevicesThread->get_id())
+    {
+        background_lock.lock();
+    }
     ResourceManager::get()->WaitForDeviceDetection();
 
     std::vector<RGBController *> rgb_controllers_hw_copy = rgb_controllers_hw;
@@ -893,6 +899,12 @@ void ResourceManager::Cleanup()
     rgb_controllers_hw.clear();
     detection_prev_size = 0;
 
+    // Derived destructors release device drivers before the base destructor runs.
+    for(RGBController* rgb_controller : rgb_controllers_hw_copy)
+    {
+        rgb_controller->StopDeviceThread();
+    }
+
     for(RGBController* rgb_controller : rgb_controllers_hw_copy)
     {
         delete rgb_controller;
@@ -907,6 +919,10 @@ void ResourceManager::Cleanup()
         delete bus;
     }
 
+    if(background_lock.owns_lock())
+    {
+        background_lock.unlock();
+    }
     RunInBackgroundThread(std::bind(&ResourceManager::HidExitCoroutine, this));
 }
 
