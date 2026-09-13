@@ -3,8 +3,8 @@
 [![Build and tests](https://github.com/kylejduan/OpenRGB-Fixed/actions/workflows/build.yml/badge.svg)](https://github.com/kylejduan/OpenRGB-Fixed/actions/workflows/build.yml)
 
 An independent [OpenRGB](https://openrgb.org/) fork that fixes shared Logitech
-receiver handle ownership and controller shutdown races. It keeps Powerplay and
-its paired mouse enabled during device rescans.
+receiver handle ownership, controller shutdown races, and lighting-control
+recovery. It keeps Powerplay and its paired mouse enabled during device rescans.
 
 Based on OpenRGB **1.0rc3.1**, commit `5e81e26`. This is the complete application
 source, including the upstream device controllers, GUI, profiles, and SDK.
@@ -19,7 +19,7 @@ The [Microsoft Visual C++ x64 runtime](https://learn.microsoft.com/en-us/cpp/win
 is required. RAM/SMBus access also requires PawnIO and an administrator launch.
 
 Linux and other platforms can [build from source](Documentation/Building-Fixed.md).
-CI builds the Windows application and Ubuntu application, and runs the lifetime
+CI builds the Windows application and Ubuntu application, and runs the protocol and lifetime
 regression tests. Hardware compatibility still depends on upstream device support.
 
 ## What is fixed
@@ -31,15 +31,18 @@ regression tests. Hardware compatibility still depends on upstream device suppor
 - **Shutdown ordering:** active controller workers finish before their hardware
   drivers and buses are destroyed. Cleanup also waits for background controller
   work such as startup profile application.
+- **Legacy Logitech lighting recovery:** explicit color updates reacquire lost
+  `0x8071` software control and RGB power, use an explicit static-color parameter,
+  and validate receiver replies. See the [lighting RCCA](Documentation/Logitech-Lighting-RCCA.md).
 
 Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.md).
 
 ## Known limits
 
-This fork does **not** claim to solve every G502 lighting-ownership problem.
-A detected mouse can still ignore color changes after another application or
-device state takes control. In the observed case, rescanning and reloading the
-profile restored control; the original trigger remains unconfirmed.
+Lighting recovery runs on the next color or profile update. There is no new
+background reconnect or idle/wake monitor. Another application continuously
+writing to the same device can still interfere. The historical trigger for the
+original loss of control remains unconfirmed.
 
 Reboot, sleep/resume, and future driver-update behavior need physical testing on
 your hardware. The application does not disable Logitech services or Windows

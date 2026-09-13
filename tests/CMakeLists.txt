@@ -12,8 +12,11 @@ add_executable(logitech_receiver_lifetime
 add_executable(device_worker_lifetime
     device_worker_lifetime.cpp
     "${OPENRGB_SOURCE}/RGBController/RGBController.cpp")
+add_executable(logitech_lighting_control
+    logitech_lighting_control.cpp
+    "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
 
-foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime)
+foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control)
     target_compile_features(${test_target} PRIVATE cxx_std_17)
     target_include_directories(${test_target} PRIVATE
         "${OPENRGB_SOURCE}"
@@ -35,6 +38,13 @@ foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime)
         target_compile_options(${test_target} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
         target_link_options(${test_target} PRIVATE -fsanitize=address,undefined)
     endif()
-    add_test(NAME ${test_target} COMMAND ${test_target})
-    set_tests_properties(${test_target} PROPERTIES TIMEOUT 20)
+    if(NOT test_target STREQUAL "logitech_lighting_control")
+        add_test(NAME ${test_target} COMMAND ${test_target})
+        set_tests_properties(${test_target} PROPERTIES TIMEOUT 20)
+    endif()
+endforeach()
+
+foreach(lighting_case IN ITEMS static mode color power replies short_ack stale selector errors short write timeout legacy shared)
+    add_test(NAME logitech_lighting_${lighting_case} COMMAND logitech_lighting_control ${lighting_case})
+    set_tests_properties(logitech_lighting_${lighting_case} PROPERTIES TIMEOUT 20)
 endforeach()

@@ -302,15 +302,18 @@ public:
     uint8_t                     getFeatureIndex(uint16_t feature_page);
     uint8_t                     getLED_count();
     logitech_led                getLED_info(uint8_t LED_num);
-    uint8_t                     setDirectMode(bool direct);
-    uint8_t                     setMode(uint8_t mode, uint16_t speed, uint8_t zone, uint8_t red, uint8_t green, uint8_t blue, uint8_t brightness);
-    uint8_t                     set8071Effects(uint8_t control);
+    int                         setDirectMode(bool direct);
+    int                         setMode(uint8_t mode, uint16_t speed, uint8_t zone, uint8_t red, uint8_t green, uint8_t blue, uint8_t brightness);
     uint8_t                     set8071TimeoutControl(uint8_t control);
     int                         getDeviceName();
 private:
     std::map<uint8_t, logitech_led> leds;
     std::shared_ptr<std::mutex> mutex;
 
+    // Callers hold the shared receiver mutex across preparation and painting.
+    int                         sendLightingRequest(hid_device* dev, longFAPrequest& request, blankFAPmessage& response, bool match_selector = false);
+    int                         prepare8071Lighting(hid_device* dev);
+    int                         set8071Effects(uint8_t events);
     hid_device*                 getDevice(uint8_t usage_index);
     uint16_t                    getFeaturePage(uint8_t feature_index);
     int                         getDeviceFeatureList();

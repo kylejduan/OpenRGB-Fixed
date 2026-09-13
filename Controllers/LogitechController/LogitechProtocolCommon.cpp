@@ -10,6 +10,7 @@
 \*---------------------------------------------------------*/
 
 #include <LogitechProtocolCommon.h>
+#include <chrono>
 
 const char* logitech_led_locations[] =
 {
@@ -665,214 +666,221 @@ void logitech_device::getRGBconfig()
     LOG_DEBUG("[%s] led_response returned %i led_counter returned %i : setting controller to %i LED%s", device_name.c_str(), led_response, led_counter, leds.size(), ((leds.size() == 1) ? "" : "s"));
 }
 
-uint8_t logitech_device::setDirectMode(bool direct)
+int logitech_device::sendLightingRequest(hid_device* dev, longFAPrequest& request, blankFAPmessage& response, bool match_selector)
 {
-    int result = 0;
-
-    /*-----------------------------------------------------------------*\
-    | Check the usage map for usage2 (0x11 Long FAP Message)            |
-    |   then set the device into direct mode via register 0x80          |
-    \*-----------------------------------------------------------------*/
-    hid_device* dev_use2 = getDevice(2);
-
-    if(dev_use2)
+    // Discard queued replies from earlier transactions. The shared receiver
+    // lock means no sibling has an in-flight request on this handle.
+    for(int queued = 0; ; queued++)
     {
-        /*-----------------------------------------------------------------*\
-        | Create a buffer for reads                                         |
-        \*-----------------------------------------------------------------*/
-        blankFAPmessage response;
-        response.init();
-
-        /*-----------------------------------------------------------------*\
-        | Turn the direct mode on or off via the RGB_feature_index          |
-        \*-----------------------------------------------------------------*/
-        longFAPrequest set_direct;
-        set_direct.init(device_index, RGB_feature_index, LOGITECH_FP8070_SET_SW_CTL);
-        set_direct.data[0] = (direct) ? 1 : 0;
-        set_direct.data[1] = set_direct.data[0];
-
-        /*-----------------------------------------------------*\
-        | Send packet                                           |
-        | This code has to be protected to avoid crashes when   |
-        | this is called at the same time to change a powerplay |
-        | mat and its paired wireless mouse leds. It will       |
-        | happen when using effects engines with high framerate |
-        \*-----------------------------------------------------*/
-        if(mutex)
+        if(queued == 64)
         {
-            std::lock_guard<std::mutex> guard(*mutex);
-
-            result = hid_write(dev_use2, set_direct.buffer, set_direct.size());
-            result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+            LOG_WARNING("[%s] Lighting input queue did not drain", device_name.c_str());
+            return -1;
         }
-        else
+        const int drained = hid_read_timeout(dev, response.buffer, response.size(), 0);
+        if(drained == 0) break;
+        if(drained < 0)
         {
-            result = hid_write(dev_use2, set_direct.buffer, set_direct.size());
-            result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+            LOG_WARNING("[%s] Lighting HID queue read failed", device_name.c_str());
+            return -1;
+        }
+    }
+    // Match the newer OpenRGB HIDPP20 driver's software identity. Zero is
+    // reserved for events; other applications use their own nonzero IDs.
+    request.feature_command = (request.feature_command & 0xF0) | 0x07;
+    response.init();
+    if(hid_write(dev, request.buffer, request.size()) != request.size())
+    {
+        LOG_WARNING("[%s] Lighting HID write failed", device_name.c_str());
+        return -1;
+    }
+
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(LOGITECH_PROTOCOL_TIMEOUT);
+    while(std::chrono::steady_clock::now() < deadline)
+    {
+        const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now()).count();
+        if(remaining <= 0) break;
+        response.init();
+        int result = hid_read_timeout(dev, response.buffer, response.size(), static_cast<int>(remaining));
+        if(result < 0)
+        {
+            LOG_WARNING("[%s] Lighting HID read failed", device_name.c_str());
+            return -1;
+        }
+        if(result < 4 || response.device_index != request.device_index ||
+           (response.report_id != LOGITECH_LONG_MESSAGE && response.report_id != LOGITECH_SHORT_MESSAGE))
+        {
+            continue;
+        }
+        if((response.feature_index == 0xFF || response.feature_index == 0x8F) && result >= 7 &&
+           response.feature_command == request.feature_index && response.data[0] == request.feature_command)
+        {
+            LOG_WARNING("[%s] Lighting HID++ error %02X for %02X/%02X",
+                        device_name.c_str(), response.data[1], request.feature_index, request.feature_command);
+            return -1;
+        }
+        if(response.feature_index != request.feature_index || response.feature_command != request.feature_command)
+        {
+            continue;
+        }
+        const int report_size = response.report_id == LOGITECH_SHORT_MESSAGE
+                              ? LOGITECH_SHORT_MESSAGE_LEN : LOGITECH_LONG_MESSAGE_LEN;
+        if(result < report_size)
+        {
+            LOG_WARNING("[%s] Truncated lighting reply (%i bytes)", device_name.c_str(), result);
+            return -1;
+        }
+        if(match_selector && response.data[0] != request.data[0])
+        {
+            continue; // 0x8071 get/set share a function but echo this selector.
+        }
+        return result;
+    }
+    LOG_WARNING("[%s] No matching lighting reply for %02X/%02X before timeout",
+                device_name.c_str(), request.feature_index, request.feature_command);
+    return -1;
+}
+
+int logitech_device::prepare8071Lighting(hid_device* dev)
+{
+    // Re-query actual state: firmware or another host can release our claim
+    // after detection. Do not reset a claim that is already held.
+    longFAPrequest request;
+    blankFAPmessage response;
+    request.init(device_index, RGB_feature_index, LOGITECH_FP8071_CONTROL);
+    int result = sendLightingRequest(dev, request, response, true);
+    if(result < 0) return result;
+    if(response.data[0] != 0) return -1;
+    if((response.data[1] & 3) != 3)
+    {
+        request.data[0] = 1;
+        request.data[1] = 3; // RGB clusters and power modes.
+        request.data[2] = 5; // Use the same event flags as detection.
+        result = sendLightingRequest(dev, request, response, true);
+        if(result < 0) return result;
+        request.init(device_index, RGB_feature_index, LOGITECH_FP8071_CONTROL);
+        result = sendLightingRequest(dev, request, response, true);
+        if(result < 0) return result;
+        if(response.data[0] != 0 || (response.data[1] & 3) != 3)
+        {
+            LOG_WARNING("[%s] Software lighting control was not acquired", device_name.c_str());
+            return -1;
         }
     }
 
-    return(result);
-}
-
-uint8_t logitech_device::setMode(uint8_t mode, uint16_t speed, uint8_t zone, uint8_t red, uint8_t green, uint8_t blue, uint8_t brightness)
-{
-    /*-----------------------------------------------------------------*\
-    | Check the usage map for usage2 (0x11 Long FAP Message) then       |
-    |   set the device mode via LOGITECH_CMD_RGB_EFFECTS_SET_CONTROL    |
-    \*-----------------------------------------------------------------*/
-    hid_device* dev_use2    = getDevice(2);
-    uint16_t feature_page   = getFeaturePage(RGB_feature_index);
-    int result              = 0;
-    LOGITECH_DEVICE_MODE fx = leds[zone].fx[mode].mode;
-
-    if(dev_use2)
+    request.init(device_index, RGB_feature_index, LOGITECH_FP8071_PWR_MODE);
+    result = sendLightingRequest(dev, request, response, true);
+    if(result < 0) return result;
+    if(response.data[0] != 0 || response.data[1] < 1 || response.data[1] > 3) return -1;
+    if(response.data[1] != 1)
     {
-        /*-----------------------------------------------------------------*\
-        | Create a buffer for reads                                         |
-        \*-----------------------------------------------------------------*/
-        blankFAPmessage response;
-        response.init();
-
-        /*-----------------------------------------------------------------*\
-        | Set the mode via the RGB_feature_index                            |
-        \*-----------------------------------------------------------------*/
-        longFAPrequest set_mode;
-        bool fp8070     = (feature_page == LOGITECH_HIDPP_PAGE_RGB_EFFECTS1);
-
-        set_mode.init(
-            device_index,
-            RGB_feature_index,
-            (fp8070 ? (uint8_t)LOGITECH_FP8070_SET_EFFECT : (uint8_t)LOGITECH_FP8071_SET_LED_EFFECT)
-        );
-        set_mode.data[0] = zone;
-        set_mode.data[1] = mode;
-
-        set_mode.data[2] = red;
-        set_mode.data[3] = green;
-        set_mode.data[4] = blue;
-
-        set_mode.data[12]   = fp8070 ? 0x00 : 0x01;    //Bit 2-3 Power Mode : Bit 1-0 Persistence
-
-        speed *= 100;
-        switch(fx)
+        request.data[0] = 1;
+        request.data[1] = 1; // An explicit color command wakes the RGB engine.
+        result = sendLightingRequest(dev, request, response, true);
+        if(result < 0) return result;
+        request.init(device_index, RGB_feature_index, LOGITECH_FP8071_PWR_MODE);
+        result = sendLightingRequest(dev, request, response, true);
+        if(result < 0) return result;
+        if(response.data[0] != 0 || response.data[1] != 1)
         {
-            case LOGITECH_DEVICE_LED_ON:
-                //set_mode.data[5]    = 0x02;     //zone;
-                break;
-
-            case LOGITECH_DEVICE_LED_SPECTRUM:
-                set_mode.data[7]    = speed >> 8;
-                set_mode.data[8]    = speed & 0xFF;
-                set_mode.data[9]    = brightness;
-                break;
-
-            case LOGITECH_DEVICE_LED_BREATHING:
-                set_mode.data[5]    = speed >> 8;
-                set_mode.data[6]    = speed & 0xFF;
-                //set_mode.data[7]    = curve_type; //Value 0-6: Default, Sine, Square, Triangle, Sawtooth, Reverse_Sawtooth, Exponent
-                set_mode.data[8]    = brightness;
-                break;
-
-            /*-----------------------------------------------------*\
-            | Place holders for later implementation                |
-            \*-----------------------------------------------------*/
-            case LOGITECH_DEVICE_LED_OFF:
-            case LOGITECH_DEVICE_LED_WAVE:
-            case LOGITECH_DEVICE_LED_STAR:
-            case LOGITECH_DEVICE_LED_RIPPLE:
-            case LOGITECH_DEVICE_LED_CUSTOM:
-            default:
-                break;
-        }
-
-        /*-----------------------------------------------------*\
-        | Send packet                                           |
-        | This code has to be protected to avoid crashes when   |
-        | this is called at the same time to change a powerplay |
-        | mat and its paired wireless mouse leds. It will       |
-        | happen when using effects engines with high framerate |
-        \*-----------------------------------------------------*/
-        if(mutex)
-        {
-            std::lock_guard<std::mutex> guard(*mutex);
-
-            result = hid_write(dev_use2, set_mode.buffer, set_mode.size());
-            result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
-        }
-        else
-        {
-            result = hid_write(dev_use2, set_mode.buffer, set_mode.size());
-            result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
-        }
-
-        LOG_DEBUG("[%s] LED command: zone=%i mode=%i RGB=%02X%02X%02X request=%02X/%02X/%02X reply=%02X/%02X/%02X bytes=%i",
-                  device_name.c_str(), zone, mode, red, green, blue,
-                  set_mode.device_index, set_mode.feature_index, set_mode.feature_command,
-                  response.device_index, response.feature_index, response.feature_command, result);
-    }
-
-     return result;
-}
-
-uint8_t logitech_device::set8071Effects(uint8_t control)
-{
-    int result = 0;
-
-    /*-----------------------------------------------------------------*\
-    | Check the usage map for usage2 (0x11 Long FAP Message)            |
-    |   then set the device into direct mode via register 0x80          |
-    \*-----------------------------------------------------------------*/
-    hid_device* dev_use2 = getDevice(2);
-
-    if(dev_use2)
-    {
-        /*-----------------------------------------------------------------*\
-        | Create a buffer for reads                                         |
-        \*-----------------------------------------------------------------*/
-        blankFAPmessage response;
-        response.init();
-
-        /*-----------------------------------------------------------------*\
-        | Use longFAPrequest (20 bytes) for FP8071 CONTROL command          |
-        | Short messages (7 bytes) are not supported by some devices        |
-        \*-----------------------------------------------------------------*/
-        longFAPrequest set_effects;
-        set_effects.init(device_index, RGB_feature_index, LOGITECH_FP8071_CONTROL);
-        set_effects.data[0]         = 1;
-        set_effects.data[1]         = 3;  //Disables all FW control for PWR (0x02) and RGB (0x01)
-        set_effects.data[2]         = control;
-
-        /*-----------------------------------------------------*\
-        | Send packet                                           |
-        | This code has to be protected to avoid crashes when   |
-        | this is called at the same time to change a powerplay |
-        | mat and its paired wireless mouse leds. It will       |
-        | happen when using effects engines with high framerate |
-        \*-----------------------------------------------------*/
-        if(mutex)
-        {
-            std::lock_guard<std::mutex> guard(*mutex);
-
-            hid_write(dev_use2, set_effects.buffer, set_effects.size());
-            result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
-        }
-        else
-        {
-            hid_write(dev_use2, set_effects.buffer, set_effects.size());
-            result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
-        }
-
-        /*-----------------------------------------------------*\
-        | Check for HID++ error response (0x8F in feature_index)|
-        \*-----------------------------------------------------*/
-        if(response.feature_index == 0x8F)
-        {
-            LOG_WARNING("[%s] set8071Effects: HID++ ERROR! ErrCode=%02X",
-                device_name.c_str(), response.data[2]);
+            LOG_WARNING("[%s] RGB power mode was not restored", device_name.c_str());
+            return -1;
         }
     }
     return result;
+}
+
+int logitech_device::setDirectMode(bool direct)
+{
+    hid_device* dev = getDevice(2);
+    if(!dev) return -1;
+    std::unique_lock<std::mutex> guard;
+    if(mutex) guard = std::unique_lock<std::mutex>(*mutex);
+    const uint16_t page = getFeaturePage(RGB_feature_index);
+    if(page == LOGITECH_HIDPP_PAGE_RGB_EFFECTS2)
+    {
+        // On 0x8071 fn8 controls RGB power, not software ownership. All
+        // host-selected effects require fn5 ownership, including Static.
+        return prepare8071Lighting(dev);
+    }
+    if(page != LOGITECH_HIDPP_PAGE_RGB_EFFECTS1) return -1;
+    longFAPrequest request;
+    blankFAPmessage response;
+    request.init(device_index, RGB_feature_index, LOGITECH_FP8070_SET_SW_CTL);
+    request.data[0] = direct ? 1 : 0;
+    request.data[1] = request.data[0];
+    return sendLightingRequest(dev, request, response);
+}
+
+int logitech_device::setMode(uint8_t mode, uint16_t speed, uint8_t zone, uint8_t red, uint8_t green, uint8_t blue, uint8_t brightness)
+{
+    hid_device* dev = getDevice(2);
+    const uint16_t page = getFeaturePage(RGB_feature_index);
+    const auto led = leds.find(zone);
+    if(!dev || led == leds.end() || mode >= led->second.fx.size() ||
+       (page != LOGITECH_HIDPP_PAGE_RGB_EFFECTS1 && page != LOGITECH_HIDPP_PAGE_RGB_EFFECTS2))
+    {
+        return -1;
+    }
+    // Both the mat and mouse use this handle. Keep the entire claim/power/
+    // color transaction serialized, not just individual writes.
+    std::unique_lock<std::mutex> guard;
+    if(mutex) guard = std::unique_lock<std::mutex>(*mutex);
+    const bool fp8070 = page == LOGITECH_HIDPP_PAGE_RGB_EFFECTS1;
+    if(!fp8070 && prepare8071Lighting(dev) < 0) return -1;
+
+    longFAPrequest request;
+    blankFAPmessage response;
+    request.init(device_index, RGB_feature_index,
+                 fp8070 ? static_cast<uint8_t>(LOGITECH_FP8070_SET_EFFECT) : static_cast<uint8_t>(LOGITECH_FP8071_SET_LED_EFFECT));
+    request.data[0] = zone;
+    request.data[1] = mode;
+    request.data[2] = red;
+    request.data[3] = green;
+    request.data[4] = blue;
+    request.data[12] = fp8070 ? 0 : 1; // 0x8071 volatile, full-power effect.
+    speed *= 100;
+    switch(led->second.fx[mode].mode)
+    {
+        case LOGITECH_DEVICE_LED_ON:
+            // Select the explicit no-ramp static parameter, also used by
+            // the HIDPP20 controller, instead of inheriting firmware defaults.
+            if(!fp8070) request.data[5] = 2;
+            break;
+        case LOGITECH_DEVICE_LED_SPECTRUM:
+            request.data[7] = speed >> 8;
+            request.data[8] = speed & 0xFF;
+            request.data[9] = brightness;
+            break;
+        case LOGITECH_DEVICE_LED_BREATHING:
+            request.data[5] = speed >> 8;
+            request.data[6] = speed & 0xFF;
+            request.data[8] = brightness;
+            break;
+        default:
+            break;
+    }
+    const int result = sendLightingRequest(dev, request, response);
+    LOG_DEBUG("[%s] LED command: zone=%i mode=%i RGB=%02X%02X%02X request=%02X/%02X/%02X reply=%02X/%02X/%02X bytes=%i",
+              device_name.c_str(), zone, mode, red, green, blue,
+              request.device_index, request.feature_index, request.feature_command,
+              response.device_index, response.feature_index, response.feature_command, result);
+    return result;
+}
+
+int logitech_device::set8071Effects(uint8_t events)
+{
+    hid_device* dev = getDevice(2);
+    if(!dev) return -1;
+    std::unique_lock<std::mutex> guard;
+    if(mutex) guard = std::unique_lock<std::mutex>(*mutex);
+    longFAPrequest request;
+    blankFAPmessage response;
+    request.init(device_index, RGB_feature_index, LOGITECH_FP8071_CONTROL);
+    request.data[0] = 1;
+    request.data[1] = 3;
+    request.data[2] = events;
+    return sendLightingRequest(dev, request, response, true);
 }
 
 uint8_t logitech_device::set8071TimeoutControl(uint8_t /*control*/)

@@ -46,7 +46,7 @@ Fury DDR5, an ASUS Z790 board, and an RTX 4090 remained detected. These are
 results from one hardware setup, not coverage of every upstream device.
 CI validates compilation and the standalone tests without physical RGB devices.
 
-## G502 lighting ownership remains a separate issue
+## G502 lighting recovery
 
 On 2026-09-12, a G502 X PLUS was detected but ignored color commands. A rescan
 and profile reload after stopping Logitech's LampArray service restored visible
@@ -54,12 +54,16 @@ red. Restarting that service and applying blue also worked. This does not
 establish that the service caused the original failure, and it does not justify
 disabling that service for every user.
 
-The lifetime fixes above are not a general fix for lighting ownership lost
-after startup, reconnect, sleep, or another RGB application. Physical reboot,
-sleep/resume, and future driver-update behavior have not been validated.
-See [Troubleshooting](Troubleshooting-Fixed.md) if a detected device ignores color
-commands. Protocol replies and an updated preview alone do not prove the LEDs
-changed.
+The subsequent [lighting RCCA](Logitech-Lighting-RCCA.md) reproduced failure after
+a software-control handoff and recovery with an explicit static parameter,
+without a rescan or restart. The legacy driver now checks control and power
+before explicit updates, uses the correct feature-generation commands, and
+validates replies. These changes are separate from the lifetime fixes.
+
+Physical reboot, sleep/resume, and future driver-update behavior have not been
+validated. See [Troubleshooting](Troubleshooting-Fixed.md) if a detected device
+ignores color commands. Protocol replies and an updated preview alone do not
+prove the LEDs changed.
 
 ## Provenance
 

@@ -23,14 +23,18 @@ initialization errors. See [SMBus access](SMBusAccess.md).
 Select the mouse's whole lighting zone, choose Direct or Static mode, and apply
 a clearly different color. Confirm the physical LEDs change.
 
-If the preview changes but the mouse does not, rescan devices, reload your
-profile, and try again. Check whether another RGB application or Windows Dynamic
+On builds containing the lighting recovery fix, applying a color or loading a
+profile reacquires lost legacy `0x8071` control. Wake a sleeping mouse and apply
+the color again. If it still ignores the change, check the log for a rejected or
+timed-out lighting transaction, then rescan and reload your profile.
+
+Check whether another RGB application or Windows Dynamic
 Lighting controls that device. Avoid assigning the same device to multiple RGB
 applications. A controlled stop/retest can help diagnose a conflict; restore
 services if that experiment does not establish a cause. This fork does not
 automatically disable Logitech services or Windows lighting settings.
 
-The [G502 investigation](Fixes.md#g502-lighting-ownership-remains-a-separate-issue)
+The [G502 investigation](Logitech-Lighting-RCCA.md)
 records what was observed and what remains unproven.
 
 ## Login and restart persistence

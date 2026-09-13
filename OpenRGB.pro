@@ -26,7 +26,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 #-----------------------------------------------------------------------------------------------#
 MAJOR       = 0
 MINOR       = 9
-SUFFIX      = 1.0rc3.1-fixed.1
+SUFFIX      = 1.0rc3.1-fixed.2
 
 GIT_SOURCE_DIR = $$shell_quote($$shell_path($$PWD))
 SHORTHASH   = $$system(git -C $$GIT_SOURCE_DIR rev-parse --short=7 HEAD)
