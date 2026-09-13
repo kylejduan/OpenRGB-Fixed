@@ -44,7 +44,7 @@ foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime l
     endif()
 endforeach()
 
-foreach(lighting_case IN ITEMS static mode color power replies short_ack stale selector errors short write timeout legacy shared)
+foreach(lighting_case IN ITEMS static mode color power replies short_ack stale selector queue_boundary queue_busy errors short write timeout legacy shared)
     add_test(NAME logitech_lighting_${lighting_case} COMMAND logitech_lighting_control ${lighting_case})
     set_tests_properties(logitech_lighting_${lighting_case} PROPERTIES TIMEOUT 20)
 endforeach()

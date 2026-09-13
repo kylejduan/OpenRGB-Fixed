@@ -268,6 +268,22 @@ int main(int argc, char** argv)
         assert(f.hid.control == 3 && f.hid.power == 1);
         assert(f.hid.replies.empty());
     }
+    else if(test == "queue_boundary" || test == "queue_busy")
+    {
+        Packet event{};
+        event[0] = 0x11;
+        f.hid.replies.assign(test == "queue_boundary" ? 64 : 65, event);
+        const int result = f.device->setMode(1, 0, 0, 255, 0, 0, 100);
+        if(test == "queue_boundary")
+        {
+            assert(result > 0 && "A full 64-report Windows HID queue can be drained successfully");
+            assert(f.count(0x10) == 1);
+        }
+        else
+        {
+            assert(result < 0 && f.hid.writes.empty() && "Do not send into a queue that exceeds the drain budget");
+        }
+    }
     else if(test == "errors")
     {
         f.hid.control = 0;

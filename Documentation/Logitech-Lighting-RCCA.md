@@ -75,7 +75,7 @@ Continuous contention from another RGB writer is outside that guarantee.
 The standalone suite includes the two existing lifetime tests plus packet,
 control-recovery, RGB-power, reply-correlation, and failure-path tests. The new
 control tests failed on the earlier implementation; the static-packet test
-failed before the parameter change. All 16 currently pass under Clang with
+failed before the parameter change. All 18 currently pass under Clang with
 AddressSanitizer and UndefinedBehaviorSanitizer.
 
 Full application builds and physical acceptance of the new executable are

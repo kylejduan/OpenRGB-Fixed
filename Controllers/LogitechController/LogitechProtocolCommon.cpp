@@ -672,13 +672,13 @@ int logitech_device::sendLightingRequest(hid_device* dev, longFAPrequest& reques
     // lock means no sibling has an in-flight request on this handle.
     for(int queued = 0; ; queued++)
     {
+        const int drained = hid_read_timeout(dev, response.buffer, response.size(), 0);
+        if(drained == 0) break;
         if(queued == 64)
         {
             LOG_WARNING("[%s] Lighting input queue did not drain", device_name.c_str());
             return -1;
         }
-        const int drained = hid_read_timeout(dev, response.buffer, response.size(), 0);
-        if(drained == 0) break;
         if(drained < 0)
         {
             LOG_WARNING("[%s] Lighting HID queue read failed", device_name.c_str());
