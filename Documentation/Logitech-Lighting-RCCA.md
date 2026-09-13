@@ -138,9 +138,37 @@ All 22 pass under Clang with
 AddressSanitizer and UndefinedBehaviorSanitizer. The modeled transition time is
 a regression fixture, not a claim about firmware internals.
 
-Full application builds and physical acceptance of the new executable are
-required before a release is marked hardware-validated. Full Windows reboot,
-sleep/resume, and future Logitech driver updates need separate physical tests.
+### Installed executable acceptance, 2026-09-13
+
+The complete Windows and Linux applications built successfully from application
+source equivalent to the rewritten commit
+`9cbe4eff76f629da8f2ecdf35f817c489a050813`. All 22 regression tests passed on
+both platforms; Linux also used AddressSanitizer and UndefinedBehaviorSanitizer.
+The original build produced the Windows package used below; its private CI
+receipt was retained when commit identities were sanitized. Its 52 payload files were verified
+against the package manifest before installation and after acceptance testing.
+
+Installed `OpenRGB.exe` SHA256:
+`2b6a6d77bb46cdad0372d46446e7a0d8157e309b90d40f6f604ab6f3cd3cb2ea`.
+
+Logitech's lighting and updater services were running during these tests.
+Fault injection changed only the specified RGB state. The color-only tests
+used OpenRGB's SDK to call the installed driver, without changing mode,
+rescanning, or restarting between the injected fault and color update.
+
+| Installed-build test | Observation |
+| --- | --- |
+| RGB power off, existing ownership untouched; first green update | Physically solid green; driver logged its wake interval before the single color frame |
+| Release software lighting control; blue update | Physically solid blue; control read back as `3`, power as `1` |
+| Powerplay green update | Physical mat logo solid green |
+| Two SDK rescans and one user-operated GUI rescan | All completed in the same process; five controllers and both RAM modules remained detected |
+| GUI Direct mode, red, Apply Colors To Selection after rescan | Physical mouse solid red |
+| Clean exit, then launch through the normal elevated startup task | Exit code `0`; same executable and unchanged saved profile; mouse physically changed from test red back to the saved magenta |
+
+The temporary SDK listener was closed for the normal startup-task test. Both
+Logitech services remained running with automatic startup. Full Windows reboot,
+sleep/resume, RGB power-save transitions, and future Logitech driver updates
+still need separate physical tests.
 
 ## Protocol references
 
