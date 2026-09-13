@@ -1,0 +1,72 @@
+name: Build and tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qtbase5-dev qt5-qmake qttools5-dev-tools libusb-1.0-0-dev libhidapi-dev libmbedtls-dev pkgconf
+      - name: Regression tests with sanitizers
+        run: |
+          cmake -S tests -B build/regression -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DOPENRGB_FIXED_SANITIZERS=ON
+          cmake --build build/regression --parallel 2
+          ctest --test-dir build/regression --output-on-failure
+      - name: Build application
+        run: |
+          mkdir -p build/application
+          cd build/application
+          qmake ../../OpenRGB.pro CONFIG-=debug_and_release CONFIG+=release
+          make -j2
+          ./openrgb --version
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1
+        with:
+          arch: x64
+      - uses: jurplel/install-qt-action@48d3ad6db93f3627c8ee7a0454bc6f3744f7e730 # v4
+        with:
+          version: '5.15.2'
+          arch: win64_msvc2019_64
+          cache: true
+      - name: Regression tests
+        shell: pwsh
+        run: |
+          cmake -S tests -B build/regression -G Ninja -DCMAKE_BUILD_TYPE=Debug
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/regression --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir build/regression --output-on-failure
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build portable application
+        shell: pwsh
+        run: ./scripts/package-windows.ps1 -Jobs 2
+      - name: Smoke test version
+        shell: pwsh
+        run: |
+          $p = Start-Process ./release/OpenRGB.exe -ArgumentList '--version' -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw 'Version command failed' }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: OpenRGB-Fixed-Windows-x64
+          path: build/dist/*
+          if-no-files-found: error

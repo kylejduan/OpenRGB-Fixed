@@ -26,12 +26,13 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 #-----------------------------------------------------------------------------------------------#
 MAJOR       = 0
 MINOR       = 9
-SUFFIX      = 1.0rc3.1
+SUFFIX      = 1.0rc3.1-fixed.1
 
-SHORTHASH   = $$system("git rev-parse --short=7 HEAD")
-LASTTAG     = "release_"$$MAJOR"."$$MINOR
-COMMAND     = "git rev-list --count "$$LASTTAG"..HEAD"
-COMMITS     = $$system($$COMMAND)
+GIT_SOURCE_DIR = $$shell_quote($$shell_path($$PWD))
+SHORTHASH   = $$system(git -C $$GIT_SOURCE_DIR rev-parse --short=7 HEAD)
+COMMITS     = $$system(git -C $$GIT_SOURCE_DIR rev-list --count HEAD)
+isEmpty(SHORTHASH): SHORTHASH = source
+isEmpty(COMMITS): COMMITS = 0
 
 VERSION_NUM = $$MAJOR"."$$MINOR"."$$COMMITS
 VERSION_STR = $$MAJOR"."$$MINOR
@@ -73,15 +74,12 @@ win32:BUILDDATE         = $$system(date /t)
 linux:BUILDDATE         = $$system(date -R -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}")
 freebsd:BUILDDATE       = $$system(date -j -R -r "${SOURCE_DATE_EPOCH:-$(date +%s)}")
 macx:BUILDDATE          = $$system(date -j -R -r "${SOURCE_DATE_EPOCH:-$(date +%s)}")
-GIT_COMMIT_ID           = $$system(git log -n 1 --pretty=format:"%H")
-GIT_COMMIT_DATE         = $$system(git log -n 1 --pretty=format:"%ci")
-
-unix {
-    GIT_BRANCH          = $$system(sh scripts/git-get-branch.sh)
-}
-else {
-    GIT_BRANCH          = $$system(powershell -ExecutionPolicy Bypass -File scripts/git-get-branch.ps1)
-}
+GIT_COMMIT_ID   = $$system(git -C $$GIT_SOURCE_DIR rev-parse HEAD)
+GIT_COMMIT_DATE = $$system(git -C $$GIT_SOURCE_DIR log -1 --format=%ci)
+GIT_BRANCH      = $$system(git -C $$GIT_SOURCE_DIR symbolic-ref --short -q HEAD)
+isEmpty(GIT_COMMIT_ID): GIT_COMMIT_ID = source-archive
+isEmpty(GIT_COMMIT_DATE): GIT_COMMIT_DATE = unknown
+isEmpty(GIT_BRANCH): GIT_BRANCH = detached-or-source-archive
 
 message("GIT_BRANCH: "$$GIT_BRANCH)
 DEFINES +=                                                                                      \

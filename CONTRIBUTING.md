@@ -1,3 +1,16 @@
+# Contributing to OpenRGB Fixed
+
+For this fork, open issues and pull requests at
+<https://github.com/kylejduan/OpenRGB-Fixed>. Keep changes focused, preserve the
+upstream license notices, and run the [regression and application build checks](Documentation/Building-Fixed.md).
+Report physical hardware tests separately from software-only CI results.
+
+The following original guidelines describe contributing directly to upstream
+OpenRGB. Their GitLab destinations and upstream history conventions apply when
+sending changes to that upstream project.
+
+---
+
 # Contributing to OpenRGB
 
 The OpenRGB project welcomes contributions from the community.  The project would not support the number of devices it does today without the amazing contributions from community developers.  If you want to add a new device, fix a bug, or add a feature, feel free to open a merge request on the OpenRGB GitLab (https://gitlab.com/CalcProgrammer1/OpenRGB).
