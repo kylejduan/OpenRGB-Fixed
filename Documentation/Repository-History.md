@@ -18,6 +18,19 @@ string and checksum; it does not constitute another physical hardware test.
 Existing installations retain the same fixes and do not need an application
 update solely because Git author metadata changed.
 
+## Repository migration
+
+On 2026-09-14, the sanitized history, both release tags, and all release assets
+were copied to a new independent GitHub repository. The previous repository
+was deleted, and the replacement was renamed to retain the same public URL.
+The release files were verified byte for byte; their checksums and source
+revisions are unchanged by this migration.
+
+Historical GitHub Actions run records cannot be transferred between
+repositories. Their logs and build artifacts were archived separately before
+deletion. Release notes retain the validation results, while subsequent CI
+runs belong to the replacement repository.
+
 ## Existing clones
 
 Commit identifiers and the two release-tag targets changed. For a clone with
