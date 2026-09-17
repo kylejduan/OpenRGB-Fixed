@@ -252,6 +252,26 @@ matches register replies, waits up to 3 s for every paired device's
 announcement, and ignores the acknowledgement. The watcher also registers a slot
 first seen through a later link notification.
 
+### Installed acceptance of `d0c4617`, 2026-09-16
+
+The build from CI run 35183061133 was installed over the first fixed.3 build
+with verified package hashes, a clean exit of the previous process, and a start
+through the normal logon task. A separate read-only listener on the receiver's
+short-report interface recorded the startup traffic.
+
+| Check | Observation |
+| --- | --- |
+| Receiver reporting register after the 21:36 restart | Read `00`: wireless notifications were off. Enumeration set the bit and the receiver acknowledged it |
+| Enumeration | Count `2`; announcements for slot 1 (`A2`) and slot 7 before the acknowledgement |
+| Detection | Powerplay mat and G502 X PLUS registered; watcher on 2 slots; Main applied; detection completed at 7.8 s |
+| Forced takeover: control set to `0` with flags `6` | Watcher logged the loss at its first 30 s poll; control read back `3/5` after 16.2 s |
+| Whole OpenRGB process, one-minute sample after the test | 0.77 CPU-seconds per minute (1.3 % of one core), 20 threads, 52 MB working set |
+
+Physical color after the forced takeover, deep sleep and wake, a cold boot, and
+starting OpenRGB while the mouse sleeps still need operator observation. The CPU
+figure covers every OpenRGB thread, including the existing per-controller worker
+loops; it was not split per thread.
+
 ## Protocol references
 
 - [Logitech HID++ packet layout and software IDs](https://github.com/Logitech/cpg-docs/blob/master/hidpp20/README.rst).
