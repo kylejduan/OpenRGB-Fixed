@@ -60,10 +60,57 @@ without a rescan or restart. The legacy driver now checks control and power
 before explicit updates, uses the correct feature-generation commands, and
 validates replies. These changes are separate from the lifetime fixes.
 
-Physical reboot, sleep/resume, and future driver-update behavior have not been
-validated. See [Troubleshooting](Troubleshooting-Fixed.md) if a detected device
-ignores color commands. Protocol replies and an updated preview alone do not
-prove the LEDs changed.
+Physical reboot, sleep/resume, and future driver-update behavior were not part of
+that validation; see the reconnect recovery below. See
+[Troubleshooting](Troubleshooting-Fixed.md) if a detected device ignores color
+commands. Protocol replies and an updated preview alone do not prove the LEDs
+changed.
+
+## Lightspeed reconnect recovery
+
+On 2026-09-16, after several reboots, the G502 X PLUS showed its onboard blue
+although OpenRGB had applied the saved magenta profile without errors. A direct
+HID++ read showed RGB Effects software control `0` with event flags `6`.
+OpenRGB claims control as `3` with flags `5`, so another host had taken the
+device back to firmware lighting. Logitech's LampArray service contains a HID++
+`0x8071` client with software-control, user-activity, and device-connect
+handlers, which makes it the likely writer. The same `0/6` state had appeared on
+2026-09-13 immediately after the mouse woke. The fixed.2 driver only reclaimed
+control inside an explicit update, and nothing requested one. A mouse that was
+asleep during detection was also never registered.
+
+Each legacy Lightspeed receiver now gets one watcher thread:
+
+- It waits in a 250 ms read on the receiver's short-report interface for device
+  connection notifications, which identify the slot and whether its link is up.
+- For each linked `0x8071` device it reads software control 2 s and 10 s after a
+  link comes up and every 30 s otherwise: one 20-byte request. It sends nothing
+  while the receiver reports the link down, and backs off to 120 s when a device
+  does not answer. Devices without `0x8071`, such as the Powerplay mat, are not
+  polled.
+- When control is lost, it requests the controller's normal mode update. The
+  existing driver path reclaims control, restores RGB power with its settle
+  interval, and repaints. A 5 s quiet window prevents repeated requests.
+- When a slot that failed detection links up, it creates and registers the
+  controller, applies the last loaded profile to it, and updates it.
+
+`ResourceManager::Cleanup()` stops watchers before any controller or handle is
+released. Late creation and re-apply wait until detection, startup profile
+application, and cleanup are idle, and give up if the watcher is stopping.
+Device initialization now holds the receiver mutex so a late device cannot
+interleave with its sibling's lighting transaction.
+
+| Test | Behavior checked |
+| --- | --- |
+| `logitech_lighting_control_read` | One GET, no claim; `-1` on no reply within the deadline or write failure; `-2` and no I/O without `0x8071` |
+| `logitech_lighting_init_locked` | A new device sends nothing while a sibling holds the receiver mutex |
+| `background_worker` | Idle wait runs work under a free mutex and abandons the wait on stop while the mutex stays held |
+| `logitech_watcher_*` | Late creation only after link up, with retries; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; no-reply backoff; unsupported devices ignored; malformed reports ignored; prompt stop |
+
+Deliberately breaking link-down gating, the quiet window, backoff, unsupported
+device handling, post-link checks, link-state parsing, or creation retries made
+the matching test fail. The suite also passes under ThreadSanitizer. Physical acceptance of the installed build is recorded in the
+[lighting RCCA](Logitech-Lighting-RCCA.md#reconnect-and-takeover-follow-up-2026-09-16).
 
 ## Provenance
 

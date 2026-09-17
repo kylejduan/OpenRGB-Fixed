@@ -188,6 +188,42 @@ The installed binary retains the checksum above. Release packages rebuilt after
 commit identity cleanup have new source identifiers and checksums; the application
 code and the scope of physical acceptance are unchanged.
 
+## Reconnect and takeover follow-up, 2026-09-16
+
+The installed fixed.2 build started from the normal logon task after the fifth
+Windows boot of the evening and logged a successful Main profile load for the
+G502 X PLUS with no lighting warnings. The mouse later showed its onboard blue
+instead of the saved magenta.
+
+| Time (PDT) | Observation |
+| --- | --- |
+| 19:25 | Startup log: Main applied to all five controllers, no `Warning` lines |
+| 19:45 | Read-only HID++ probe: software control `0`, event flags `6`, RGB power `2`, onboard mode `1` |
+| 19:48 | Mouse slot gave no HID++ replies (deep sleep); the Powerplay slot answered |
+| 20:08 | On wake: control `0`, flags `6`, power `1`; a direct claim `3/5` and static magenta frame restored the physical color |
+
+OpenRGB claims control with flags `5`; flags `6` add user-activity events and
+drop effect-sync events, so another host wrote them. `logi_lamparray_service`
+(Logitech LampArray Service, driver 1.1.91.2790, running and automatic) contains
+HID++ client types for `0x8071` software-control configuration, RGB power mode,
+user-activity events, and receiver device-connect events. Windows Dynamic
+Lighting was off, so that service left the mouse in firmware lighting. The same
+`0/6` reading appeared on 2026-09-13 immediately after the mouse was woken. The
+service is therefore the likely writer; the attribution is not proven by a trace
+of its writes. With the operator's approval the service was set to Manual and
+stopped on 2026-09-16 at 20:12.
+
+The detection logs also explain the unregistered-mouse case. The receiver's
+device connection report for slot 1 carries flags `A2` when the mouse is awake and
+`62` when it is asleep; bit `0x40` marks a link that is not established. In the
+19:09 startup the mouse was asleep and detection logged ten "Not Connected"
+retries without registering it.
+
+The fixed.2 recovery only ran inside an explicit update, and nothing requested
+one after the takeover. Fixed.3 adds the receiver watcher described in
+[Fixes](Fixes.md#lightspeed-reconnect-recovery). It does not depend on the
+service attribution: any loss of control on a linked device is repainted.
+
 ## Protocol references
 
 - [Logitech HID++ packet layout and software IDs](https://github.com/Logitech/cpg-docs/blob/master/hidpp20/README.rst).

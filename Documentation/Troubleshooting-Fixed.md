@@ -39,6 +39,38 @@ automatically disable Logitech services or Windows lighting settings.
 The [G502 investigation](Logitech-Lighting-RCCA.md)
 records what was observed and what remains unproven.
 
+## Lightspeed reconnect watcher
+
+Devices behind a legacy Lightspeed or Powerplay receiver are watched in the
+background. When one returns to its onboard colors after sleep, wake, reboot, or
+another program's takeover, OpenRGB repaints it within about 30 seconds, or a
+few seconds after it reconnects. The log records each repaint as
+`[Lightspeed watcher] ... lost software lighting control`. A warning saying the
+device keeps losing control means another program is actively driving it.
+
+Settings live in `OpenRGB.json` in the OpenRGB configuration folder. Close
+OpenRGB before editing the file:
+
+```json
+"LogitechLightspeed": {
+    "reconnect_watcher": true,
+    "ownership_poll_seconds": 30
+}
+```
+
+`ownership_poll_seconds` accepts 5 to 600. Set `reconnect_watcher` to `false`
+to turn the watcher off. Both are read during device detection.
+
+Logitech's LampArray service can take lighting back from OpenRGB. If you do not
+use Windows Dynamic Lighting or G HUB lighting, setting that service to Manual
+removes the contention; the watcher works either way. To restore it, run in an
+administrator PowerShell:
+
+```powershell
+Set-Service logi_lamparray_service -StartupType Automatic
+Start-Service logi_lamparray_service
+```
+
 ## Login and restart persistence
 
 For devices requiring administrator access, use Windows Task Scheduler to start
@@ -69,8 +101,10 @@ On a Windows resume notification, the existing handler requests that profile.
 The repaired Logitech driver then prepares lighting control and RGB power as
 part of its color updates. This option does not add an automatic device rescan
 or retry loop if a receiver is unavailable when the notification arrives.
-If colors are wrong after wake, wake the mouse and reload the profile. If a
-device is still missing or unresponsive, rescan and reload the profile.
+Lightspeed and Powerplay devices do not need this option to recover from their
+own sleep; the reconnect watcher repaints them. If colors are still wrong after
+wake, wake the mouse and reload the profile. If a device is still missing or
+unresponsive, rescan and reload the profile.
 
 In the recorded fixed.2 setup, enabling a saved resume profile persisted through
 an application restart. Actual Windows sleep/resume, hibernation, full reboot,
