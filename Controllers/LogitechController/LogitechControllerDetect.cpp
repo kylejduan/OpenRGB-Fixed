@@ -1256,22 +1256,27 @@ void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& 
     | Lightspeed Receivers will only have one paired /connected device  |
     | Unifying Receivers can have up to 6 devices paired / connected    |
     \*-----------------------------------------------------------------*/
-    if(device_count > 0)
+    /*-------------------------------------------------*\
+    | Create mutex to prevent the controllers sharing a |
+    |   receiver from interfering with each other       |
+    \*-------------------------------------------------*/
+    std::shared_ptr<std::mutex>       logitech_mutex = std::make_shared<std::mutex>();
+    LightspeedSlotList                slot_list;
+
+    for(wireless_map::iterator wd = wireless_devices.begin(); wd != wireless_devices.end(); wd++)
     {
-        /*-------------------------------------------------*\
-        | Create mutex to prevent the controllers sharing a |
-        |   receiver from interfering with each other       |
-        \*-------------------------------------------------*/
-        std::shared_ptr<std::mutex>       logitech_mutex = std::make_shared<std::mutex>();
-        LightspeedSlotList                slot_list;
-
-        for(wireless_map::iterator wd = wireless_devices.begin(); wd != wireless_devices.end(); wd++)
-        {
-            slot_list.emplace_back(wd->second, CreateLogitechLightspeedDevice(path, device_usages, wd->second, dev_pid, true, logitech_mutex));
-        }
-
-        StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list, link_up);
+        slot_list.emplace_back(wd->second, CreateLogitechLightspeedDevice(path, device_usages, wd->second, dev_pid, true, logitech_mutex));
     }
+
+    /*-------------------------------------------------*\
+    | Watch even when enumeration found nothing: late   |
+    |   announcements and wakes still register devices  |
+    \*-------------------------------------------------*/
+    if(device_count == 0)
+    {
+        LOG_INFO("[Lightspeed watcher] No devices enumerated on receiver %04X; waiting for connections", dev_pid);
+    }
+    StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list, link_up);
 }
 
 /*-------------------------------------------------------------------------------------------------------------------------------------------------*\

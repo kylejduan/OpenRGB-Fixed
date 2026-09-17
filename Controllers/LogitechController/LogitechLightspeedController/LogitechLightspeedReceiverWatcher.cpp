@@ -18,6 +18,7 @@ constexpr unsigned char HIDPP_SHORT_REPORT          = 0x10;
 constexpr unsigned char DJ_CONNECTION_NOTIFICATION  = 0x41;
 constexpr unsigned char DJ_LINK_NOT_ESTABLISHED     = 0x40;
 constexpr int           CONNECTION_REPORT_SIZE      = 7;
+constexpr unsigned char RECEIVER_INDEX              = 0xFF;
 }
 
 LogitechLightspeedReceiverWatcher::LogitechLightspeedReceiverWatcher(std::shared_ptr<hid_device> notifications_, LightspeedWatcherTiming timing_)
@@ -132,15 +133,32 @@ void LogitechLightspeedReceiverWatcher::OnReport(const unsigned char* report, in
     {
         return;
     }
-    const std::map<uint8_t, Slot>::iterator found = slots.find(report[1]);
-    if(found == slots.end())
+    const uint8_t index = report[1];
+    const bool    up    = (report[4] & DJ_LINK_NOT_ESTABLISHED) == 0;
+
+    if(index == 0 || index == RECEIVER_INDEX)
     {
         return;
     }
 
-    Slot&       slot = found->second;
-    const bool  up   = (report[4] & DJ_LINK_NOT_ESTABLISHED) == 0;
-    LOG_DEBUG("[Lightspeed watcher] Slot %u link %s", report[1], up ? "up" : "down");
+    std::map<uint8_t, Slot>::iterator found = slots.find(index);
+    if(found == slots.end())
+    {
+        /*-------------------------------------------------*\
+        | Enumeration missed this device, for example a     |
+        | late boot announcement. Treat it as pending.      |
+        \*-------------------------------------------------*/
+        if(!up || !create)
+        {
+            return;
+        }
+        LOG_INFO("[Lightspeed watcher] Slot %u connected without an enumerated device", index);
+        found = slots.emplace(index, Slot()).first;
+        found->second.interval = timing.poll;
+    }
+
+    Slot& slot = found->second;
+    LOG_DEBUG("[Lightspeed watcher] Slot %u link %s", index, up ? "up" : "down");
 
     if(slot.registered && !slot.monitored)
     {

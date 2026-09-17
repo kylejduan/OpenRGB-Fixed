@@ -113,15 +113,16 @@ int main(int argc, char** argv)
     if(test == "link_reapply"){ mouse.script = {0, 3}; }
 
     LogitechLightspeedReceiverWatcher watcher(handle, timing);
+    std::atomic<int> created_slot{0};
     watcher.SetCreateHook([&](uint8_t slot) -> std::optional<LightspeedSlotHooks> {
-        assert(slot == 1);
+        created_slot = slot;
         if(++creates < succeed_on) return std::nullopt;
         return mouse.hooks();
     });
     const bool pending = test == "late_create" || test == "create_retry" || test == "asleep" || test == "malformed";
     if(test == "pending_linked") watcher.AddPending(1, true);
     else if(pending) watcher.AddPending(1, false);
-    else        watcher.AddRegistered(1, mouse.hooks());
+    else if(test != "unknown_slot") watcher.AddRegistered(1, mouse.hooks());
     watcher.Start();
 
     if(test == "late_create" || test == "create_retry")
@@ -133,6 +134,17 @@ int main(int argc, char** argv)
         assert(eventually([&] { return mouse.read_count() >= 1; }) && "Verify ownership after late registration");
         std::this_thread::sleep_for(150ms);
         assert(creates == succeed_on && "Stop creation attempts after success");
+    }
+    else if(test == "unknown_slot")
+    {
+        // Enumeration can miss a late boot announcement; the announcement or a
+        // later wake still reaches the watcher as a link notification.
+        link(receiver, 3, false);
+        std::this_thread::sleep_for(100ms);
+        assert(creates == 0 && "An unknown sleeping slot is not probed");
+        link(receiver, 3, true);
+        assert(eventually([&] { return creates == 1 && created_slot == 3; }));
+        assert(eventually([&] { return mouse.read_count() >= 1; }));
     }
     else if(test == "pending_linked")
     {
@@ -147,7 +159,8 @@ int main(int argc, char** argv)
         else
         {
             push(receiver, {0x10, 1, 0x41});                                  // Truncated.
-            push(receiver, {0x10, 2, 0x41, 0x11, 0xA2, 0x99, 0x40});          // Unknown slot.
+            push(receiver, {0x10, 0, 0x41, 0x11, 0xA2, 0x99, 0x40});          // No slot 0.
+            push(receiver, {0x10, 0xFF, 0x41, 0x11, 0xA2, 0x99, 0x40});       // Receiver itself.
             push(receiver, {0x10, 1, 0x42, 0x11, 0xA2, 0x99, 0x40});          // Other notification.
             push(receiver, {0x11, 1, 0x41, 0x11, 0xA2, 0x99, 0x40});          // Long report.
         }
