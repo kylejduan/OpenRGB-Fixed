@@ -12,6 +12,7 @@
 #include <LogitechProtocolCommon.h>
 #include <chrono>
 #include <cstring>
+#include <set>
 #include <thread>
 
 /*---------------------------------------------------------*\
@@ -45,9 +46,52 @@ static std::vector<uint16_t> logitech_RGB_pages =
     LOGITECH_HIDPP_PAGE_RGB_EFFECTS2
 };
 
+/*---------------------------------------------------------*\
+| Receiver enumeration waits for matching replies. At boot  |
+| the receiver acknowledged the reconnect request first and |
+| announced paired devices after the old 300 ms reads.      |
+\*---------------------------------------------------------*/
+static const int LOGITECH_RECEIVER_REPLY_DEADLINE_MS    = 1000;
+static const int LOGITECH_RECEIVER_ANNOUNCE_DEADLINE_MS = 3000;
+static const uint8_t LOGITECH_DJ_CONNECTION_NOTIFICATION = 0x41;
+static const uint8_t LOGITECH_HIDPP_SHORT_ERROR         = 0x8F;
+
+static int readReceiverRegisterReply(hid_device* dev, uint8_t sub_id, uint8_t reg, blankFAPmessage& response)
+{
+    const std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(LOGITECH_RECEIVER_REPLY_DEADLINE_MS);
+
+    while(true)
+    {
+        const long long remaining = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now()).count();
+        if(remaining <= 0)
+        {
+            return(-1);
+        }
+
+        response.init();
+        const int result = hid_read_timeout(dev, response.buffer, response.size(), static_cast<int>(remaining));
+        if(result < 0)
+        {
+            return(-1);
+        }
+        if(result < LOGITECH_SHORT_MESSAGE_LEN || response.report_id != LOGITECH_SHORT_MESSAGE || response.device_index != LOGITECH_RECEIVER_DEVICE_INDEX)
+        {
+            continue;
+        }
+        if(response.feature_index == sub_id && response.feature_command == reg)
+        {
+            return(result);
+        }
+        if(response.feature_index == LOGITECH_HIDPP_SHORT_ERROR && response.feature_command == sub_id && response.data[0] == reg)
+        {
+            LOG_WARNING("Logitech receiver register %02X/%02X error %02X", sub_id, reg, response.data[1]);
+            return(-1);
+        }
+    }
+}
+
 int getWirelessDevice(usages device_usages, uint16_t pid, wireless_map *wireless_devices, std::map<uint8_t, bool> *link_up)
 {
-    hid_device* dev_use1;
     usages::iterator find_usage = device_usages.find(1);
     if (find_usage == device_usages.end())
     {
@@ -57,90 +101,119 @@ int getWirelessDevice(usages device_usages, uint16_t pid, wireless_map *wireless
         {
             LOG_DEBUG("Usage index:\t%i", dev->first);
         }
+        return((int)wireless_devices->size());
     }
-    else
+
+    hid_device*     dev_use1 = find_usage->second.get();
+    blankFAPmessage response;
+    shortFAPrequest request;
+
+    /*-----------------------------------------------------------------*\
+    | Register 0x00: enable wireless notifications (r1 bit 0) while     |
+    |   keeping the receiver's other reporting flags                    |
+    \*-----------------------------------------------------------------*/
+    request.init(LOGITECH_RECEIVER_DEVICE_INDEX, LOGITECH_GET_REGISTER_REQUEST);
+    request.feature_command = 0x00;
+    hid_write(dev_use1, request.buffer, request.size());
+
+    const bool     reporting_read   = readReceiverRegisterReply(dev_use1, LOGITECH_GET_REGISTER_REQUEST, 0x00, response) > 0;
+    const uint8_t  reporting[3]     = {response.data[0], response.data[1], response.data[2]};
+
+    if(!reporting_read || !(reporting[1] & 1))
     {
-        dev_use1 = find_usage->second.get();
-        /*-----------------------------------------------------------------*\
-        | Create a buffer for reads                                         |
-        \*-----------------------------------------------------------------*/
-        blankFAPmessage response;
-        response.init();
+        request.init(LOGITECH_RECEIVER_DEVICE_INDEX, LOGITECH_SET_REGISTER_REQUEST);
+        request.feature_command = 0x00;
+        request.data[0]         = reporting_read ? reporting[0] : 0;
+        request.data[1]         = (reporting_read ? reporting[1] : 0) | 1;
+        request.data[2]         = reporting_read ? reporting[2] : 0;
+        hid_write(dev_use1, request.buffer, request.size());
 
-        shortFAPrequest get_connected_devices;
-        get_connected_devices.init(LOGITECH_RECEIVER_DEVICE_INDEX, LOGITECH_GET_REGISTER_REQUEST);
-
-        hid_write(dev_use1, get_connected_devices.buffer, get_connected_devices.size());
-        hid_read_timeout(dev_use1, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
-        bool wireless_notifications = response.data[1] & 1;  //Connected devices is a flag
-
-        if (!wireless_notifications)
+        if(readReceiverRegisterReply(dev_use1, LOGITECH_SET_REGISTER_REQUEST, 0x00, response) < 0)
         {
-            response.init(); //zero out the response
-            get_connected_devices.init(LOGITECH_RECEIVER_DEVICE_INDEX, LOGITECH_SET_REGISTER_REQUEST);
-            get_connected_devices.data[1] = 1;
-            hid_write(dev_use1, get_connected_devices.buffer, get_connected_devices.size());
-            hid_read_timeout(dev_use1, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+            LOG_WARNING("Unable to enable wireless notifications on receiver %04X", pid);
+        }
+    }
 
-            if(get_connected_devices.feature_index == 0x8F)
-            {
-                LOG_ERROR("Logitech Protocol error: %02X %02X %02X %02X %02X %02X %02X", get_connected_devices.report_id, get_connected_devices.device_index, get_connected_devices.feature_index, get_connected_devices.feature_command, get_connected_devices.data[0], get_connected_devices.data[1], get_connected_devices.data[2]);
-            }
+    /*-----------------------------------------------------------------*\
+    | Register 0x02: r1 holds the number of paired devices              |
+    \*-----------------------------------------------------------------*/
+    request.init(LOGITECH_RECEIVER_DEVICE_INDEX, LOGITECH_GET_REGISTER_REQUEST);
+    request.feature_command = 0x02;
+    hid_write(dev_use1, request.buffer, request.size());
+
+    unsigned int device_count = 0;
+    if(readReceiverRegisterReply(dev_use1, LOGITECH_GET_REGISTER_REQUEST, 0x02, response) > 0)
+    {
+        device_count = response.data[1];
+    }
+    LOG_INFO("Count of connected devices to %4X: %i", pid, device_count);
+
+    if(device_count == 0)
+    {
+        LOG_WARNING("No devices were found connected to receiver!");
+        return((int)wireless_devices->size());
+    }
+
+    /*-----------------------------------------------------------------*\
+    | Writing 0x02 to register 0x02 makes the receiver acknowledge and  |
+    |   announce every paired device with a connection notification,    |
+    |   in either order. Collect announcements until all have arrived.  |
+    \*-----------------------------------------------------------------*/
+    LOG_INFO("Faking a reconnect to get device list");
+    request.init(LOGITECH_RECEIVER_DEVICE_INDEX, LOGITECH_SET_REGISTER_REQUEST);
+    request.feature_command = 0x02;
+    request.data[0]         = 0x02;
+    hid_write(dev_use1, request.buffer, request.size());
+
+    std::set<uint8_t> announced;
+    const std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(LOGITECH_RECEIVER_ANNOUNCE_DEADLINE_MS);
+
+    while(announced.size() < device_count)
+    {
+        const long long remaining = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now()).count();
+        if(remaining <= 0)
+        {
+            break;
         }
 
-        response.init(); //zero out the response
-        get_connected_devices.init(LOGITECH_RECEIVER_DEVICE_INDEX, LOGITECH_GET_REGISTER_REQUEST);
-        get_connected_devices.feature_command       = 0x02;    //0x02 Connection State register. Essentially asking for count of paired devices
-        hid_write(dev_use1, get_connected_devices.buffer, get_connected_devices.size());
-        hid_read_timeout(dev_use1, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+        blankFAPmessage devices;
+        devices.init();
 
-        unsigned int device_count = response.data[1];
-        LOG_INFO("Count of connected devices to %4X: %i", pid, device_count);
-
-        if (device_count > 0)
+        const int result = hid_read_timeout(dev_use1, devices.buffer, devices.size(), static_cast<int>(remaining));
+        if(result < 0)
         {
-            LOG_INFO("Faking a reconnect to get device list");
-            device_count++;     //Add 1 to the device_count to include the receiver
-
-            response.init();
-            get_connected_devices.init(LOGITECH_RECEIVER_DEVICE_INDEX, LOGITECH_SET_REGISTER_REQUEST);
-            get_connected_devices.feature_index     = LOGITECH_SET_REGISTER_REQUEST;
-            get_connected_devices.feature_command   = 0x02;    //0x02 Connection State register
-            get_connected_devices.data[0]           = 0x02;    //Writting 0x02 to the connection state register will ask the receiver to fake a reconnect of paired devices
-            hid_write(dev_use1, get_connected_devices.buffer, get_connected_devices.size());
-
-            for(size_t i = 0; i < device_count; i++)
-            {
-                blankFAPmessage devices;
-                devices.init();
-
-                hid_read_timeout(dev_use1, devices.buffer, devices.size(), LOGITECH_PROTOCOL_TIMEOUT);
-                unsigned int wireless_PID = (devices.data[2] << 8) | devices.data[1];
-                LOG_INFO("Connected Device Index %i:\tVirtualID=%04X\t\t%02X %02X %02X %02X %02X %02X %02X", i, wireless_PID, devices.buffer[0], devices.buffer[1], devices.buffer[2], devices.buffer[3], devices.buffer[4], devices.buffer[5], devices.buffer[6]);
-
-                /*-----------------------------------------------------------------*\
-                | We need to read the receiver from the HID device queue but        |
-                |    there is no need to add it as it's own device                  |
-                \*-----------------------------------------------------------------*/
-                if(devices.device_index != LOGITECH_RECEIVER_DEVICE_INDEX)
-                {
-                    wireless_devices->emplace(wireless_PID, devices.device_index);
-
-                    /*---------------------------------------------------------*\
-                    | Connection notification flags: bit 6 set means the link   |
-                    | is not established (device asleep or out of range)        |
-                    \*---------------------------------------------------------*/
-                    if(link_up)
-                    {
-                        (*link_up)[devices.device_index] = (devices.data[0] & 0x40) == 0;
-                    }
-                }
-            }
+            break;
         }
-        else
+        if(result < LOGITECH_SHORT_MESSAGE_LEN || devices.report_id != LOGITECH_SHORT_MESSAGE || devices.feature_index != LOGITECH_DJ_CONNECTION_NOTIFICATION)
         {
-            LOG_WARNING("No devices were found connected to receiver!");
+            continue;
         }
+
+        const uint8_t slot = devices.device_index;
+        if(slot == 0 || slot == LOGITECH_RECEIVER_DEVICE_INDEX)
+        {
+            continue;
+        }
+
+        unsigned int wireless_PID = (devices.data[2] << 8) | devices.data[1];
+        LOG_INFO("Connected Device Index %i:\tVirtualID=%04X\t\t%02X %02X %02X %02X %02X %02X %02X", slot, wireless_PID, devices.buffer[0], devices.buffer[1], devices.buffer[2], devices.buffer[3], devices.buffer[4], devices.buffer[5], devices.buffer[6]);
+
+        announced.insert(slot);
+        wireless_devices->emplace(wireless_PID, slot);
+
+        /*---------------------------------------------------------*\
+        | Connection notification flags: bit 6 set means the link   |
+        | is not established (device asleep or out of range)        |
+        \*---------------------------------------------------------*/
+        if(link_up)
+        {
+            (*link_up)[slot] = (devices.data[0] & 0x40) == 0;
+        }
+    }
+
+    if(announced.size() < device_count)
+    {
+        LOG_WARNING("Receiver %04X announced %u of %u paired devices", pid, static_cast<unsigned int>(announced.size()), device_count);
     }
 
     return((int)wireless_devices->size());

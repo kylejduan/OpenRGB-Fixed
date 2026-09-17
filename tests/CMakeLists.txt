@@ -15,13 +15,16 @@ add_executable(device_worker_lifetime
 add_executable(logitech_receiver_watcher
     logitech_receiver_watcher.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechLightspeedController/LogitechLightspeedReceiverWatcher.cpp")
+add_executable(logitech_receiver_enumeration
+    logitech_receiver_enumeration.cpp
+    "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
 add_executable(background_worker
     background_worker.cpp)
 add_executable(logitech_lighting_control
     logitech_lighting_control.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
 
-foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control background_worker logitech_receiver_watcher)
+foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control background_worker logitech_receiver_watcher logitech_receiver_enumeration)
     target_compile_features(${test_target} PRIVATE cxx_std_17)
     target_include_directories(${test_target} PRIVATE
         "${OPENRGB_SOURCE}"
@@ -44,7 +47,7 @@ foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime l
         target_compile_options(${test_target} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
         target_link_options(${test_target} PRIVATE -fsanitize=address,undefined)
     endif()
-    if(NOT test_target MATCHES "^(logitech_lighting_control|logitech_receiver_watcher)$")
+    if(NOT test_target MATCHES "^(logitech_lighting_control|logitech_receiver_watcher|logitech_receiver_enumeration)$")
         add_test(NAME ${test_target} COMMAND ${test_target})
         set_tests_properties(${test_target} PROPERTIES TIMEOUT 20)
     endif()
@@ -58,4 +61,9 @@ endforeach()
 foreach(watcher_case IN ITEMS late_create create_retry pending_linked asleep malformed link_reapply poll_reapply quiet backoff unsupported link_down stop)
     add_test(NAME logitech_watcher_${watcher_case} COMMAND logitech_receiver_watcher ${watcher_case})
     set_tests_properties(logitech_watcher_${watcher_case} PROPERTIES TIMEOUT 20)
+endforeach()
+
+foreach(enumeration_case IN ITEMS normal boot_order asleep stale_reply enable_notifications)
+    add_test(NAME logitech_enumeration_${enumeration_case} COMMAND logitech_receiver_enumeration ${enumeration_case})
+    set_tests_properties(logitech_enumeration_${enumeration_case} PROPERTIES TIMEOUT 20)
 endforeach()
