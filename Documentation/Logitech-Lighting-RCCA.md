@@ -267,10 +267,29 @@ short-report interface recorded the startup traffic.
 | Forced takeover: control set to `0` with flags `6` | Watcher logged the loss at its first 30 s poll; control read back `3/5` after 16.2 s |
 | Whole OpenRGB process, one-minute sample after the test | 0.77 CPU-seconds per minute (1.3 % of one core), 20 threads, 52 MB working set |
 
-Physical color after the forced takeover, deep sleep and wake, a cold boot, and
-starting OpenRGB while the mouse sleeps still need operator observation. The CPU
-figure covers every OpenRGB thread, including the existing per-controller worker
-loops; it was not split per thread.
+A later per-thread sample attributed that cost: ten controller worker threads, five
+for detected devices and five for placeholder controllers kept from the sizes file,
+each woke about 570 times per second in their 1 ms idle sleep, at 0.1 to 0.2 % of one
+core each. The watcher thread woke 4.2 times per second and measured 0.0 %.
+
+### Review follow-up and final build `832f53c`, 2026-09-16
+
+Two code reviews of the fixed.3 changes found four defects, all fixed before this
+installation: late device creation held the background lock through ten attempts,
+late creation could consume the watcher's link notifications from the shared handle,
+no-reply backoff shortened polls configured above 120 s, and the watcher's own handle
+could listen to a different receiver than the bundled one when two receivers share
+a product ID.
+
+| Check on `832f53c` | Observation |
+| --- | --- |
+| Installation | Package hashes verified; previous build exited cleanly; logon task started the new build |
+| Detection | Slots 1 and 7 announced; both devices registered; watcher on 2 slots with its own handle; Main applied at 8.9 s |
+| Forced takeover, then receiver re-announcement | Control `3/5` again 2.1 s later: the watcher acted on the link notification |
+| Forced takeover without a link event | Control `3/5` again after 28.3 s, within the 30 s poll |
+
+Deep sleep and wake, a cold boot, and starting OpenRGB while the mouse sleeps have
+not been observed physically on this build.
 
 ## Protocol references
 
