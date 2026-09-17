@@ -42,6 +42,7 @@ struct hid_device_
     std::chrono::steady_clock::time_point rgb_ready_at{};
     std::array<unsigned char, 3> rendered_rgb{};
     bool slow_color_reply = false;
+    bool slow_replies = false;
     bool short_wake_ack_once = false;
     std::chrono::steady_clock::time_point reply_available_at{};
 };
@@ -77,7 +78,18 @@ extern "C" int hid_write(hid_device* dev, const unsigned char* bytes, size_t siz
     if(request[2] == 0)
     {
         const unsigned page = (request[4] << 8) | request[5];
-        reply[4] = page == dev->page ? 9 : 0;
+        reply[4] = page == dev->page ? 9 : (page == 0x0005 ? 3 : 0);
+    }
+    else if(request[2] == 3) // Device name and type (0x0005).
+    {
+        static const std::string name = "G502 X PLUS";
+        if(fn == 0x00) reply[4] = static_cast<unsigned char>(name.size());
+        else if(fn == 0x10)
+        {
+            const size_t start = std::min<size_t>(request[4], name.size());
+            std::copy_n(name.begin() + start, std::min<size_t>(16, name.size() - start), reply.begin() + 4);
+        }
+        else if(fn == 0x20) reply[4] = 3;
     }
     else if(fn == 0)
     {
@@ -165,7 +177,7 @@ extern "C" int hid_write(hid_device* dev, const unsigned char* bytes, size_t siz
         wrong[4] ^= 1; // Same function/ID, but a stale set reply for a getter (or reverse).
         dev->replies.push_back(wrong);
     }
-    dev->reply_available_at = dev->slow_color_reply && fn == 0x10
+    dev->reply_available_at = (dev->slow_color_reply && fn == 0x10) || dev->slow_replies
                            ? std::chrono::steady_clock::now() + std::chrono::milliseconds(450)
                            : std::chrono::steady_clock::time_point{};
     dev->replies.push_back(reply);
@@ -479,6 +491,20 @@ int main(int argc, char** argv)
         held.unlock();
         auto sibling = created.get();
         assert(sibling->getLED_count() == 1 && !f.hid.writes.empty());
+    }
+    else if(test == "init_slow")
+    {
+        // Replies measured about 487 ms after a wake. Initialization must pair
+        // each query with its own reply instead of taking the next report.
+        hid_device_ slow;
+        slow.slow_replies = true;
+        usages bundle;
+        bundle.emplace(2, std::shared_ptr<hid_device>(&slow, hid_close));
+        logitech_device late(f.path, bundle, 1, false, f.receiver_mutex);
+        assert(late.device_name == "G502 X PLUS" && late.logitech_device_type == 3 && "Slow replies must not shift name queries");
+        assert(late.RGB_feature_index == 9 && "Slow replies must not shift feature lookups");
+        assert(late.getLED_count() == 1 && "Slow replies must not shift LED enumeration");
+        assert(late.getLED_info(0).fx.size() == 2);
     }
     else { assert(false && "Unknown test case"); }
     std::printf("PASS: Logitech lighting %s\n", test.c_str());

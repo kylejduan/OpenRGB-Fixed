@@ -11,7 +11,15 @@
 
 #include <LogitechProtocolCommon.h>
 #include <chrono>
+#include <cstring>
 #include <thread>
+
+/*---------------------------------------------------------*\
+| Initialization queries pair each request with its own     |
+| reply. Wireless replies arrived about 487 ms late after a |
+| wake, beyond the upstream 300 ms read timeout.            |
+\*---------------------------------------------------------*/
+static const int LOGITECH_QUERY_DEADLINE_MS = 1000;
 
 const char* logitech_led_locations[] =
 {
@@ -352,10 +360,10 @@ uint8_t logitech_device::getFeatureIndex(uint16_t feature_page)
         get_index.data[0]       = feature_page >> 8;
         get_index.data[1]       = feature_page & 0xFF;
 
-        hid_write(dev_use2, get_index.buffer, get_index.size());
-        hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
-
-        feature_index           = response.data[0];
+        if(sendLightingRequest(dev_use2, get_index, response, false, LOGITECH_QUERY_DEADLINE_MS, false) > 0)
+        {
+            feature_index       = response.data[0];
+        }
 
         LOG_DEBUG("[%s] Feature Page %04X found @ index %02X - %02X %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(), feature_page, feature_index,
                 response.data[0], response.data[1],  response.data[2],  response.data[3], response.data[4], response.data[5],  response.data[6],  response.data[7]);
@@ -415,17 +423,21 @@ int logitech_device::getDeviceFeatureList()
         longFAPrequest get_count;
         get_count.init(device_index, feature_index, LOGITECH_CMD_FEATURE_SET_GET_COUNT);
 
-        hid_write(dev_use2, get_count.buffer, get_count.size());
-        hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
-        unsigned int feature_count = response.data[0];
+        unsigned int feature_count = 0;
+        if(sendLightingRequest(dev_use2, get_count, response, false, LOGITECH_QUERY_DEADLINE_MS, false) > 0)
+        {
+            feature_count = response.data[0];
+        }
 
         longFAPrequest get_features;
         get_features.init(device_index, feature_index, LOGITECH_CMD_FEATURE_SET_GET_ID);
-        for(std::size_t i = 1; feature_list.size() < feature_count; i++ )
+        for(std::size_t i = 1; i <= feature_count && feature_list.size() < feature_count; i++ )
         {
             get_features.data[0] = (uint8_t)i;
-            hid_write(dev_use2, get_features.buffer, get_features.size());
-            hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+            if(sendLightingRequest(dev_use2, get_features, response, false, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
+            {
+                break;
+            }
             LOG_DEBUG("[%s] Feature %04X @ index: %02X", device_name.c_str(), (response.data[0] << 8) | response.data[1], i);
             feature_list.emplace((uint16_t)((response.data[0] << 8) | response.data[1]), (uint8_t)i);
         }
@@ -466,8 +478,10 @@ int logitech_device::getDeviceName()
         {
             longFAPrequest get_length;
             get_length.init(device_index, feature_index, LOTITECH_CMD_DEVICE_NAME_TYPE_GET_COUNT);
-            hid_write(dev_use2, get_length.buffer, get_length.size());
-            hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+            if(sendLightingRequest(dev_use2, get_length, response, false, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
+            {
+                return(0);
+            }
             unsigned int name_length = response.data[0];
             LOG_DEBUG("[%s] Name Length %02i - %02X %02X %02X %02X %02X %02X %02X %02X   %02X %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(), name_length,
                 response.data[0], response.data[1],  response.data[2],  response.data[3],  response.data[4],  response.data[5],  response.data[6],  response.data[7],
@@ -478,9 +492,17 @@ int logitech_device::getDeviceName()
             while(device_name.length() < name_length)
             {
                 get_name.data[0] = (uint8_t)device_name.length();   //This sets the character index to get from the device
-                hid_write(dev_use2, get_name.buffer, get_name.size());
-                hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
-                std::string temp = (char *)&response.data;
+                // Name replies carry characters, not an echoed index.
+                if(sendLightingRequest(dev_use2, get_name, response, false, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
+                {
+                    device_name.clear();
+                    return(0);
+                }
+                std::string temp((char *)&response.data, strnlen((char *)&response.data, sizeof(response.data)));
+                if(temp.empty())
+                {
+                    break;
+                }
                 device_name.append(temp);
                 LOG_DEBUG("[%s] Get Name %02i - %02X %02X %02X %02X %02X %02X %02X %02X   %02X %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(), device_name.length(),
                     response.data[0], response.data[1],  response.data[2],  response.data[3],  response.data[4],  response.data[5],  response.data[6],  response.data[7],
@@ -488,8 +510,11 @@ int logitech_device::getDeviceName()
             }
 
             get_name.init(device_index, feature_index, LOGITECH_CMD_DEVICE_NAME_TYPE_GET_TYPE);
-            hid_write(dev_use2, get_name.buffer, get_name.size());
-            hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+            if(sendLightingRequest(dev_use2, get_name, response, false, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
+            {
+                device_name.clear();
+                return(0);
+            }
             logitech_device_type = response.data[0];
             LOG_DEBUG("[%s] Get Type %02i - %02X %02X %02X %02X %02X %02X %02X %02X   %02X %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(), logitech_device_type,
                 response.data[0], response.data[1],  response.data[2],  response.data[3],  response.data[4],  response.data[5],  response.data[6],  response.data[7],
@@ -595,8 +620,11 @@ void logitech_device::getRGBconfig()
             get_count.data[3] = 0;
             get_count.data[4] = 0;
 
-            result = hid_write(dev_use2, get_count.buffer, get_count.size());
-            result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+            if(sendLightingRequest(dev_use2, get_count, response, true, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
+            {
+                LOG_DEBUG("[%s] FP8071 - No device info reply", device_name.c_str());
+                return;
+            }
             LOG_DEBUG("[%s] FP8071 - LED Count - %04X :   %02X %04X %04X %04X %04X   %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(),
                 (response.data[1] << 8 | response.data[2]), response.data[0], (response.data[1] << 8 | response.data[2]), (response.data[3] << 8 | response.data[4]), (response.data[5] << 8 | response.data[6]),
                 (response.data[7] << 8 | response.data[8]), response.data[9], response.data[10], response.data[11], response.data[12], response.data[13], response.data[14], response.data[15]);
@@ -608,8 +636,12 @@ void logitech_device::getRGBconfig()
                 get_count.data[1] = 0xFF;
                 get_count.data[2] = 0;
 
-                result = hid_write(dev_use2, get_count.buffer, get_count.size());
-                result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+                if(sendLightingRequest(dev_use2, get_count, response, true, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
+                {
+                    LOG_DEBUG("[%s] FP8071 - No cluster %02i reply", device_name.c_str(), i);
+                    leds.clear();
+                    return;
+                }
                 LOG_DEBUG("[%s] FP8071 - LED %02i - %02X %02X %02X %02X %02X %02X %02X %02X   %02X %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(), i,
                     response.data[0], response.data[1],  response.data[2],  response.data[3],  response.data[4],  response.data[5],  response.data[6],  response.data[7],
                     response.data[8], response.data[9], response.data[10], response.data[11], response.data[12], response.data[13], response.data[14], response.data[15]);
@@ -629,8 +661,12 @@ void logitech_device::getRGBconfig()
 
                     get_effect.data[0] = get_count.data[0];
                     get_effect.data[1] = i;
-                    result = hid_write(dev_use2, get_effect.buffer, get_effect.size());
-                    result = hid_read_timeout(dev_use2, fx_response.buffer, fx_response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+                    if(sendLightingRequest(dev_use2, get_effect, fx_response, true, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
+                    {
+                        LOG_DEBUG("[%s] FP8071 - No cluster %02i effect %02X reply", device_name.c_str(), get_count.data[0], i);
+                        leds.clear();
+                        return;
+                    }
                     LOG_DEBUG("[%s] FP8071 - LED %02i Effect %02X - %02X %02X %02X %02X %02X %02X %02X %02X   %02X %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(), get_count.data[0], i,
                         fx_response.data[0], fx_response.data[1],  fx_response.data[2],  fx_response.data[3],  fx_response.data[4],  fx_response.data[5],  fx_response.data[6],  fx_response.data[7],
                         fx_response.data[8], fx_response.data[9], fx_response.data[10], fx_response.data[11], fx_response.data[12], fx_response.data[13], fx_response.data[14], fx_response.data[15]);
