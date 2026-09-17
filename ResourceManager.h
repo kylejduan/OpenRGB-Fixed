@@ -19,6 +19,7 @@
 #include <thread>
 #include <string>
 #include <vector>
+#include "BackgroundWorker.h"
 #include "SPDWrapper.h"
 #include "hidapi_wrapper.h"
 #include "i2c_smbus.h"
@@ -195,6 +196,15 @@ public:
     void WaitForInitialization();
     void WaitForDeviceDetection();
 
+    void RegisterBackgroundWorker(std::unique_ptr<BackgroundWorker> worker);
+
+    /*-----------------------------------------------------*\
+    | Runs fn when no detection, startup profile, or        |
+    | cleanup work is active. Gives up once stop_requested  |
+    | returns true.                                         |
+    \*-----------------------------------------------------*/
+    bool RunWhenBackgroundIdle(const std::function<bool()>& stop_requested, const std::function<void()>& fn);
+
 private:
     void UpdateDetectorSettings();
     void SetupConfigurationDirectory();
@@ -316,6 +326,8 @@ private:
     std::mutex                                  DetectDeviceMutex;
     std::function<void()>                       ScheduledBackgroundFunction;
     std::mutex                                  BackgroundThreadStateMutex;
+    std::mutex                                  BackgroundWorkersMutex;
+    std::vector<std::unique_ptr<BackgroundWorker>> background_workers;
 
     /*-----------------------------------------------------*\
     | NOTE: wakes up the background detection thread        |

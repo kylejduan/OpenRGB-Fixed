@@ -878,6 +878,18 @@ void ResourceManager::Cleanup()
     }
     ResourceManager::get()->WaitForDeviceDetection();
 
+    // Workers use controllers and receiver handles; stop them before either is released.
+    std::vector<std::unique_ptr<BackgroundWorker>> workers;
+    {
+        std::lock_guard<std::mutex> lock(BackgroundWorkersMutex);
+        workers.swap(background_workers);
+    }
+    for(std::unique_ptr<BackgroundWorker>& worker : workers)
+    {
+        worker->Stop();
+    }
+    workers.clear();
+
     std::vector<RGBController *> rgb_controllers_hw_copy = rgb_controllers_hw;
 
     for(std::size_t hw_controller_idx = 0; hw_controller_idx < rgb_controllers_hw.size(); hw_controller_idx++)
@@ -2110,6 +2122,26 @@ void ResourceManager::WaitForDeviceDetection()
 {
     DetectDeviceMutex.lock();
     DetectDeviceMutex.unlock();
+}
+
+void ResourceManager::RegisterBackgroundWorker(std::unique_ptr<BackgroundWorker> worker)
+{
+    std::lock_guard<std::mutex> lock(BackgroundWorkersMutex);
+    background_workers.push_back(std::move(worker));
+}
+
+bool ResourceManager::RunWhenBackgroundIdle(const std::function<bool()>& stop_requested, const std::function<void()>& fn)
+{
+    if(DetectDevicesThread && std::this_thread::get_id() == DetectDevicesThread->get_id())
+    {
+        /*-------------------------------------------------*\
+        | Background coroutines already hold the mutex      |
+        \*-------------------------------------------------*/
+        fn();
+        return(true);
+    }
+
+    return(RunWhenIdle(BackgroundThreadStateMutex, stop_requested, fn));
 }
 
 bool ResourceManager::IsAnyDimmDetectorEnabled(json &detector_settings)

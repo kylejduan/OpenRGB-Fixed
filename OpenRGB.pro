@@ -178,6 +178,7 @@ HEADERS +=                                                                      
     OpenRGBPluginInterface.h                                                                    \
     PluginManager.h                                                                             \
     ProfileManager.h                                                                            \
+    BackgroundWorker.h                                                                          \
     ResourceManager.h                                                                           \
     ResourceManagerInterface.h                                                                  \
     SettingsManager.h                                                                           \

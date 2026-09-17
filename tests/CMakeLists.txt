@@ -12,11 +12,13 @@ add_executable(logitech_receiver_lifetime
 add_executable(device_worker_lifetime
     device_worker_lifetime.cpp
     "${OPENRGB_SOURCE}/RGBController/RGBController.cpp")
+add_executable(background_worker
+    background_worker.cpp)
 add_executable(logitech_lighting_control
     logitech_lighting_control.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
 
-foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control)
+foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control background_worker)
     target_compile_features(${test_target} PRIVATE cxx_std_17)
     target_include_directories(${test_target} PRIVATE
         "${OPENRGB_SOURCE}"
