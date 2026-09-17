@@ -1118,7 +1118,7 @@ void DetectLogitechWired(hid_device_info* info, const std::string& /*name*/)
 \*---------------------------------------------------------------------------------------------------------*/
 #if defined(_WIN32) || defined(__APPLE__)
 
-usages BundleLogitechUsages(hid_device_info* info)
+usages BundleLogitechUsages(hid_device_info* info, std::string* short_report_path = nullptr)
 {
     /*-----------------------------------------------------------------*\
     | Need a unique ID to group usages for 1 device if multiple exist   |
@@ -1141,7 +1141,16 @@ usages BundleLogitechUsages(hid_device_info* info)
             if(dev)
             {
                 LOG_DEBUG("Success! Adding Usage %i for device @ path %s", temp_info->usage, temp_info->path);
-                temp_usages.emplace((uint8_t)temp_info->usage, std::shared_ptr<hid_device>(dev, hid_close));
+                const bool inserted = temp_usages.emplace((uint8_t)temp_info->usage, std::shared_ptr<hid_device>(dev, hid_close)).second;
+
+                /*---------------------------------------------------------*\
+                | Report the short-report collection actually bundled so a  |
+                | second handle listens to the same receiver                |
+                \*---------------------------------------------------------*/
+                if(inserted && temp_info->usage == 1 && short_report_path)
+                {
+                    *short_report_path = temp_info->path;
+                }
             }
             else
             {
@@ -1277,20 +1286,21 @@ void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& 
     char        *path           = info->path;
     uint16_t    dev_pid         = info->product_id;
 
+    std::string short_report_path;
+    usages      device_usages   = BundleLogitechUsages(info, &short_report_path);
+
     /*-----------------------------------------------------------------*\
-    | The watcher reads link notifications from its own handle to this  |
-    |   short-report collection. Device queries flush and read the      |
-    |   shared handle and would otherwise consume those notifications.  |
+    | The watcher reads link notifications from its own handle to the   |
+    |   bundled short-report collection. Device queries flush and read  |
+    |   the shared handle and would otherwise consume those reports.    |
     \*-----------------------------------------------------------------*/
-    hid_device*                 watcher_dev             = hid_open_path(path);
+    hid_device*                 watcher_dev             = short_report_path.empty() ? nullptr : hid_open_path(short_report_path.c_str());
     std::shared_ptr<hid_device> watcher_notifications;
 
     if(watcher_dev)
     {
         watcher_notifications = std::shared_ptr<hid_device>(watcher_dev, hid_close);
     }
-
-    usages      device_usages   = BundleLogitechUsages(info);
 
     wireless_map                wireless_devices;
     std::map<uint8_t, bool>     link_up;
