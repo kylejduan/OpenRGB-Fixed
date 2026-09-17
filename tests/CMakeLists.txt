@@ -12,18 +12,22 @@ add_executable(logitech_receiver_lifetime
 add_executable(device_worker_lifetime
     device_worker_lifetime.cpp
     "${OPENRGB_SOURCE}/RGBController/RGBController.cpp")
+add_executable(logitech_receiver_watcher
+    logitech_receiver_watcher.cpp
+    "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechLightspeedController/LogitechLightspeedReceiverWatcher.cpp")
 add_executable(background_worker
     background_worker.cpp)
 add_executable(logitech_lighting_control
     logitech_lighting_control.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
 
-foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control background_worker)
+foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control background_worker logitech_receiver_watcher)
     target_compile_features(${test_target} PRIVATE cxx_std_17)
     target_include_directories(${test_target} PRIVATE
         "${OPENRGB_SOURCE}"
         "${OPENRGB_SOURCE}/RGBController"
         "${OPENRGB_SOURCE}/Controllers/LogitechController"
+        "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechLightspeedController"
         "${OPENRGB_SOURCE}/dependencies/hidapi-win/include"
         "${OPENRGB_SOURCE}/dependencies/json")
     target_compile_definitions(${test_target} PRIVATE HID_API_NO_EXPORT_DEFINE)
@@ -40,7 +44,7 @@ foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime l
         target_compile_options(${test_target} PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
         target_link_options(${test_target} PRIVATE -fsanitize=address,undefined)
     endif()
-    if(NOT test_target STREQUAL "logitech_lighting_control")
+    if(NOT test_target MATCHES "^(logitech_lighting_control|logitech_receiver_watcher)$")
         add_test(NAME ${test_target} COMMAND ${test_target})
         set_tests_properties(${test_target} PROPERTIES TIMEOUT 20)
     endif()
@@ -49,4 +53,9 @@ endforeach()
 foreach(lighting_case IN ITEMS static mode color power power_control power_changed power_retry slow_ack replies short_ack stale selector queue_boundary queue_busy errors short write timeout legacy shared control_read init_locked)
     add_test(NAME logitech_lighting_${lighting_case} COMMAND logitech_lighting_control ${lighting_case})
     set_tests_properties(logitech_lighting_${lighting_case} PROPERTIES TIMEOUT 20)
+endforeach()
+
+foreach(watcher_case IN ITEMS late_create create_retry asleep malformed link_reapply poll_reapply quiet backoff unsupported link_down stop)
+    add_test(NAME logitech_watcher_${watcher_case} COMMAND logitech_receiver_watcher ${watcher_case})
+    set_tests_properties(logitech_watcher_${watcher_case} PROPERTIES TIMEOUT 20)
 endforeach()
