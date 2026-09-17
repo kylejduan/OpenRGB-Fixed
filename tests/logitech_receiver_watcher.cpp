@@ -104,6 +104,7 @@ int main(int argc, char** argv)
     int succeed_on = 1;
 
     if(test == "backoff")     { timing.poll = 20ms; timing.poll_max = 160ms; mouse.script = {-1}; }
+    if(test == "backoff_long_poll") { timing.poll = 200ms; timing.poll_max = 100ms; mouse.script = {-1}; }
     if(test == "poll_reapply"){ timing.poll = 20ms; mouse.script = {3, 3, 0, 3}; }
     if(test == "quiet")       { timing.poll = 10ms; timing.quiet = 400ms; mouse.script = {0}; }
     if(test == "unsupported") { timing.poll = 10ms; mouse.script = {-2}; }
@@ -192,6 +193,15 @@ int main(int argc, char** argv)
         const size_t reads = mouse.read_count();
         assert(reads >= 3 && reads <= 8 && "No-reply polls back off exponentially");
         assert(mouse.reapply_count() == 0);
+    }
+    else if(test == "backoff_long_poll")
+    {
+        // A configured poll longer than the backoff cap must never be shortened
+        // for a device that stopped answering.
+        std::this_thread::sleep_for(700ms);
+        const size_t reads = mouse.read_count();
+        // Correct: reads at 200, 400 and 600 ms. Capped at 100 ms it read 5 times.
+        assert(reads >= 1 && reads <= 3 && "No-reply backoff must not poll faster than the configured interval");
     }
     else if(test == "unsupported")
     {

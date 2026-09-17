@@ -58,7 +58,7 @@ foreach(lighting_case IN ITEMS static mode color power power_control power_chang
     set_tests_properties(logitech_lighting_${lighting_case} PROPERTIES TIMEOUT 20)
 endforeach()
 
-foreach(watcher_case IN ITEMS late_create create_retry pending_linked unknown_slot asleep malformed link_reapply poll_reapply quiet backoff unsupported link_down stop)
+foreach(watcher_case IN ITEMS late_create create_retry pending_linked unknown_slot asleep malformed link_reapply poll_reapply quiet backoff backoff_long_poll unsupported link_down stop)
     add_test(NAME logitech_watcher_${watcher_case} COMMAND logitech_receiver_watcher ${watcher_case})
     set_tests_properties(logitech_watcher_${watcher_case} PROPERTIES TIMEOUT 20)
 endforeach()

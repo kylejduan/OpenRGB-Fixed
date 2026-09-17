@@ -234,7 +234,8 @@ void LogitechLightspeedReceiverWatcher::CheckOwnership(uint8_t index, Slot& slot
     }
     if(control < 0)
     {
-        slot.interval  = std::min(slot.interval * 2, timing.poll_max);
+        // Back off, but never below a configured poll longer than the cap.
+        slot.interval  = std::min(slot.interval * 2, std::max(timing.poll_max, timing.poll));
         slot.next_poll = after + slot.interval;
         LOG_DEBUG("[Lightspeed watcher] %s on slot %u did not answer", slot.hooks.name.c_str(), index);
         return;
