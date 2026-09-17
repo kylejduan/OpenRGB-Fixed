@@ -69,7 +69,7 @@ struct Mouse
         LightspeedSlotHooks h;
         h.name = "G502 test";
         h.read_control = [this](int deadline_ms) {
-            assert(deadline_ms == 300);
+            assert(deadline_ms == 1000 && "Post-wake replies take about 487 ms");
             std::lock_guard<std::mutex> lock(mutex);
             return script[std::min(reads++, script.size() - 1)];
         };
@@ -119,7 +119,8 @@ int main(int argc, char** argv)
         return mouse.hooks();
     });
     const bool pending = test == "late_create" || test == "create_retry" || test == "asleep" || test == "malformed";
-    if(pending) watcher.AddPending(1);
+    if(test == "pending_linked") watcher.AddPending(1, true);
+    else if(pending) watcher.AddPending(1, false);
     else        watcher.AddRegistered(1, mouse.hooks());
     watcher.Start();
 
@@ -132,6 +133,13 @@ int main(int argc, char** argv)
         assert(eventually([&] { return mouse.read_count() >= 1; }) && "Verify ownership after late registration");
         std::this_thread::sleep_for(150ms);
         assert(creates == succeed_on && "Stop creation attempts after success");
+    }
+    else if(test == "pending_linked")
+    {
+        // Detection failed while the link was up: no link notification will
+        // follow, so creation must be retried on its own schedule.
+        assert(eventually([&] { return creates == 1; }));
+        assert(eventually([&] { return mouse.read_count() >= 1; }));
     }
     else if(test == "asleep" || test == "malformed")
     {

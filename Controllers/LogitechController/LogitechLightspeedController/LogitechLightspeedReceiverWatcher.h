@@ -35,10 +35,10 @@ struct LightspeedWatcherTiming
     std::chrono::milliseconds               read_timeout{250};
     std::chrono::milliseconds               poll{30000};
     std::chrono::milliseconds               poll_max{120000};
-    int                                     reply_deadline_ms{300};
+    int                                     reply_deadline_ms{1000};
     std::chrono::milliseconds               quiet{5000};
     std::vector<std::chrono::milliseconds>  after_link{std::chrono::milliseconds(2000), std::chrono::milliseconds(10000)};
-    std::vector<std::chrono::milliseconds>  create_after_link{std::chrono::milliseconds(500), std::chrono::milliseconds(3000), std::chrono::milliseconds(10000)};
+    std::vector<std::chrono::milliseconds>  create_after_link{std::chrono::milliseconds(500), std::chrono::milliseconds(3000), std::chrono::milliseconds(10000), std::chrono::milliseconds(60000), std::chrono::milliseconds(300000)};
 };
 
 class LogitechLightspeedReceiverWatcher : public BackgroundWorker
@@ -52,7 +52,8 @@ public:
     // Configuration: call before Start().
     void SetCreateHook(CreateHook hook);
     void AddRegistered(uint8_t slot, LightspeedSlotHooks hooks);
-    void AddPending(uint8_t slot);
+    // linked: the receiver reported the slot's link up during enumeration.
+    void AddPending(uint8_t slot, bool linked);
 
     void Start();
     void Stop() override;

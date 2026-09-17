@@ -45,7 +45,7 @@ static std::vector<uint16_t> logitech_RGB_pages =
     LOGITECH_HIDPP_PAGE_RGB_EFFECTS2
 };
 
-int getWirelessDevice(usages device_usages, uint16_t pid, wireless_map *wireless_devices)
+int getWirelessDevice(usages device_usages, uint16_t pid, wireless_map *wireless_devices, std::map<uint8_t, bool> *link_up)
 {
     hid_device* dev_use1;
     usages::iterator find_usage = device_usages.find(1);
@@ -125,6 +125,15 @@ int getWirelessDevice(usages device_usages, uint16_t pid, wireless_map *wireless
                 if(devices.device_index != LOGITECH_RECEIVER_DEVICE_INDEX)
                 {
                     wireless_devices->emplace(wireless_PID, devices.device_index);
+
+                    /*---------------------------------------------------------*\
+                    | Connection notification flags: bit 6 set means the link   |
+                    | is not established (device asleep or out of range)        |
+                    \*---------------------------------------------------------*/
+                    if(link_up)
+                    {
+                        (*link_up)[devices.device_index] = (devices.data[0] & 0x40) == 0;
+                    }
                 }
             }
         }

@@ -42,9 +42,11 @@ void LogitechLightspeedReceiverWatcher::AddRegistered(uint8_t slot, LightspeedSl
     entry.hooks      = std::move(hooks);
 }
 
-void LogitechLightspeedReceiverWatcher::AddPending(uint8_t slot)
+void LogitechLightspeedReceiverWatcher::AddPending(uint8_t slot, bool linked)
 {
-    slots[slot].registered = false;
+    Slot& entry      = slots[slot];
+    entry.registered = false;
+    entry.linked     = linked;
 }
 
 void LogitechLightspeedReceiverWatcher::Start()
@@ -58,6 +60,18 @@ void LogitechLightspeedReceiverWatcher::Start()
     {
         entry.second.interval  = timing.poll;
         entry.second.next_poll = now + timing.poll;
+
+        /*-------------------------------------------------*\
+        | Detection failed on a linked device: no link      |
+        | notification will follow, so retry on a schedule  |
+        \*-------------------------------------------------*/
+        if(!entry.second.registered && entry.second.linked)
+        {
+            for(std::chrono::milliseconds offset : timing.create_after_link)
+            {
+                Schedule(entry.second, now + offset);
+            }
+        }
     }
     worker = std::thread(&LogitechLightspeedReceiverWatcher::Run, this);
 }

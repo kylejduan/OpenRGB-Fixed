@@ -273,7 +273,8 @@ struct logitech_led
         leds_fx                         fx;
 };
 
-int getWirelessDevice(usages _usages, uint16_t pid, wireless_map *wireless_devices);    //Helper function needed outside of class
+// link_up, when given, records whether the receiver reported each slot's radio link as established.
+int getWirelessDevice(usages _usages, uint16_t pid, wireless_map *wireless_devices, std::map<uint8_t, bool> *link_up = nullptr);    //Helper function needed outside of class
 
 class logitech_device
 {

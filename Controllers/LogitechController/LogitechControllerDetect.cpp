@@ -1168,7 +1168,7 @@ static LightspeedSlotHooks LightspeedSlotHooksFor(RGBController_LogitechLightspe
     return(hooks);
 }
 
-static void StartLogitechLightspeedWatcher(const char* path, const usages& device_usages, uint16_t dev_pid, std::shared_ptr<std::mutex> logitech_mutex, const LightspeedSlotList& slot_list)
+static void StartLogitechLightspeedWatcher(const char* path, const usages& device_usages, uint16_t dev_pid, std::shared_ptr<std::mutex> logitech_mutex, const LightspeedSlotList& slot_list, const std::map<uint8_t, bool>& link_up)
 {
     json settings = ResourceManager::get()->GetSettingsManager()->GetSettings("LogitechLightspeed");
 
@@ -1229,7 +1229,8 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
         }
         else
         {
-            watcher->AddPending(entry.first);
+            const std::map<uint8_t, bool>::const_iterator link = link_up.find(entry.first);
+            watcher->AddPending(entry.first, link != link_up.end() && link->second);
         }
     }
 
@@ -1247,8 +1248,9 @@ void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& 
     uint16_t    dev_pid         = info->product_id;
     usages      device_usages   = BundleLogitechUsages(info);
 
-    wireless_map wireless_devices;
-    unsigned int device_count   = getWirelessDevice(device_usages, dev_pid, &wireless_devices);
+    wireless_map                wireless_devices;
+    std::map<uint8_t, bool>     link_up;
+    unsigned int device_count   = getWirelessDevice(device_usages, dev_pid, &wireless_devices, &link_up);
 
     /*-----------------------------------------------------------------*\
     | Lightspeed Receivers will only have one paired /connected device  |
@@ -1268,7 +1270,7 @@ void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& 
             slot_list.emplace_back(wd->second, CreateLogitechLightspeedDevice(path, device_usages, wd->second, dev_pid, true, logitech_mutex));
         }
 
-        StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list);
+        StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list, link_up);
     }
 }
 
