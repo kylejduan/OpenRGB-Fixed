@@ -81,8 +81,9 @@ asleep during detection was also never registered.
 
 Each legacy Lightspeed receiver now gets one watcher thread:
 
-- It waits in a 250 ms read on the receiver's short-report interface for device
-  connection notifications, which identify the slot and whether its link is up.
+- It waits in a 250 ms read on its own handle to the receiver's short-report
+  interface for device connection notifications, which identify the slot and
+  whether its link is up. Device queries on the shared handle cannot consume them.
 - For each linked `0x8071` device it reads software control 2 s and 10 s after a
   link comes up and every 30 s otherwise: one 20-byte request with a one-second
   reply window. It sends nothing while the receiver reports the link down, and
@@ -93,13 +94,17 @@ Each legacy Lightspeed receiver now gets one watcher thread:
   interval, and repaints. A 5 s quiet window prevents repeated requests.
 - When a slot that failed detection links up, was already linked when detection
   failed, or links up without having been enumerated at all, it retries creation
-  0.5 s, 3 s, 10 s, 60 s and 5 min later.
+  0.5 s, 3 s, 10 s, 60 s and 5 min later, one initialization attempt each.
   A successful attempt registers the controller, applies the last loaded profile
   to it, and updates it.
 
 `ResourceManager::Cleanup()` stops watchers before any controller or handle is
-released. Late creation and re-apply wait until detection, startup profile
-application, and cleanup are idle, and give up if the watcher is stopping.
+released. A late device is queried without holding the background lock;
+registering it and re-applying lighting wait until detection, startup profile
+application, and cleanup are idle. If the watcher is stopping, an unregistered
+controller is stopped and discarded, so a rescan or exit waits for at most one
+initialization attempt. A no-reply backoff never polls faster than the configured
+interval.
 Device initialization now holds the receiver mutex so a late device cannot
 interleave with its sibling's lighting transaction.
 
