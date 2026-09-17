@@ -240,6 +240,18 @@ attempts. Fixed.3 pairs each initialization query with its reply using a
 one-second deadline, retries linked devices that still fail detection, and allows
 the watcher's control read one second.
 
+### Restart with the first fixed.3 build
+
+Windows restarted at 21:36 and the logon task started that first build at 21:37.
+Enumeration logged the receiver's acknowledgement (`10 FF 80 02`) followed by two
+empty reads, then ten failed attempts on a nonexistent slot 0 over 21 s. Neither
+the mouse nor the mat was registered. At 21:39 a probe read the mouse at software
+control `0`, event flags `0`, full RGB power: firmware lighting with no host
+control, while the LampArray service stayed stopped. The corrected enumeration
+matches register replies, waits up to 3 s for every paired device's
+announcement, and ignores the acknowledgement. The watcher also registers a slot
+first seen through a later link notification.
+
 ## Protocol references
 
 - [Logitech HID++ packet layout and software IDs](https://github.com/Logitech/cpg-docs/blob/master/hidpp20/README.rst).

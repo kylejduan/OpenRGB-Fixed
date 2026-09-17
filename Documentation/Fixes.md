@@ -91,8 +91,9 @@ Each legacy Lightspeed receiver now gets one watcher thread:
 - When control is lost, it requests the controller's normal mode update. The
   existing driver path reclaims control, restores RGB power with its settle
   interval, and repaints. A 5 s quiet window prevents repeated requests.
-- When a slot that failed detection links up, or was already linked when
-  detection failed, it retries creation 0.5 s, 3 s, 10 s, 60 s and 5 min later.
+- When a slot that failed detection links up, was already linked when detection
+  failed, or links up without having been enumerated at all, it retries creation
+  0.5 s, 3 s, 10 s, 60 s and 5 min later.
   A successful attempt registers the controller, applies the last loaded profile
   to it, and updates it.
 
@@ -111,13 +112,23 @@ fixed.2 logs show the same fault as occasional 14 s and 35 s registrations. The
 queries now use the matched request path with a one-second deadline and abandon
 an attempt on a missing reply.
 
+A Windows restart at 21:36 the same evening exposed the same fault one step
+earlier. Receiver enumeration also read a fixed number of reports: at boot the
+receiver acknowledged the reconnect request first and announced both devices
+after the 300 ms reads. Detection invented slot 0, retried it for 21 s, and
+registered neither the mouse nor the Powerplay mat, leaving the mouse in firmware
+blue. Register reads now wait for their own replies, and announcements are
+collected until every paired device has reported or 3 s pass. The watcher starts
+even when enumeration finds nothing, so late announcements still register devices.
+
 | Test | Behavior checked |
 | --- | --- |
 | `logitech_lighting_control_read` | One GET, no claim; `-1` on no reply within the deadline or write failure; `-2` and no I/O without `0x8071` |
 | `logitech_lighting_init_locked` | A new device sends nothing while a sibling holds the receiver mutex |
 | `logitech_lighting_init_slow` | Name, feature and LED queries stay paired with their replies when every reply takes 450 ms |
 | `background_worker` | Idle wait runs work under a free mutex and abandons the wait on stop while the mutex stays held |
-| `logitech_watcher_*` | Late creation after link up or when linked at detection, with retries; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; no-reply backoff; unsupported devices ignored; malformed reports ignored; prompt stop |
+| `logitech_enumeration_*` | Both paired devices found when announcements precede or follow the acknowledgement by 800 ms, with a sleeping mouse, with a stale report queued before a register reply, and when notifications must be enabled |
+| `logitech_watcher_*` | Late creation after link up, when linked at detection, or for a slot enumeration missed, with retries; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; no-reply backoff; unsupported devices ignored; malformed reports ignored; prompt stop |
 
 Deliberately breaking link-down gating, the quiet window, backoff, unsupported
 device handling, post-link checks, link-state parsing, creation retries, the
