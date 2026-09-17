@@ -246,3 +246,8 @@ void RGBController_LogitechLightspeed::DeviceUpdateMode()
     controller->lightspeed->setDirectMode(modes[active_mode].name == "Direct");
     DeviceUpdateLEDs();
 }
+
+int RGBController_LogitechLightspeed::ReadLightingControl(int deadline_ms)
+{
+    return(controller->lightspeed->readSoftwareControl(deadline_ms));
+}

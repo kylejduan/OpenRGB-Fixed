@@ -7,12 +7,17 @@
 |   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
+#include <algorithm>
+#include <optional>
 #include <thread>
 #include <hidapi.h>
 #include "Detector.h"
 #include "ResourceManager.h"
 #include "LogManager.h"
 #include "LogitechProtocolCommon.h"
+#include "LogitechLightspeedReceiverWatcher.h"
+#include "ProfileManager.h"
+#include "SettingsManager.h"
 #include "LogitechG203LController.h"
 #include "LogitechG213Controller.h"
 #include "LogitechG560Controller.h"
@@ -1030,7 +1035,7 @@ REGISTER_HID_DETECTOR_IPU("Logitech X56 Rhino Hotas Throttle",              Dete
 |                                                                                                           |
 \*---------------------------------------------------------------------------------------------------------*/
 
-void CreateLogitechLightspeedDevice(char *path, usages device_usages, uint8_t device_index, uint16_t pid, bool wireless, std::shared_ptr<std::mutex> mutex_ptr)
+RGBController_LogitechLightspeed* CreateLogitechLightspeedDevice(char *path, usages device_usages, uint8_t device_index, uint16_t pid, bool wireless, std::shared_ptr<std::mutex> mutex_ptr)
 {
     LogitechLightspeedController* controller                = new LogitechLightspeedController(device_usages.find(2)->second.get(), path);
     bool lightspeedDeviceIsValid                            = false;
@@ -1055,11 +1060,13 @@ void CreateLogitechLightspeedDevice(char *path, usages device_usages, uint8_t de
         rgb_controller->pid                                 = pid;
         ResourceManager::get()->RegisterRGBController(rgb_controller);
         LOG_DEBUG("Added controller in %i retries", retryCount);
+        return(rgb_controller);
     }
     else
     {
         delete controller;
         LOG_DEBUG("Failed to set up device - exceeded retries");
+        return(nullptr);
     }
 }
 
@@ -1137,6 +1144,99 @@ usages BundleLogitechUsages(hid_device_info* info)
     return temp_usages;
 }
 
+/*---------------------------------------------------------------------------------------------------------*\
+| Lightspeed receiver watcher                                                                               |
+|   Restores lighting when a paired device loses 0x8071 software control after sleep, wake, or another      |
+|   application's takeover, and registers devices that were asleep during detection.                        |
+\*---------------------------------------------------------------------------------------------------------*/
+using LightspeedSlotList = std::vector<std::pair<uint8_t, RGBController_LogitechLightspeed*>>;
+
+static LightspeedSlotHooks LightspeedSlotHooksFor(RGBController_LogitechLightspeed* controller, LogitechLightspeedReceiverWatcher* watcher)
+{
+    LightspeedSlotHooks hooks;
+    hooks.name         = controller->GetName();
+    hooks.read_control = [controller](int deadline_ms) { return controller->ReadLightingControl(deadline_ms); };
+    hooks.reapply      = [controller, watcher]()
+    {
+        /*-------------------------------------------------------------*\
+        | Wait for detection or startup profile work so the saved state |
+        | is what gets painted                                          |
+        \*-------------------------------------------------------------*/
+        ResourceManager::get()->RunWhenBackgroundIdle([watcher] { return watcher->StopRequested(); },
+                                                      [controller] { controller->UpdateMode(); });
+    };
+    return(hooks);
+}
+
+static void StartLogitechLightspeedWatcher(const char* path, const usages& device_usages, uint16_t dev_pid, std::shared_ptr<std::mutex> logitech_mutex, const LightspeedSlotList& slot_list)
+{
+    json settings = ResourceManager::get()->GetSettingsManager()->GetSettings("LogitechLightspeed");
+
+    if(settings.contains("reconnect_watcher") && settings["reconnect_watcher"].is_boolean() && !settings["reconnect_watcher"].get<bool>())
+    {
+        LOG_INFO("[Lightspeed watcher] Disabled by LogitechLightspeed.reconnect_watcher");
+        return;
+    }
+
+    const usages::const_iterator notifications = device_usages.find(1);
+
+    if(notifications == device_usages.end())
+    {
+        LOG_INFO("[Lightspeed watcher] Receiver has no short-report interface; not watching");
+        return;
+    }
+
+    LightspeedWatcherTiming timing;
+
+    if(settings.contains("ownership_poll_seconds") && settings["ownership_poll_seconds"].is_number_integer())
+    {
+        timing.poll = std::chrono::seconds(std::clamp(settings["ownership_poll_seconds"].get<int>(), 5, 600));
+    }
+
+    std::unique_ptr<LogitechLightspeedReceiverWatcher> watcher = std::make_unique<LogitechLightspeedReceiverWatcher>(notifications->second, timing);
+    LogitechLightspeedReceiverWatcher*                 self    = watcher.get();
+    const std::string                                  receiver_path(path);
+
+    watcher->SetCreateHook([self, receiver_path, device_usages, dev_pid, logitech_mutex](uint8_t slot) -> std::optional<LightspeedSlotHooks>
+    {
+        RGBController_LogitechLightspeed* created = nullptr;
+
+        ResourceManager::get()->RunWhenBackgroundIdle([self] { return self->StopRequested(); }, [&]()
+        {
+            std::string      mutable_path = receiver_path;
+            ProfileManager*  profiles     = ResourceManager::get()->GetProfileManager();
+
+            created = CreateLogitechLightspeedDevice(&mutable_path[0], device_usages, slot, dev_pid, true, logitech_mutex);
+
+            if(created && profiles && profiles->ApplyLastProfile(created))
+            {
+                created->UpdateMode();
+            }
+        });
+
+        if(!created)
+        {
+            return(std::nullopt);
+        }
+        return(LightspeedSlotHooksFor(created, self));
+    });
+
+    for(const std::pair<uint8_t, RGBController_LogitechLightspeed*>& entry : slot_list)
+    {
+        if(entry.second)
+        {
+            watcher->AddRegistered(entry.first, LightspeedSlotHooksFor(entry.second, self));
+        }
+        else
+        {
+            watcher->AddPending(entry.first);
+        }
+    }
+
+    watcher->Start();
+    ResourceManager::get()->RegisterBackgroundWorker(std::move(watcher));
+}
+
 void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& /*name*/)
 {
     /*-----------------------------------------------------------------*\
@@ -1161,11 +1261,14 @@ void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& 
         |   receiver from interfering with each other       |
         \*-------------------------------------------------*/
         std::shared_ptr<std::mutex>       logitech_mutex = std::make_shared<std::mutex>();
+        LightspeedSlotList                slot_list;
 
         for(wireless_map::iterator wd = wireless_devices.begin(); wd != wireless_devices.end(); wd++)
         {
-            CreateLogitechLightspeedDevice(path, device_usages, wd->second, dev_pid, true, logitech_mutex);
+            slot_list.emplace_back(wd->second, CreateLogitechLightspeedDevice(path, device_usages, wd->second, dev_pid, true, logitech_mutex));
         }
+
+        StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list);
     }
 }
 
