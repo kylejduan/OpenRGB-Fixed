@@ -305,6 +305,8 @@ public:
     logitech_led                getLED_info(uint8_t LED_num);
     int                         setDirectMode(bool direct);
     int                         setMode(uint8_t mode, uint16_t speed, uint8_t zone, uint8_t red, uint8_t green, uint8_t blue, uint8_t brightness);
+    // Watchdog query: control flags, -1 without a valid reply, -2 when not 0x8071.
+    int                         readSoftwareControl(int deadline_ms);
     uint8_t                     set8071TimeoutControl(uint8_t control);
     int                         getDeviceName();
 private:
@@ -313,10 +315,9 @@ private:
     std::chrono::steady_clock::time_point rgb_ready_after{};
 
     // Callers hold the shared receiver mutex across preparation and painting.
-    int                         sendLightingRequest(hid_device* dev, longFAPrequest& request, blankFAPmessage& response, bool match_selector = false);
+    int                         sendLightingRequest(hid_device* dev, longFAPrequest& request, blankFAPmessage& response, bool match_selector = false, int deadline_ms = 1000, bool warn_on_timeout = true);
     int                         ensure8071Control(hid_device* dev);
     int                         prepare8071Lighting(hid_device* dev);
-    int                         set8071Effects(uint8_t events);
     hid_device*                 getDevice(uint8_t usage_index);
     uint16_t                    getFeaturePage(uint8_t feature_index);
     int                         getDeviceFeatureList();

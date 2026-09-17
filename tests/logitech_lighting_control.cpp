@@ -445,6 +445,41 @@ int main(int argc, char** argv)
         }
         assert(saw_sibling);
     }
+    else if(test == "control_read")
+    {
+        f.hid.control = 3;
+        assert(f.device->readSoftwareControl(300) == 3);
+        assert(f.hid.writes.size() == 1 && f.count(0x50, 0) == 1 && "Read ownership with one GET and no claim");
+        f.hid.control = 0;
+        assert(f.device->readSoftwareControl(300) == 0 && f.count(0x50, 1) == 0);
+        f.hid.timeout = true;
+        const auto started = std::chrono::steady_clock::now();
+        assert(f.device->readSoftwareControl(300) == -1);
+        assert(std::chrono::steady_clock::now() - started < std::chrono::milliseconds(900) && "Honor the short watchdog deadline");
+        f.hid.timeout = false;
+        f.hid.fail_write = true;
+        assert(f.device->readSoftwareControl(300) == -1);
+        f.hid.fail_write = false;
+        f.hid.page = 0x8070;
+        f.device->feature_list.clear();
+        f.device->feature_list.emplace(0x8070, 9);
+        f.hid.writes.clear();
+        assert(f.device->readSoftwareControl(300) == -2 && f.hid.writes.empty() && "Only 0x8071 devices are polled");
+    }
+    else if(test == "init_locked")
+    {
+        usages bundle;
+        bundle.emplace(2, std::shared_ptr<hid_device>(&f.hid, hid_close));
+        std::unique_lock<std::mutex> held(*f.receiver_mutex);
+        auto created = std::async(std::launch::async, [&] {
+            return std::make_unique<logitech_device>(f.path, bundle, 7, false, f.receiver_mutex);
+        });
+        assert(created.wait_for(std::chrono::milliseconds(100)) == std::future_status::timeout);
+        assert(f.hid.writes.empty() && "A late device must not query the receiver during a sibling transaction");
+        held.unlock();
+        auto sibling = created.get();
+        assert(sibling->getLED_count() == 1 && !f.hid.writes.empty());
+    }
     else { assert(false && "Unknown test case"); }
     std::printf("PASS: Logitech lighting %s\n", test.c_str());
 }

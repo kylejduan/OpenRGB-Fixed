@@ -157,6 +157,11 @@ logitech_device::~logitech_device() = default;
 
 void logitech_device::initialiseDevice()
 {
+    // A device can be created after detection while siblings on the same
+    // receiver are painting. Keep the whole query sequence serialized.
+    std::unique_lock<std::mutex> guard;
+    if(mutex) guard = std::unique_lock<std::mutex>(*mutex);
+
     bool is_connected = connected();
     flushReadQueue();
 
@@ -642,9 +647,16 @@ void logitech_device::getRGBconfig()
                 leds.emplace(response.data[0], new_led);
             }
             /*-----------------------------------------------------------------*\
-            | Set the config to SW control mode                                 |
+            | Set the config to SW control mode. initialiseDevice() already     |
+            | holds the shared receiver mutex.                                  |
             \*-----------------------------------------------------------------*/
-            set8071Effects(5);
+            longFAPrequest claim;
+            blankFAPmessage claim_response;
+            claim.init(device_index, RGB_feature_index, LOGITECH_FP8071_CONTROL);
+            claim.data[0] = 1;
+            claim.data[1] = 3; // RGB clusters and power modes.
+            claim.data[2] = 5; // Effect-sync and idle-timeout events.
+            sendLightingRequest(dev_use2, claim, claim_response, true);
         }
 
         /*get_count.feature_command = LOGITECH_CMD_RGB_EFFECTS_GET_STATE;
@@ -667,7 +679,7 @@ void logitech_device::getRGBconfig()
     LOG_DEBUG("[%s] led_response returned %i led_counter returned %i : setting controller to %i LED%s", device_name.c_str(), led_response, led_counter, leds.size(), ((leds.size() == 1) ? "" : "s"));
 }
 
-int logitech_device::sendLightingRequest(hid_device* dev, longFAPrequest& request, blankFAPmessage& response, bool match_selector)
+int logitech_device::sendLightingRequest(hid_device* dev, longFAPrequest& request, blankFAPmessage& response, bool match_selector, int deadline_ms, bool warn_on_timeout)
 {
     // Discard queued replies from earlier transactions. The shared receiver
     // lock means no sibling has an in-flight request on this handle.
@@ -698,7 +710,7 @@ int logitech_device::sendLightingRequest(hid_device* dev, longFAPrequest& reques
 
     // A post-wake wireless color reply took about 487 ms in hardware testing.
     // Keep lighting transactions bounded without rejecting that valid reply.
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(deadline_ms);
     while(std::chrono::steady_clock::now() < deadline)
     {
         const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now()).count();
@@ -739,8 +751,11 @@ int logitech_device::sendLightingRequest(hid_device* dev, longFAPrequest& reques
         }
         return result;
     }
-    LOG_WARNING("[%s] No matching lighting reply for %02X/%02X before timeout",
-                device_name.c_str(), request.feature_index, request.feature_command);
+    if(warn_on_timeout)
+    {
+        LOG_WARNING("[%s] No matching lighting reply for %02X/%02X before timeout",
+                    device_name.c_str(), request.feature_index, request.feature_command);
+    }
     return -1;
 }
 
@@ -900,19 +915,19 @@ int logitech_device::setMode(uint8_t mode, uint16_t speed, uint8_t zone, uint8_t
     return result;
 }
 
-int logitech_device::set8071Effects(uint8_t events)
+int logitech_device::readSoftwareControl(int deadline_ms)
 {
     hid_device* dev = getDevice(2);
-    if(!dev) return -1;
+    if(!dev || RGB_feature_index == 0) return -1;
+    if(getFeaturePage(RGB_feature_index) != LOGITECH_HIDPP_PAGE_RGB_EFFECTS2) return -2;
     std::unique_lock<std::mutex> guard;
     if(mutex) guard = std::unique_lock<std::mutex>(*mutex);
     longFAPrequest request;
     blankFAPmessage response;
     request.init(device_index, RGB_feature_index, LOGITECH_FP8071_CONTROL);
-    request.data[0] = 1;
-    request.data[1] = 3;
-    request.data[2] = events;
-    return sendLightingRequest(dev, request, response, true);
+    // A sleeping mouse does not answer; that is expected, not a warning.
+    if(sendLightingRequest(dev, request, response, true, deadline_ms, false) < 0) return -1;
+    return response.data[1];
 }
 
 uint8_t logitech_device::set8071TimeoutControl(uint8_t /*control*/)
