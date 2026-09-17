@@ -35,6 +35,9 @@ regression tests. Hardware compatibility still depends on upstream device suppor
   `0x8071` software control and RGB power, use an explicit static-color parameter,
   allow the RGB engine to settle after power recovery, and validate receiver
   replies. See the [lighting RCCA](Documentation/Logitech-Lighting-RCCA.md).
+- **Reliable Lightspeed detection:** receiver enumeration and device setup pair
+  every query with its own reply, so slow post-wake replies and boot-time report
+  ordering no longer skip the mouse or the Powerplay mat.
 - **Lightspeed reconnect recovery:** a small watcher per Lightspeed or Powerplay
   receiver repaints a paired device with its current OpenRGB colors when it
   loses software lighting control after sleep, wake, reboot, or another
@@ -46,10 +49,11 @@ Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.m
 ## Known limits
 
 Reconnect recovery applies to devices behind a legacy Lightspeed or Powerplay
-receiver on Windows and macOS. It checks each awake device every 30 seconds and
-shortly after it reconnects, so a takeover can show for up to that long. Another
-application continuously writing to the same device can still interfere; the
-watcher then logs a warning instead of fighting it faster. See
+receiver on Windows and macOS; this fork's CI does not validate macOS builds. It
+checks each awake device every 30 seconds and shortly after it reconnects, so a
+takeover can show for up to that long. Another application continuously writing
+to the same device can still interfere; the watcher then logs a warning instead
+of fighting it faster. See
 [Troubleshooting](Documentation/Troubleshooting-Fixed.md#lightspeed-reconnect-watcher)
 to change the interval or turn it off.
 
