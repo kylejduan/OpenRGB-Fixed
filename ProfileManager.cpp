@@ -139,6 +139,32 @@ bool ProfileManager::LoadSizeFromProfile(std::string profile_name)
     return(LoadProfileWithOptions(profile_name, true, false));
 }
 
+bool ProfileManager::ApplyLastProfile(RGBController* controller)
+{
+    std::string profile_name;
+    {
+        std::lock_guard<std::mutex> lock(last_profile_mutex);
+        profile_name = last_profile;
+    }
+
+    if(profile_name.empty() || controller == nullptr)
+    {
+        return(false);
+    }
+
+    std::vector<RGBController*> saved   = LoadProfileToList(profile_name);
+    std::vector<bool>           used(saved.size(), false);
+    const bool                  applied = LoadDeviceFromListWithOptions(saved, used, controller, false, true);
+
+    for(RGBController* saved_controller : saved)
+    {
+        delete saved_controller;
+    }
+
+    LOG_INFO("[ProfileManager] Profile %s for late device %s: %s", profile_name.c_str(), controller->GetName().c_str(), applied ? "applied" : "no match");
+    return(applied);
+}
+
 std::vector<RGBController*> ProfileManager::LoadProfileToList
     (
     std::string     profile_name,
@@ -428,6 +454,12 @@ bool ProfileManager::LoadProfileWithOptions
     for(unsigned int controller_idx = 0; controller_idx < temp_controllers.size(); controller_idx++)
     {
         delete temp_controllers[controller_idx];
+    }
+
+    if(ret_val && load_settings)
+    {
+        std::lock_guard<std::mutex> lock(last_profile_mutex);
+        last_profile = profile_name;
     }
 
     return(ret_val);

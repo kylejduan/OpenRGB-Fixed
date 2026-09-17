@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <mutex>
+#include <string>
 #include "RGBController.h"
 #include "filesystem.h"
 
@@ -63,6 +65,13 @@ public:
     void DeleteProfile(std::string profile_name);
     unsigned char * GetProfileListDescription();
 
+    /*-----------------------------------------------------*\
+    | Copies the most recently loaded profile's entry into  |
+    | a controller registered after that load. The caller   |
+    | triggers the device update.                           |
+    \*-----------------------------------------------------*/
+    bool ApplyLastProfile(RGBController* controller);
+
     std::vector<std::string> profile_list;
 
     bool LoadDeviceFromListWithOptions
@@ -84,6 +93,8 @@ public:
 
 private:
     filesystem::path configuration_directory;
+    std::mutex       last_profile_mutex;
+    std::string      last_profile;
 
     void UpdateProfileList();
     bool LoadProfileWithOptions
