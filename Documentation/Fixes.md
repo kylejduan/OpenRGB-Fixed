@@ -84,15 +84,17 @@ Each legacy Lightspeed receiver now gets one watcher thread:
 - It waits in a 250 ms read on the receiver's short-report interface for device
   connection notifications, which identify the slot and whether its link is up.
 - For each linked `0x8071` device it reads software control 2 s and 10 s after a
-  link comes up and every 30 s otherwise: one 20-byte request. It sends nothing
-  while the receiver reports the link down, and backs off to 120 s when a device
-  does not answer. Devices without `0x8071`, such as the Powerplay mat, are not
+  link comes up and every 30 s otherwise: one 20-byte request with a one-second
+  reply window. It sends nothing while the receiver reports the link down, and
+  backs off to 120 s when a device does not answer. Devices without `0x8071`, such as the Powerplay mat, are not
   polled.
 - When control is lost, it requests the controller's normal mode update. The
   existing driver path reclaims control, restores RGB power with its settle
   interval, and repaints. A 5 s quiet window prevents repeated requests.
-- When a slot that failed detection links up, it creates and registers the
-  controller, applies the last loaded profile to it, and updates it.
+- When a slot that failed detection links up, or was already linked when
+  detection failed, it retries creation 0.5 s, 3 s, 10 s, 60 s and 5 min later.
+  A successful attempt registers the controller, applies the last loaded profile
+  to it, and updates it.
 
 `ResourceManager::Cleanup()` stops watchers before any controller or handle is
 released. Late creation and re-apply wait until detection, startup profile
@@ -100,16 +102,26 @@ application, and cleanup are idle, and give up if the watcher is stopping.
 Device initialization now holds the receiver mutex so a late device cannot
 interleave with its sibling's lighting transaction.
 
+The first fixed.3 installation exposed an older detection fault. Every
+initialization query wrote a request and accepted the next report within 300 ms.
+After a wake, replies had been measured at about 487 ms, so one late reply shifted
+every later answer and the attempt failed validation. In that start all ten
+attempts failed over 64 s, although the mouse answered normally minutes later;
+fixed.2 logs show the same fault as occasional 14 s and 35 s registrations. The
+queries now use the matched request path with a one-second deadline and abandon
+an attempt on a missing reply.
+
 | Test | Behavior checked |
 | --- | --- |
 | `logitech_lighting_control_read` | One GET, no claim; `-1` on no reply within the deadline or write failure; `-2` and no I/O without `0x8071` |
 | `logitech_lighting_init_locked` | A new device sends nothing while a sibling holds the receiver mutex |
+| `logitech_lighting_init_slow` | Name, feature and LED queries stay paired with their replies when every reply takes 450 ms |
 | `background_worker` | Idle wait runs work under a free mutex and abandons the wait on stop while the mutex stays held |
-| `logitech_watcher_*` | Late creation only after link up, with retries; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; no-reply backoff; unsupported devices ignored; malformed reports ignored; prompt stop |
+| `logitech_watcher_*` | Late creation after link up or when linked at detection, with retries; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; no-reply backoff; unsupported devices ignored; malformed reports ignored; prompt stop |
 
 Deliberately breaking link-down gating, the quiet window, backoff, unsupported
-device handling, post-link checks, link-state parsing, or creation retries made
-the matching test fail. The suite also passes under ThreadSanitizer. Physical acceptance of the installed build is recorded in the
+device handling, post-link checks, link-state parsing, creation retries, the
+linked-slot schedule, or name reply matching made the matching test fail. The suite also passes under ThreadSanitizer. Physical acceptance of the installed build is recorded in the
 [lighting RCCA](Logitech-Lighting-RCCA.md#reconnect-and-takeover-follow-up-2026-09-16).
 
 ## Provenance

@@ -224,6 +224,22 @@ one after the takeover. Fixed.3 adds the receiver watcher described in
 [Fixes](Fixes.md#lightspeed-reconnect-recovery). It does not depend on the
 service attribution: any loss of control on a linked device is repainted.
 
+### First fixed.3 installation
+
+The first fixed.3 build (`a343580`) installed cleanly at 21:07 and started its
+watcher, but the G502 X PLUS was not registered. Its creation ran from 6.4 s to
+70.8 s after launch with no "Not Connected" lines, so the receiver reported the
+link up while every initialization attempt failed validation. A read-only probe
+at 21:09 got normal replies. A restart with debug logging at 21:10 registered the
+mouse on its first attempt, with replies about 7 ms apart.
+
+The upstream initialization queries accepted the next report within 300 ms
+without matching it to the request. Earlier wake tests measured a 487 ms reply,
+and fixed.2 logs contain 14 s and 35 s registrations consistent with retried
+attempts. Fixed.3 pairs each initialization query with its reply using a
+one-second deadline, retries linked devices that still fail detection, and allows
+the watcher's control read one second.
+
 ## Protocol references
 
 - [Logitech HID++ packet layout and software IDs](https://github.com/Logitech/cpg-docs/blob/master/hidpp20/README.rst).
