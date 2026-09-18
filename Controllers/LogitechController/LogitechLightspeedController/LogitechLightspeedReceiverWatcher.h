@@ -27,6 +27,8 @@ struct LightspeedSlotHooks
 {
     std::string                             name;
     std::function<int(int deadline_ms)>     read_control;   // Flags, -1 no reply, -2 unsupported.
+    std::function<int(int deadline_ms)>     read_power;     // 1 full, 2 power save, 3 off, -1 no reply.
+    std::function<bool()>                   static_colors;  // False for device-side animations.
     std::function<void()>                   reapply;
 };
 
@@ -37,7 +39,17 @@ struct LightspeedWatcherTiming
     std::chrono::milliseconds               poll_max{120000};
     int                                     reply_deadline_ms{1000};
     std::chrono::milliseconds               quiet{5000};
-    std::vector<std::chrono::milliseconds>  after_link{std::chrono::milliseconds(2000), std::chrono::milliseconds(10000)};
+    /*-----------------------------------------------------------------*\
+    | Refresh interval for host-painted colours. A device can repaint   |
+    | its own default while keeping our software control, so ownership  |
+    | checks alone cannot detect it. Zero disables the refresh.         |
+    \*-----------------------------------------------------------------*/
+    std::chrono::milliseconds               repaint{300000};
+    /*-----------------------------------------------------------------*\
+    | Re-apply colours after a reconnect: the first frame can be        |
+    | acknowledged before the RGB engine renders again.                 |
+    \*-----------------------------------------------------------------*/
+    std::vector<std::chrono::milliseconds>  after_link{std::chrono::milliseconds(1500), std::chrono::milliseconds(10000)};
     std::vector<std::chrono::milliseconds>  create_after_link{std::chrono::milliseconds(500), std::chrono::milliseconds(3000), std::chrono::milliseconds(10000), std::chrono::milliseconds(60000), std::chrono::milliseconds(300000)};
 };
 
@@ -72,6 +84,9 @@ private:
         clock::time_point               next_poll{};
         std::chrono::milliseconds       interval{};
         clock::time_point               quiet_until{};
+        clock::time_point               next_repaint{};
+        bool                            power_saving    = false;
+        bool                            repaint_on_due  = false;
         int                             lost_episodes   = 0;
     };
 
@@ -79,6 +94,7 @@ private:
     void OnReport(const unsigned char* report, int size, clock::time_point now);
     void Service(uint8_t index, Slot& slot, clock::time_point now);
     void CheckOwnership(uint8_t index, Slot& slot);
+    void Repaint(uint8_t index, Slot& slot, const char* reason);
     static void Schedule(Slot& slot, clock::time_point when);
 
     std::shared_ptr<hid_device>     notifications;

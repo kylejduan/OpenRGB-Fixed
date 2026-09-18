@@ -59,8 +59,9 @@ void LogitechLightspeedReceiverWatcher::Start()
     const clock::time_point now = clock::now();
     for(std::pair<const uint8_t, Slot>& entry : slots)
     {
-        entry.second.interval  = timing.poll;
-        entry.second.next_poll = now + timing.poll;
+        entry.second.interval     = timing.poll;
+        entry.second.next_poll    = now + timing.poll;
+        entry.second.next_repaint = now + timing.repaint;
 
         /*-------------------------------------------------*\
         | Detection failed on a linked device: no link      |
@@ -170,8 +171,10 @@ void LogitechLightspeedReceiverWatcher::OnReport(const unsigned char* report, in
     {
         return;
     }
-    slot.interval  = timing.poll;
-    slot.next_poll = now + timing.poll;
+    slot.interval       = timing.poll;
+    slot.next_poll      = now + timing.poll;
+    slot.next_repaint   = now + timing.repaint;
+    slot.repaint_on_due = slot.registered; // A reconnect resets the device's LEDs.
     for(std::chrono::milliseconds offset : (slot.registered ? timing.after_link : timing.create_after_link))
     {
         Schedule(slot, now + offset);
@@ -215,10 +218,65 @@ void LogitechLightspeedReceiverWatcher::Service(uint8_t index, Slot& slot, clock
         return;
     }
 
+    /*-------------------------------------------------------------*\
+    | A reconnect re-initialises the device's LEDs even when it      |
+    | keeps our software control, so re-apply instead of checking    |
+    \*-------------------------------------------------------------*/
+    if(due_now && slot.repaint_on_due)
+    {
+        if(slot.due.empty())
+        {
+            slot.repaint_on_due = false;
+        }
+        Repaint(index, slot, "reconnected");
+        return;
+    }
+
+    /*-------------------------------------------------------------*\
+    | Refresh host-painted colours. Device-side animations are left |
+    | alone: re-applying one restarts it visibly.                   |
+    \*-------------------------------------------------------------*/
+    if(timing.repaint > std::chrono::milliseconds(0) && now >= slot.next_repaint)
+    {
+        slot.next_repaint = now + timing.repaint;
+
+        if(!slot.hooks.static_colors || slot.hooks.static_colors())
+        {
+            /*-----------------------------------------------------*\
+            | Never wake the RGB engine out of power save just to   |
+            | refresh: the power-return check repaints instead      |
+            \*-----------------------------------------------------*/
+            const int power = slot.hooks.read_power ? slot.hooks.read_power(timing.reply_deadline_ms) : 1;
+
+            if(power > 1)
+            {
+                slot.power_saving = true;
+                return;
+            }
+            if(power < 0)
+            {
+                return;
+            }
+
+            Repaint(index, slot, "refreshing colours");
+            return;
+        }
+    }
+
     if(due_now || now >= slot.next_poll)
     {
         CheckOwnership(index, slot);
     }
+}
+
+void LogitechLightspeedReceiverWatcher::Repaint(uint8_t index, Slot& slot, const char* reason)
+{
+    LOG_DEBUG("[Lightspeed watcher] %s on slot %u: %s", slot.hooks.name.c_str(), index, reason);
+    slot.hooks.reapply();
+    const clock::time_point after = clock::now();
+    slot.quiet_until  = after + timing.quiet;
+    slot.next_poll    = after + timing.poll;
+    slot.next_repaint = after + timing.repaint;
 }
 
 void LogitechLightspeedReceiverWatcher::CheckOwnership(uint8_t index, Slot& slot)
@@ -246,6 +304,25 @@ void LogitechLightspeedReceiverWatcher::CheckOwnership(uint8_t index, Slot& slot
     if((control & 3) == 3)
     {
         slot.lost_episodes = 0;
+
+        /*---------------------------------------------------------*\
+        | Ownership is ours, but RGB power save resets what the     |
+        | device shows. Repaint once it is back at full power.      |
+        \*---------------------------------------------------------*/
+        if(slot.hooks.read_power)
+        {
+            const int power = slot.hooks.read_power(timing.reply_deadline_ms);
+
+            if(power > 1)
+            {
+                slot.power_saving = true;
+            }
+            else if(power == 1 && slot.power_saving)
+            {
+                slot.power_saving = false;
+                Repaint(index, slot, "RGB power restored");
+            }
+        }
         return;
     }
     if(after < slot.quiet_until)

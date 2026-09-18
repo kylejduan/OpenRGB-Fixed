@@ -1174,7 +1174,9 @@ static LightspeedSlotHooks LightspeedSlotHooksFor(RGBController_LogitechLightspe
 {
     LightspeedSlotHooks hooks;
     hooks.name         = controller->GetName();
-    hooks.read_control = [controller](int deadline_ms) { return controller->ReadLightingControl(deadline_ms); };
+    hooks.read_control   = [controller](int deadline_ms) { return controller->ReadLightingControl(deadline_ms); };
+    hooks.read_power     = [controller](int deadline_ms) { return controller->ReadLightingPower(deadline_ms); };
+    hooks.static_colors  = [controller]() { return controller->ActiveModeUsesHostColors(); };
     hooks.reapply      = [controller, watcher]()
     {
         /*-------------------------------------------------------------*\
@@ -1215,6 +1217,13 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
     if(settings.contains("ownership_poll_seconds") && settings["ownership_poll_seconds"].is_number_integer())
     {
         timing.poll = std::chrono::seconds(std::clamp(settings["ownership_poll_seconds"].get<int>(), 5, 600));
+    }
+
+    if(settings.contains("repaint_seconds") && settings["repaint_seconds"].is_number_integer())
+    {
+        const int repaint = settings["repaint_seconds"].get<int>();
+
+        timing.repaint = std::chrono::seconds(repaint <= 0 ? 0 : std::clamp(repaint, 30, 3600));
     }
 
     std::unique_ptr<LogitechLightspeedReceiverWatcher> watcher = std::make_unique<LogitechLightspeedReceiverWatcher>(notifications, timing);

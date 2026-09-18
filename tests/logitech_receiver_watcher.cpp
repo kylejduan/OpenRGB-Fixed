@@ -62,7 +62,9 @@ struct Mouse
 {
     std::mutex mutex;
     std::vector<int> script{3};
-    size_t reads = 0;
+    std::vector<int> power_script{1};
+    bool static_colors = true;
+    size_t reads = 0, power_reads = 0;
     int reapplies = 0;
     LightspeedSlotHooks hooks()
     {
@@ -73,6 +75,12 @@ struct Mouse
             std::lock_guard<std::mutex> lock(mutex);
             return script[std::min(reads++, script.size() - 1)];
         };
+        h.read_power = [this](int deadline_ms) {
+            assert(deadline_ms == 1000);
+            std::lock_guard<std::mutex> lock(mutex);
+            return power_script[std::min(power_reads++, power_script.size() - 1)];
+        };
+        h.static_colors = [this] { std::lock_guard<std::mutex> lock(mutex); return static_colors; };
         h.reapply = [this] { std::lock_guard<std::mutex> lock(mutex); ++reapplies; };
         return h;
     }
@@ -88,6 +96,7 @@ static LightspeedWatcherTiming fast()
     t.poll_max          = 240000ms;
     t.quiet             = 100ms;
     t.after_link        = {10ms, 60ms};
+    t.repaint           = 0ms; // Off unless a case asks for it.
     t.create_after_link = {10ms, 40ms, 80ms};
     return t;
 }
@@ -110,8 +119,13 @@ int main(int argc, char** argv)
     if(test == "unsupported") { timing.poll = 10ms; mouse.script = {-2}; }
     if(test == "link_down")   { timing.poll = 20ms; }
     if(test == "stop")        { timing.read_timeout = 250ms; }
+    if(test == "power_return"){ timing.poll = 20ms; mouse.power_script = {2, 2, 1, 1}; }
+    if(test == "periodic_repaint")      { timing.poll = 600000ms; timing.repaint = 60ms; }
+    if(test == "no_periodic_for_effect"){ timing.poll = 600000ms; timing.repaint = 60ms; mouse.static_colors = false; }
+    if(test == "no_repaint_in_power_save"){ timing.poll = 600000ms; timing.repaint = 60ms; mouse.power_script = {2}; }
     if(test == "create_retry"){ succeed_on = 3; }
-    if(test == "link_reapply"){ mouse.script = {0, 3}; }
+    // Ownership stays ours: only the reconnect itself may trigger the re-apply.
+    if(test == "link_reapply"){ mouse.script = {3}; }
 
     LogitechLightspeedReceiverWatcher watcher(handle, timing);
     std::atomic<int> created_slot{0};
@@ -170,11 +184,36 @@ int main(int argc, char** argv)
     }
     else if(test == "link_reapply")
     {
+        // A reconnect re-initialises the device's LEDs even when it keeps our
+        // software control, so the colours must be re-applied unconditionally.
         link(receiver, 1, true);
-        assert(eventually([&] { return mouse.reapply_count() == 1; }));
-        assert(eventually([&] { return mouse.read_count() >= 2; }) && "Verify after the quiet window");
-        std::this_thread::sleep_for(150ms);
-        assert(mouse.reapply_count() == 1);
+        assert(eventually([&] { return mouse.reapply_count() >= 1; }));
+        std::this_thread::sleep_for(200ms);
+        const int after_link = mouse.reapply_count();
+        assert(after_link >= 1 && after_link <= 2 && "One re-apply per scheduled post-link frame");
+    }
+    else if(test == "power_return")
+    {
+        // Returning from RGB power save to full power repaints the device.
+        assert(eventually([&] { return mouse.reapply_count() >= 1; }));
+        std::this_thread::sleep_for(200ms);
+        assert(mouse.reapply_count() == 1 && "Only the transition back to full power repaints");
+    }
+    else if(test == "periodic_repaint")
+    {
+        assert(eventually([&] { return mouse.reapply_count() >= 2; }) && "Static colours are refreshed periodically");
+    }
+    else if(test == "no_repaint_in_power_save")
+    {
+        // Refreshing colours must not wake the RGB engine out of power save.
+        std::this_thread::sleep_for(400ms);
+        assert(mouse.reapply_count() == 0 && "A refresh must not force RGB power back on");
+        assert(mouse.read_count() == 0 && "A refresh checks power, not ownership");
+    }
+    else if(test == "no_periodic_for_effect")
+    {
+        std::this_thread::sleep_for(400ms);
+        assert(mouse.reapply_count() == 0 && "A device-side animation must not be restarted");
     }
     else if(test == "poll_reapply")
     {

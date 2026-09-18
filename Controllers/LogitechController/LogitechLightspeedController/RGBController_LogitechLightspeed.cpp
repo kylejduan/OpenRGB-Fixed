@@ -251,3 +251,24 @@ int RGBController_LogitechLightspeed::ReadLightingControl(int deadline_ms)
 {
     return(controller->lightspeed->readSoftwareControl(deadline_ms));
 }
+
+int RGBController_LogitechLightspeed::ReadLightingPower(int deadline_ms)
+{
+    return(controller->lightspeed->readRgbPowerMode(deadline_ms));
+}
+
+/*---------------------------------------------------------*\
+| True when the device shows colours this host painted.     |
+| Device-side animations must not be restarted periodically.|
+\*---------------------------------------------------------*/
+bool RGBController_LogitechLightspeed::ActiveModeUsesHostColors()
+{
+    if(active_mode < 0 || (std::size_t)active_mode >= modes.size())
+    {
+        return(false);
+    }
+
+    const unsigned int color_mode = modes[active_mode].color_mode;
+
+    return(color_mode == MODE_COLORS_PER_LED || color_mode == MODE_COLORS_MODE_SPECIFIC);
+}

@@ -506,6 +506,24 @@ int main(int argc, char** argv)
         assert(late.getLED_count() == 1 && "Slow replies must not shift LED enumeration");
         assert(late.getLED_info(0).fx.size() == 2);
     }
+    else if(test == "power_read")
+    {
+        for(unsigned char mode : {1, 2, 3})
+        {
+            f.hid.power = mode;
+            f.hid.writes.clear();
+            assert(f.device->readRgbPowerMode(300) == mode);
+            assert(f.hid.writes.size() == 1 && f.count(0x80, 0) == 1 && "Read power with one GET and no set");
+        }
+        f.hid.timeout = true;
+        assert(f.device->readRgbPowerMode(300) == -1);
+        f.hid.timeout = false;
+        f.hid.page = 0x8070;
+        f.device->feature_list.clear();
+        f.device->feature_list.emplace(0x8070, 9);
+        f.hid.writes.clear();
+        assert(f.device->readRgbPowerMode(300) == -2 && f.hid.writes.empty());
+    }
     else { assert(false && "Unknown test case"); }
     std::printf("PASS: Logitech lighting %s\n", test.c_str());
 }

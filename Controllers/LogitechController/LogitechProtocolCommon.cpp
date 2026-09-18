@@ -1033,6 +1033,21 @@ int logitech_device::setMode(uint8_t mode, uint16_t speed, uint8_t zone, uint8_t
     return result;
 }
 
+int logitech_device::readRgbPowerMode(int deadline_ms)
+{
+    hid_device* dev = getDevice(2);
+    if(!dev || RGB_feature_index == 0) return -1;
+    if(getFeaturePage(RGB_feature_index) != LOGITECH_HIDPP_PAGE_RGB_EFFECTS2) return -2;
+    std::unique_lock<std::mutex> guard;
+    if(mutex) guard = std::unique_lock<std::mutex>(*mutex);
+    longFAPrequest request;
+    blankFAPmessage response;
+    request.init(device_index, RGB_feature_index, LOGITECH_FP8071_PWR_MODE);
+    // 1 full RGB, 2 power save, 3 off. A sleeping mouse does not answer.
+    if(sendLightingRequest(dev, request, response, true, deadline_ms, false) < 0) return -1;
+    return response.data[1];
+}
+
 int logitech_device::readSoftwareControl(int deadline_ms)
 {
     hid_device* dev = getDevice(2);

@@ -306,8 +306,9 @@ public:
     logitech_led                getLED_info(uint8_t LED_num);
     int                         setDirectMode(bool direct);
     int                         setMode(uint8_t mode, uint16_t speed, uint8_t zone, uint8_t red, uint8_t green, uint8_t blue, uint8_t brightness);
-    // Watchdog query: control flags, -1 without a valid reply, -2 when not 0x8071.
+    // Watchdog queries: value, -1 without a valid reply, -2 when not 0x8071.
     int                         readSoftwareControl(int deadline_ms);
+    int                         readRgbPowerMode(int deadline_ms);
     uint8_t                     set8071TimeoutControl(uint8_t control);
     int                         getDeviceName();
 private:

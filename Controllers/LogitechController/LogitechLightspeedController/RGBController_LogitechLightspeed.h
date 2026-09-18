@@ -31,6 +31,8 @@ public:
     void        DeviceUpdateMode();
 
     int         ReadLightingControl(int deadline_ms);
+    int         ReadLightingPower(int deadline_ms);
+    bool        ActiveModeUsesHostColors();
 
     uint16_t    pid;        //This is a workaround fix for G502 mode breathing / spectrum cycle swap
 private:
