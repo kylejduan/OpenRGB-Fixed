@@ -92,6 +92,12 @@ Each legacy Lightspeed receiver now gets one watcher thread:
 - When control is lost, it requests the controller's normal mode update. The
   existing driver path reclaims control, restores RGB power with its settle
   interval, and repaints. A 5 s quiet window prevents repeated requests.
+- A device can also repaint its own default while keeping our software control,
+  so ownership checks alone are not enough. Colours are re-applied 1.5 s and
+  10 s after a link comes up, when RGB power returns to full, and every five
+  minutes for host-painted colours (`repaint_seconds`, 0 disables). Refreshes
+  skip device-side animations, which a re-apply would restart, and devices in
+  RGB power save, which a re-apply would cancel.
 - When a slot that failed detection links up, was already linked when detection
   failed, or links up without having been enumerated at all, it retries creation
   0.5 s, 3 s, 10 s, 60 s and 5 min later, one initialization attempt each.

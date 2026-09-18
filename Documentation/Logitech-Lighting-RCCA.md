@@ -291,6 +291,27 @@ a product ID.
 Deep sleep and wake, a cold boot, and starting OpenRGB while the mouse sleeps have
 not been observed physically on this build.
 
+### Colour drift with ownership held, 2026-09-17
+
+The release build started at 04:08 after a 04:07 restart, registered both devices
+and applied the saved profile. About sixteen hours later the mouse showed its
+onboard blue while a read-only probe reported software control `3`, event flags
+`5` and full RGB power, and the log contained no watcher activity: ownership had
+never been lost, so nothing triggered a repaint. Forcing a takeover made the
+watcher re-apply the profile, and the operator confirmed the colour returned.
+
+The device therefore repaints its own default while keeping the host's software
+control. This is consistent with the 2026-09-13 wake tests, where frames were
+acknowledged while the RGB engine was not rendering. Ownership state does not
+describe what the LEDs show, and `0x8071` offers no way to read the current
+colour back, so a periodic re-apply is the only available detection.
+
+Fixed.4 re-applies colours 1.5 s and 10 s after a link comes up, when RGB power
+returns to full, and every five minutes for host-painted colours. Refreshes skip
+device-side animations and devices in RGB power save. A read-only monitor of
+control, power and receiver notifications was started to identify which
+transition precedes the drift; that attribution is still open.
+
 ## Protocol references
 
 - [Logitech HID++ packet layout and software IDs](https://github.com/Logitech/cpg-docs/blob/master/hidpp20/README.rst).

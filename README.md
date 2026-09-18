@@ -40,9 +40,10 @@ regression tests. Hardware compatibility still depends on upstream device suppor
   ordering no longer skip the mouse or the Powerplay mat.
 - **Lightspeed reconnect recovery:** a small watcher per Lightspeed or Powerplay
   receiver repaints a paired device with its current OpenRGB colors when it
-  loses software lighting control after sleep, wake, reboot, or another
-  application's takeover. A device that was asleep during detection is
-  registered when it wakes and receives the last loaded profile.
+  reconnects, when RGB power returns, when it loses software lighting control,
+  or if its own firmware repaints its default while OpenRGB still holds control.
+  A device that was asleep during detection is registered when it wakes and
+  receives the last loaded profile.
 
 Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.md).
 
@@ -50,8 +51,9 @@ Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.m
 
 Reconnect recovery applies to devices behind a legacy Lightspeed or Powerplay
 receiver on Windows and macOS; this fork's CI does not validate macOS builds. It
-checks each awake device every 30 seconds and shortly after it reconnects, so a
-takeover can show for up to that long. Another application continuously writing
+checks each awake device every 30 seconds and shortly after it reconnects, and
+refreshes static colors every five minutes, so a wrong color can show for up to
+that long. Another application continuously writing
 to the same device can still interfere; the watcher then logs a warning instead
 of fighting it faster. See
 [Troubleshooting](Documentation/Troubleshooting-Fixed.md#lightspeed-reconnect-watcher)

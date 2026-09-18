@@ -43,10 +43,11 @@ records what was observed and what remains unproven.
 
 Devices behind a legacy Lightspeed or Powerplay receiver are watched in the
 background. When one returns to its onboard colors after sleep, wake, reboot, or
-another program's takeover, OpenRGB repaints it within about 30 seconds, or a
-few seconds after it reconnects. The log records each repaint as
-`[Lightspeed watcher] ... lost software lighting control`. A warning saying the
-device keeps losing control means another program is actively driving it.
+another program's takeover, OpenRGB repaints it a few seconds after it
+reconnects, within about 30 seconds of losing software control, or within five
+minutes if the device repaints itself while OpenRGB still holds control. A
+warning saying the device keeps losing control means another program is actively
+driving it.
 
 Settings live in `OpenRGB.json` in the OpenRGB configuration folder. Close
 OpenRGB before editing the file:
@@ -54,12 +55,16 @@ OpenRGB before editing the file:
 ```json
 "LogitechLightspeed": {
     "reconnect_watcher": true,
-    "ownership_poll_seconds": 30
+    "ownership_poll_seconds": 30,
+    "repaint_seconds": 300
 }
 ```
 
-`ownership_poll_seconds` accepts 5 to 600. Set `reconnect_watcher` to `false`
-to turn the watcher off. Both are read during device detection.
+`ownership_poll_seconds` accepts 5 to 600. `repaint_seconds` accepts 30 to 3600
+and refreshes static colors on that interval; `0` turns the refresh off, leaving
+reconnect, power-return and ownership recovery in place. Set `reconnect_watcher`
+to `false` to turn the watcher off entirely. All three are read during device
+detection.
 
 Logitech's LampArray service can take lighting back from OpenRGB. If you do not
 use Windows Dynamic Lighting or G HUB lighting, setting that service to Manual
