@@ -1,0 +1,20 @@
+{
+  "Time": "2026-09-13T03:12:10.9842174-07:00",
+  "Pid": 44952,
+  "StartTime": "2026-09-13T03:11:58.0113763-07:00",
+  "Executable": "C:\\Program Files\\OpenRGB\\OpenRGB.exe",
+  "SHA256": "2B6A6D77BB46CDAD0372D46446E7A0D8157E309B90D40F6F604AB6F3CD3CB2EA",
+  "MainSHA256": "8A286CE6FEB191C7E199944D3509AC3DA21573EFD95F531ECF4F50F84BA473CD",
+  "ResumeProfile": {
+    "enabled": true,
+    "name": "Main"
+  },
+  "TaskState": "Running",
+  "TemporaryPortListening": false,
+  "ActualSleepTested": false,
+  "ResumeSettingVerifiedAfterLaunch": true,
+  "FreshStartupLog": "OpenRGB_20260913_031158.log",
+  "ProfileLoadSuccessCount": 5,
+  "DetectionCompletionMilliseconds": 41904,
+  "OnlyResumeSettingsChanged": true
+}

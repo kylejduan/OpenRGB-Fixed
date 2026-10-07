@@ -1,0 +1,8 @@
+Unexpected OpenRGB instance
+At C:\OpenRGB-Diagnostics\2026-09-16-g502-blue\reload-main-profile.ps1:17 char:84
++ ... ram Files\OpenRGB\OpenRGB.exe') {throw 'Unexpected OpenRGB instance'}
++                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Unexpected OpenRGB instance:String) [], RuntimeException
+    + FullyQualifiedErrorId : Unexpected OpenRGB instance
+ 
+

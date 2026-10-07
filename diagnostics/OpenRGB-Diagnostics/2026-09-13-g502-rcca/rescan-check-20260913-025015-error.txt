@@ -1,0 +1,9 @@
+Exception calling "ReadAllText" with "1" argument(s): "The process cannot access the file 
+'C:\Users\USER\AppData\Roaming\OpenRGB\logs\OpenRGB_20260913_024720.log' because it is being used by another process."
+At C:\OpenRGB-Diagnostics\2026-09-13-g502-rcca\rescan-once.ps1:7 char:2
++  $before=[IO.File]::ReadAllText($LogFile)
++  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+    + FullyQualifiedErrorId : IOException
+ 
+

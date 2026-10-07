@@ -1,0 +1,8 @@
+Exception calling "Request" with "4" argument(s): "No matching HID++ reply before deadline"
+At C:\OpenRGB-Diagnostics\2026-09-16-g502-blue\paint-magenta.ps1:7 char:2
++  $feature=$probe.Request(1,0,0,[byte[]]@(0x80,0x71,0))
++  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+    + FullyQualifiedErrorId : Exception
+ 
+

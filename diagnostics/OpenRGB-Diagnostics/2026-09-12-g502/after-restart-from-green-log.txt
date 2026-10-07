@@ -1,0 +1,72 @@
+    OpenRGB v0.9+ (1.0rc3.1-powerplay-rcca2)
+    Commit: 5e81e26+powerplay-rcca2 from local RCCA build 2026-09-06
+    Launched: 20260913_000935
+====================================================================================================
+
+1     |Info:    [ProfileManager] Found file: Main.orp attempting to validate header
+1     |Info:    [ProfileManager] Valid v5 profile found for Main
+5035  |Info:    [ResourceManager] Initializing HID interfaces: Success
+5036  |Info:    ------------------------------------------------------
+5036  |Info:    |               Start device detection               |
+5036  |Info:    ------------------------------------------------------
+5203  |Info:    ------------------------------------------------------
+5203  |Info:    |             Detecting I2C interfaces               |
+5203  |Info:    ------------------------------------------------------
+5221  |Info:    [ResourceManager] Registering I2C interface: Nvidia NvAPI I2C on GPU 0 Device 10DE:2684 Subsystem: 10DE:165B
+5221  |Info:    Start PawnIO: SmbusI801.bin
+5224  |Info:    PawnIO initialized successully
+5224  |Info:    [ResourceManager] Registering I2C interface: i801 Device 8086:7A23 Subsystem: 1043:8882
+5224  |Info:    Start PawnIO: SmbusPIIX4.bin
+5226  |Info:    PawnIO module initialization aborted (unsupported)
+5226  |Info:    Start PawnIO: SmbusPIIX4.bin
+5227  |Info:    PawnIO module initialization aborted (unsupported)
+5227  |Info:    Start PawnIO: SmbusNCT6793.bin
+5228  |Info:    PawnIO initialized successully
+5229  |Info:    [ResourceManager] Registering I2C interface: NCT6796 Device FFFF:FFFF Subsystem: FFFF:FFFF
+5229  |Info:    Start PawnIO: SmbusIntelSkylakeIMC.bin
+5230  |ERROR:   PawnIO module initialization aborted (code=-2147024841)
+5230  |Info:    Start PawnIO: SmbusIntelSkylakeIMC.bin
+5230  |ERROR:   PawnIO module initialization aborted (code=-2147024841)
+5230  |Info:    ------------------------------------------------------
+5230  |Info:    |               Detecting I2C devices                |
+5230  |Info:    ------------------------------------------------------
+5376  |Info:    ------------------------------------------------------
+5376  |Info:    |            Detecting I2C DIMM modules              |
+5376  |Info:    ------------------------------------------------------
+5412  |Info:    [ResourceManager] Detected occupied slot 2, bus 1, type DDR5
+5445  |Info:    [ResourceManager] Detected occupied slot 4, bus 1, type DDR5
+5656  |Info:    [Kingston Fury DDR5 DRAM] Registering RGB controller
+5656  |Info:    ------------------------------------------------------
+5656  |Info:    |               Detecting I2C PCI devices            |
+5656  |Info:    ------------------------------------------------------
+5658  |Info:    ------------------------------------------------------
+5658  |Info:    |               Detecting HID devices                |
+5658  |Info:    ------------------------------------------------------
+5683  |Info:    Count of connected devices to C53A: 2
+5683  |Info:    Faking a reconnect to get device list
+5685  |Info:    Connected Device Index 0:	VirtualID=4099		10 01 41 11 A2 99 40
+5686  |Info:    Connected Device Index 1:	VirtualID=405F		10 07 41 0C A9 5F 40
+5687  |Info:    Connected Device Index 2:	VirtualID=0000		10 FF 80 02 00 00 00
+6385  |Info:    [Candy companion chip] Registering RGB controller
+7142  |Info:    [G502 X PLUS] Registering RGB controller
+7193  |Info:    [ASUS ROG MAXIMUS Z790 FORMULA] Registering RGB controller
+7194  |Info:    ------------------------------------------------------
+7194  |Info:    |              Detecting other devices               |
+7194  |Info:    ------------------------------------------------------
+7437  |Info:    [Creative SoundBlaster AE-5] Windows detection function called
+7441  |Warning: [Creative SoundBlaster AE-5] No matching device found
+7441  |Warning: [Creative SoundBlaster AE-5] Device initialization failed
+7802  |Info:    [NVIDIA GeForce RTX 4090 FE] Registering RGB controller
+7809  |Info:    [ResourceManager] Calling Post-detection callbacks
+7810  |Info:    ------------------------------------------------------
+7810  |Info:    |                Detection completed                 |
+7810  |Info:    ------------------------------------------------------
+7811  |Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+7811  |Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+
+Wireless Index: 7
+7811  |Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+
+Wireless Index: 1
+7811  |Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+7811  |Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 

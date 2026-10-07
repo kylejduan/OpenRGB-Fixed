@@ -1,0 +1,72 @@
+{
+    "Time":  "2026-09-17T00:03:31.9739284-07:00",
+    "ControlBefore":  [
+                          0,
+                          3,
+                          5
+                      ],
+    "Released":  [
+                     1,
+                     0,
+                     6
+                 ],
+    "ReclaimedAfterSeconds":  24.9,
+    "Samples":  [
+                    {
+                        "Seconds":  2.5,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  5,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  7.5,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  9.9,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  12.4,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  14.9,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  17.4,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  19.9,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  22.4,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  24.9,
+                        "Control":  3,
+                        "Events":  5
+                    }
+                ],
+    "OpenRGB":  [
+                    {
+                        "Id":  38028,
+                        "StartTime":  "\/Date(1789628568388)\/"
+                    }
+                ]
+}

@@ -1,0 +1,968 @@
+{
+    "Started":  "2026-09-12T23:11:32.2974323-07:00",
+    "Time":  "2026-09-12T23:11:35.4766033-07:00",
+    "Pid":  20028,
+    "Service":  "Stopped",
+    "Elements":  [
+                     {
+                         "Name":  "OpenRGB",
+                         "Type":  "ControlType.Window",
+                         "Id":  "OpenRGBDialog",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Group",
+                         "Id":  "OpenRGBDialog.centralWidget",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Group",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Custom",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Group",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Group",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Custom",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Custom",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Custom",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Custom",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "R:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.RedLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Spinner",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.RedSpinBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "0"
+                     },
+                     {
+                         "Name":  "H:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.HueLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Spinner",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.HueSpinBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "0"
+                     },
+                     {
+                         "Name":  "G:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.GreenLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Spinner",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.GreenSpinBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "0"
+                     },
+                     {
+                         "Name":  "S:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.SatLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Spinner",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.SatSpinBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "0"
+                     },
+                     {
+                         "Name":  "B:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.BlueLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Spinner",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.BlueSpinBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "0"
+                     },
+                     {
+                         "Name":  "V:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.ValLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Spinner",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.ValSpinBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "0"
+                     },
+                     {
+                         "Name":  "Hex:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.HexLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Edit",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.HexLineEdit",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "000000"
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Group",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorWheelBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Group",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.SwatchBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Saving Not Supported",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.DeviceSaveButton",
+                         "Enabled":  false,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Custom",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Speed:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.SpeedLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.ComboBox",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.LEDBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "Entire Device"
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.List",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Entire Device",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 1",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 2",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 3",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 4",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 5",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 6",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 7",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 8",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 9",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 10",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 11",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1, LED 12",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 1",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 2",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 3",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 4",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 5",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 6",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 7",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 8",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 9",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2, LED 10",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.ComboBox",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ZoneBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "All Zones"
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.List",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "All Zones",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 1",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury Slot 2",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Random",
+                         "Type":  "ControlType.RadioButton",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.RandomCheck",
+                         "Enabled":  false,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Mode:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ModeLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "Dir:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.DirectionLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Slider",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.SpeedSlider",
+                         "Enabled":  false,
+                         "Offscreen":  false,
+                         "Value":  "0"
+                     },
+                     {
+                         "Name":  "Colors:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ColorLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "Per-LED",
+                         "Type":  "ControlType.RadioButton",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.PerLEDCheck",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Zone:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ZoneLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.ComboBox",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ModeBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "Direct"
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.List",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Direct",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Static",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Rainbow",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Spectrum",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Rhythm",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Breath",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Dynamic",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Slide",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Slither",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Teleport",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Wind",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Comet",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Rain",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Firework",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Voltage",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Flame",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Twilight",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Fury",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Prism",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Apply All Devices",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.SetAllButton",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "LED:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.LEDLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "Edit",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.EditZoneButton",
+                         "Enabled":  false,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Mode-Specific",
+                         "Type":  "ControlType.RadioButton",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ModeSpecificCheck",
+                         "Enabled":  false,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Apply Colors To Selection",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ApplyColorsButton",
+                         "Enabled":  false,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Select All",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.SelectAllLEDsButton",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Slider",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.BrightnessSlider",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "80"
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.ComboBox",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.DirectionBox",
+                         "Enabled":  false,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.List",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Brightness:",
+                         "Type":  "ControlType.Text",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.BrightnessLabel",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  null
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Custom",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.DeviceViewBoxFrame",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Group",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.DeviceViewBoxFrame.DeviceViewBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Tab",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_tabbar",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Devices",
+                         "Type":  "ControlType.Tab",
+                         "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_tabbar",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Devices",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Information",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "SDK Server",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "SDK Client",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Settings",
+                         "Type":  "ControlType.TabItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.Custom",
+                         "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Toggle LED View",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonToggleDeviceView",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Rescan Devices",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonRescan",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Save Profile",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonSaveProfile",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Delete Profile",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonDeleteProfile",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Load Profile",
+                         "Type":  "ControlType.Button",
+                         "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonLoadProfile",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.ComboBox",
+                         "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ProfileBox",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  "Main"
+                     },
+                     {
+                         "Name":  "",
+                         "Type":  "ControlType.List",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     },
+                     {
+                         "Name":  "Main",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Value":  ""
+                     }
+                 ]
+}

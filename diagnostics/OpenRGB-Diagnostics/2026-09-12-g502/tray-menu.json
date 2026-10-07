@@ -1,0 +1,30 @@
+{
+    "RootCount":  1,
+    "Elements":  [
+                     {
+                         "Name":  "OpenRGB",
+                         "Type":  "ControlType.Window",
+                         "Id":  "OpenRGBDialog",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Patterns":  [
+                                          "InvokePatternIdentifiers.Pattern",
+                                          "ValuePatternIdentifiers.Pattern",
+                                          "WindowPatternIdentifiers.Pattern",
+                                          "TransformPatternIdentifiers.Pattern"
+                                      ]
+                     },
+                     {
+                         "Name":  "Main",
+                         "Type":  "ControlType.ListItem",
+                         "Id":  "",
+                         "Enabled":  true,
+                         "Offscreen":  false,
+                         "Patterns":  [
+                                          "InvokePatternIdentifiers.Pattern",
+                                          "ValuePatternIdentifiers.Pattern",
+                                          "SelectionItemPatternIdentifiers.Pattern"
+                                      ]
+                     }
+                 ]
+}

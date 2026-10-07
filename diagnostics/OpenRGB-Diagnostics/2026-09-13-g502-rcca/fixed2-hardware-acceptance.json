@@ -1,0 +1,98 @@
+{
+  "SourceRevision": "efe23dcc310e326c35900d79957aa3f153c18708",
+  "InstalledSHA256": "a625ca5872da775a52e304f14a2407fa989f8fe08c93b4b6a2d2991f040ed939",
+  "ServerPid": 37080,
+  "Tests": [
+    {
+      "Case": "Installed driver green",
+      "Command": "sdk-color-only-20260913-015056.json",
+      "PhysicalResponse": "Yes, solid green",
+      "Result": "pass"
+    },
+    {
+      "Case": "Release control then color-only blue",
+      "Perturbation": "release-20260913-015213.json",
+      "Readback": "lighting-state-20260913-015235.json",
+      "PhysicalResponse": "Yes, solid blue",
+      "Result": "pass"
+    },
+    {
+      "Case": "Reassert claim, RGB power off, then color-only red",
+      "Perturbation": "release-20260913-015313.json",
+      "Readback": "lighting-state-20260913-015336.json",
+      "PhysicalResponse": "No, another color or no light",
+      "Result": "fail",
+      "Note": "Control readback 3 and power 1 do not prove physical RGB recovery. Further physical observation pending.",
+      "Clarification": "No light, even after moving mouse; confirmed again at power1/control3."
+    },
+    {
+      "Case": "Identical red retry with power already1",
+      "Command": "sdk-color-only-20260913-015527.json",
+      "PhysicalResponse": "Yes, solid red",
+      "Result": "pass"
+    },
+    {
+      "Case": "RGB power-off only, ownership unchanged; first SDK blue",
+      "Perturbation": "power-off-only-20260913-015647.json",
+      "PhysicalResponse": "No, no light",
+      "Result": "fail"
+    },
+    {
+      "Case": "Matched-count A: post-wake ownership reads, single red",
+      "Command": "wake-first-color-20260913-020104.json",
+      "PhysicalResponse": "No, no light",
+      "BeforePaintMs": 47.9615,
+      "Result": "fail"
+    },
+    {
+      "Case": "Matched-count B: post-wake ownership reassertion, single red",
+      "Command": "wake-first-color-20260913-020243.json",
+      "PhysicalResponse": "No, no light",
+      "BeforePaintMs": 45.4183,
+      "Result": "fail"
+    },
+    {
+      "Case": "Two immediate first frames after power recovery",
+      "Command": "wake-first-color-20260913-020536.json",
+      "PhysicalResponse": "No, no light",
+      "BeforePaintMs": 47.5063,
+      "Result": "fail",
+      "Services": "Logitech lighting and LGHUB updater running"
+    },
+    {
+      "Case": "Single red frame after one-second interval",
+      "Command": "wake-first-color-20260913-020720.json",
+      "PhysicalResponse": "Yes, solid red",
+      "BeforePaintMs": 1050.8116,
+      "Result": "pass",
+      "Services": "Logitech lighting and LGHUB updater running"
+    },
+    {
+      "Case": "Single blue frame after one-second interval",
+      "Command": "wake-first-color-20260913-020854.json",
+      "PhysicalResponse": "Yes, solid blue",
+      "BeforePaintMs": 1047.6416000000002,
+      "Result": "pass",
+      "Services": "Logitech lighting and LGHUB updater running"
+    },
+    {
+      "Case": "LampArray stopped; installed immediate red after RGB power-off",
+      "Command": "sdk-color-only-20260913-021259.json",
+      "PhysicalResponse": "No, no light",
+      "Result": "fail"
+    },
+    {
+      "Case": "LampArray stopped; single blue after one-second wake interval",
+      "Command": "wake-first-color-20260913-021501.json",
+      "PhysicalResponse": "Yes, solid blue",
+      "Result": "pass"
+    }
+  ],
+  "Conclusion": "Immediate rendering after power readback fails with LampArray running or stopped. A one-second interval before a single frame succeeded in three tests. Production wake correction is committed as8fc2a33; complete new executable acceptance remains pending.",
+  "ServicesRestored": {
+    "Name": "logi_lamparray_service",
+    "State": "Running",
+    "StartMode": "Auto",
+    "ProcessId": 18092
+  }
+}

@@ -1,0 +1,8 @@
+Exception calling "FromHandle" with "1" argument(s): "hwnd cannot be IntPtr.Zero or null."
+At C:\OpenRGB-Diagnostics\2026-09-12-g502\restore-main.ps1:6 char:2
++  $root=[System.Windows.Automation.AutomationElement]::FromHandle($rgb ...
++  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+    + FullyQualifiedErrorId : ArgumentException
+ 
+

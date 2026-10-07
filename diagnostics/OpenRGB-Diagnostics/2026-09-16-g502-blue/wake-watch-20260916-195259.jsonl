@@ -1,0 +1,4 @@
+{"Event":"start","Time":"2026-09-16T19:53:00.1061481-07:00"}
+{"Event":"wake-state","Time":"2026-09-16T20:08:49.7776454-07:00","Control":0,"Events":6,"Power":1,"LampArray":"Running"}
+{"Event":"painted","Time":"2026-09-16T20:08:49.8136519-07:00","Color":"FF00FF","PowerBeforePaint":1,"Reply":[0,0,0,0,0,0]}
+{"Event":"state","Time":"2026-09-16T20:08:49.8331593-07:00","Control":3,"Events":5,"Power":1,"LampArray":"Running","OpenRGBPid":19044}

@@ -1,0 +1,12 @@
+{
+    "Time":  "2026-09-12T23:14:42.7961057-07:00",
+    "Pid":  20028,
+    "DeviceTab":  2,
+    "Mode":  "Direct",
+    "Hex":  "0000FF",
+    "ServiceBefore":  "Stopped",
+    "ServiceAfter":  "Running",
+    "ServiceStartMode":  "Auto",
+    "ServicePid":  10704,
+    "ProfileSaved":  false
+}

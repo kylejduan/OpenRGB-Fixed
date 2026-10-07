@@ -1,0 +1,17 @@
+{
+    "Time":  "2026-09-13T02:49:24.0458555-07:00",
+    "ServerPid":  5568,
+    "Device":  "Candy companion chip",
+    "DeviceIndex":  1,
+    "Color":  "00FF00",
+    "PacketId":  1050,
+    "ModeChanged":  false,
+    "Controllers":  [
+                        "Kingston Fury DDR5 DRAM",
+                        "Candy companion chip",
+                        "G502 X PLUS",
+                        "ASUS ROG MAXIMUS Z790 FORMULA",
+                        "NVIDIA GeForce RTX 4090 FE"
+                    ],
+    "Payload":  "0A-00-00-00-01-00-00-FF-00-00"
+}

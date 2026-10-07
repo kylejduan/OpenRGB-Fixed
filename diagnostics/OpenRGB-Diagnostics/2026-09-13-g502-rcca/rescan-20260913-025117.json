@@ -1,0 +1,7 @@
+{
+    "Time":  "2026-09-13T02:51:18.1030280-07:00",
+    "Action":  "rescan",
+    "ServerPid":  5568,
+    "PacketId":  140,
+    "Note":  "Request sent; verify fresh detection/profile logs separately"
+}

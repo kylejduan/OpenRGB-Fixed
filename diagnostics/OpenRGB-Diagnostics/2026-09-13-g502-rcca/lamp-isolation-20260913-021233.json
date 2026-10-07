@@ -1,0 +1,17 @@
+{
+    "Time":  "2026-09-13T02:12:41.2007704-07:00",
+    "Action":  "Stop",
+    "Service":  {
+                    "Name":  "logi_lamparray_service",
+                    "State":  "Stopped",
+                    "StartMode":  "Auto",
+                    "ProcessId":  0
+                },
+    "OpenRGB":  [
+                    {
+                        "Id":  37080,
+                        "Path":  "C:\\Program Files\\OpenRGB\\OpenRGB.exe",
+                        "StartTime":  "\/Date(1789289362679)\/"
+                    }
+                ]
+}

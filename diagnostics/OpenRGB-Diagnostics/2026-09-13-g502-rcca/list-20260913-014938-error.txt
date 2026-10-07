@@ -1,0 +1,8 @@
+Unexpected server process
+At C:\OpenRGB-Diagnostics\2026-09-13-g502-rcca\sdk-command.ps1:8 char:63
++ ... ogram Files\OpenRGB\OpenRGB.exe') {throw 'Unexpected server process'}
++                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Unexpected server process:String) [], RuntimeException
+    + FullyQualifiedErrorId : Unexpected server process
+ 
+

@@ -1,0 +1,67 @@
+{
+  "SourceRevision": "8fc2a339fd4011c310fc9b35bd9d8956c6a1a792",
+  "InstalledSHA256": "2b6a6d77bb46cdad0372d46446e7a0d8157e309b90d40f6f604ab6f3cd3cb2ea",
+  "ServerPid": 5568,
+  "InstallReceipt": "installed-wake-fixed2.json",
+  "LogFile": "OpenRGB_20260913_024720.log",
+  "Tests": [
+    {
+      "Case": "RGB power-off only, ownership unchanged; first SDK green",
+      "Perturbation": "power-off-only-20260913-024800.json",
+      "Command": "sdk-color-only-20260913-024801.json",
+      "Readback": "lighting-state-20260913-024837.json",
+      "PhysicalResponse": "Yes, solid green",
+      "Result": "pass",
+      "DriverWaitLogMs": 41915,
+      "DriverColorAckLogMs": 42939
+    },
+    {
+      "Case": "Release control then color-only blue",
+      "Perturbation": "release-20260913-024919.json",
+      "Command": "sdk-color-only-20260913-024921.json",
+      "Readback": "lighting-state-20260913-024958.json",
+      "PhysicalResponse": "Yes, solid blue",
+      "Result": "pass"
+    },
+    {
+      "Case": "Powerplay color-only green",
+      "Command": "sdk-color-only-20260913-024923.json",
+      "PhysicalResponse": "Yes, solid green",
+      "Result": "pass"
+    },
+    {
+      "Case": "Two SDK rescans with same installed process",
+      "Receipts": [
+        "rescan-check-20260913-025049.json",
+        "rescan-check-20260913-025116.json"
+      ],
+      "Inventories": [
+        "sdk-inventory-20260913-025104-parsed.json",
+        "sdk-inventory-20260913-025131-parsed.json"
+      ],
+      "Controllers": 5,
+      "RAMZones": 2,
+      "MainRestoredAfterEach": true,
+      "Result": "pass"
+    },
+    {
+      "Case": "User GUI rescan and Direct red Apply Colors To Selection",
+      "Inventory": "sdk-inventory-20260913-025624-parsed.json",
+      "PhysicalResponse": "Rescan finished and mouse is red",
+      "DetectionCompletions": 4,
+      "ServerPid": 5568,
+      "Result": "pass"
+    },
+    {
+      "Case": "Normal elevated startup task restores saved Main profile",
+      "RestartReceipt": "final-task-restart.json",
+      "LogReceipt": "final-restart-log.json",
+      "PackageReceipt": "final-package-settings-verification.json",
+      "PhysicalResponse": "Yes, it changed back to the saved color",
+      "Transition": "FF0000 to saved FF00FF",
+      "Result": "pass"
+    }
+  ],
+  "Pending": [],
+  "Conclusion": "Installed source8fc passed first-update RGB power recovery, software control recovery, Powerplay color, three rescans including GUI, GUI Direct red, and normal task restart with a physical transition to saved Main. Both Logitech services remain running/Auto; temporary SDK port closed. OS reboot/sleep and power-save transitions remain untested."
+}

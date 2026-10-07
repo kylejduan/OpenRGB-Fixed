@@ -1,0 +1,97 @@
+[
+  {
+    "file": "LpcIO.bin",
+    "size": 17388,
+    "sha256": "4247d588b9da9c598a65c6f5b8255a90bedee510ee1c354f9a909a2f959cd4df"
+  },
+  {
+    "file": "OpenRGB.exe",
+    "size": 8513024,
+    "sha256": "04a7eb2b1fab4cef296cb60c99348a1ac7df4e4a5803e73cf1a76418457d6845"
+  },
+  {
+    "file": "PawnIOLib.dll",
+    "size": 4096,
+    "sha256": "c6e7c2f54643ef9cb51b9a3ec7b0efc9e204803c206f33014e39f281546ea9b4"
+  },
+  {
+    "file": "Qt5Core.dll",
+    "size": 5998712,
+    "sha256": "45861a45902474fc1fea389c0d7375c57831e781e8fd346e1f968abe0b9f8cb5"
+  },
+  {
+    "file": "Qt5Gui.dll",
+    "size": 7085176,
+    "sha256": "fc9955aeedef3a439f536f243bf5258b6c28a7c92d0506312b003568a5667765"
+  },
+  {
+    "file": "Qt5Widgets.dll",
+    "size": 5516920,
+    "sha256": "cf4da208c6648e32472f58939c31913c4178208c9b1133a856be735eb87ace25"
+  },
+  {
+    "file": "SmbusI801.bin",
+    "size": 48892,
+    "sha256": "c561fd4a2669ec4e52676fdc6905f54edf70c7308efc93b4126ad644ac00a319"
+  },
+  {
+    "file": "SmbusIntelSkylakeIMC.bin",
+    "size": 19612,
+    "sha256": "36dc1d4f860e56b0f8eb84afe26a6c55aa03346cd51a455a1aa6c601532c7303"
+  },
+  {
+    "file": "SmbusNCT6793.bin",
+    "size": 18844,
+    "sha256": "4767b71f8ab870d6414ceb15adfdcddac4e539928481ed590463e481253ecd1b"
+  },
+  {
+    "file": "SmbusPIIX4.bin",
+    "size": 38836,
+    "sha256": "0a5a8166ffde0ca12db6f897f5dce295e885a9629954f544bf315b2cce6f00ba"
+  },
+  {
+    "file": "hidapi.dll",
+    "size": 162304,
+    "sha256": "ebeb835e2b4530ed68843f19d6a2604c51772e3c26e7f542fde194075f82d9b4"
+  },
+  {
+    "file": "imageformats/qgif.dll",
+    "size": 38008,
+    "sha256": "e1f6186d39cfa95c6639ae3a035066c87cc1b3a76d7909e18b76661422a3d98a"
+  },
+  {
+    "file": "imageformats/qico.dll",
+    "size": 36984,
+    "sha256": "2b51c4f038cc95a109286e208c058bbb4ee1a11676ceea0a49cfa222749bcd90"
+  },
+  {
+    "file": "imageformats/qjpeg.dll",
+    "size": 418936,
+    "sha256": "cff769bf14a53c4ac6c2ae3d64f21e04f2fd907d097a54a1784af483b596ddef"
+  },
+  {
+    "file": "libEGL.dll",
+    "size": 23672,
+    "sha256": "381718382cadd159a4dc98714e454d40c3a60c3f67a5b6d582fe5587b3a6fc47"
+  },
+  {
+    "file": "libGLESv2.dll",
+    "size": 3368056,
+    "sha256": "a4d3c0174463ecd447258583cd90577abb4db08c8f9b0c5ad214099cf2f9b43a"
+  },
+  {
+    "file": "libusb-1.0.dll",
+    "size": 157696,
+    "sha256": "a8c91f0ff68fb7802a9f4416728f0eeb4d99af4ceaa4ef7dfe9374e76e375018"
+  },
+  {
+    "file": "platforms/qwindows.dll",
+    "size": 1493624,
+    "sha256": "ba0278ed9851dff2ae29b9b21bbf8cfbc0500973fbd0214e8a6a97c95f8a53f9"
+  },
+  {
+    "file": "styles/qwindowsvistastyle.dll",
+    "size": 143480,
+    "sha256": "a347fcd340ab6df13fff7294585696af5cbbb71104944204507f0c3b9ead6afd"
+  }
+]

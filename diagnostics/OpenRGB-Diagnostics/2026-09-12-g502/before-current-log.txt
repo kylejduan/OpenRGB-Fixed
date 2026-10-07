@@ -1,0 +1,130 @@
+    OpenRGB v0.9+ (1.0rc3.1-powerplay-rcca2)
+    Commit: 5e81e26+powerplay-rcca2 from local RCCA build 2026-09-06
+    Launched: 20260911_103937
+====================================================================================================
+
+215   |Info:    [ProfileManager] Found file: Main.orp attempting to validate header
+276   |Info:    [ProfileManager] Valid v5 profile found for Main
+5330  |Info:    [ResourceManager] Initializing HID interfaces: Success
+5330  |Info:    ------------------------------------------------------
+5330  |Info:    |               Start device detection               |
+5353  |Info:    ------------------------------------------------------
+5503  |Info:    ------------------------------------------------------
+5553  |Info:    |             Detecting I2C interfaces               |
+5568  |Info:    ------------------------------------------------------
+5583  |Info:    [ResourceManager] Registering I2C interface: Nvidia NvAPI I2C on GPU 0 Device 10DE:2684 Subsystem: 10DE:165B
+5615  |Info:    Start PawnIO: SmbusI801.bin
+5678  |Info:    PawnIO initialized successully
+5692  |Info:    [ResourceManager] Registering I2C interface: i801 Device 8086:7A23 Subsystem: 1043:8882
+5693  |Info:    Start PawnIO: SmbusPIIX4.bin
+5711  |Info:    PawnIO module initialization aborted (unsupported)
+5711  |Info:    Start PawnIO: SmbusPIIX4.bin
+5724  |Info:    PawnIO module initialization aborted (unsupported)
+5755  |Info:    Start PawnIO: SmbusNCT6793.bin
+5802  |Info:    PawnIO initialized successully
+5803  |Info:    [ResourceManager] Registering I2C interface: NCT6796 Device FFFF:FFFF Subsystem: FFFF:FFFF
+5804  |Info:    Start PawnIO: SmbusIntelSkylakeIMC.bin
+5833  |ERROR:   PawnIO module initialization aborted (code=-2147024841)
+5847  |Info:    Start PawnIO: SmbusIntelSkylakeIMC.bin
+5848  |ERROR:   PawnIO module initialization aborted (code=-2147024841)
+5849  |Info:    ------------------------------------------------------
+5849  |Info:    |               Detecting I2C devices                |
+5863  |Info:    ------------------------------------------------------
+5995  |Info:    ------------------------------------------------------
+6033  |Info:    |            Detecting I2C DIMM modules              |
+6034  |Info:    ------------------------------------------------------
+6070  |Info:    [ResourceManager] Detected occupied slot 2, bus 1, type DDR5
+6129  |Info:    [ResourceManager] Detected occupied slot 4, bus 1, type DDR5
+6350  |Info:    [Kingston Fury DDR5 DRAM] Registering RGB controller
+6359  |Info:    ------------------------------------------------------
+6359  |Info:    |               Detecting I2C PCI devices            |
+6360  |Info:    ------------------------------------------------------
+6361  |Info:    ------------------------------------------------------
+6374  |Info:    |               Detecting HID devices                |
+6375  |Info:    ------------------------------------------------------
+6389  |Info:    Count of connected devices to C53A: 2
+6391  |Info:    Faking a reconnect to get device list
+6392  |Info:    Connected Device Index 0:	VirtualID=4099		10 01 41 11 A2 99 40
+6393  |Info:    Connected Device Index 1:	VirtualID=405F		10 07 41 0C A9 5F 40
+6394  |Info:    Connected Device Index 2:	VirtualID=0000		10 FF 80 02 00 00 00
+7101  |Info:    [Candy companion chip] Registering RGB controller
+8187  |Info:    [G502 X PLUS] Registering RGB controller
+8293  |Info:    [ASUS ROG MAXIMUS Z790 FORMULA] Registering RGB controller
+8298  |Info:    ------------------------------------------------------
+8329  |Info:    |              Detecting other devices               |
+8514  |Info:    ------------------------------------------------------
+9058  |Info:    [Creative SoundBlaster AE-5] Windows detection function called
+9152  |Warning: [Creative SoundBlaster AE-5] No matching device found
+9197  |Warning: [Creative SoundBlaster AE-5] Device initialization failed
+9245  |Info:    [NVIDIA GeForce RTX 4090 FE] Registering RGB controller
+9297  |Info:    [ResourceManager] Calling Post-detection callbacks
+9570  |Info:    ------------------------------------------------------
+9940  |Info:    |                Detection completed                 |
+10235 |Info:    ------------------------------------------------------
+10567 |Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+10568 |Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 7
+10568 |Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 1
+10568 |Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+10568 |Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 
+130517186|Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+130517186|Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 7
+130517186|Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 1
+130517186|Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+130517186|Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 
+130519473|Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+130519473|Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 7
+130519473|Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 1
+130519473|Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+130519473|Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 
+130542341|Info:    [ProfileManager] Found file: Main.orp attempting to validate header
+130542341|Info:    [ProfileManager] Valid v5 profile found for Main
+130543059|Info:    [ProfileManager] Found file: Main.orp attempting to validate header
+130543060|Info:    [ProfileManager] Valid v5 profile found for Main
+130544531|Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+130544531|Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 7
+130544531|Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 1
+130544531|Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+130544531|Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 
+130545100|Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+130545100|Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 7
+130545100|Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 1
+130545100|Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+130545100|Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 
+130550136|Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+130550136|Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 7
+130550136|Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 1
+130550136|Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+130550136|Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 
+130550294|Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+130550294|Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 7
+130550294|Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 1
+130550294|Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+130550294|Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 
+130581874|Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+130581874|Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 7
+130581874|Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 1
+130581874|Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+130581874|Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 
+130582722|Info:    [ProfileManager] Profile loading: Succeeded for Kingston Fury DDR5 DRAM @ I2C: i801, addresses [0x61,0x63]
+130582722|Info:    [ProfileManager] Profile loading: Succeeded for Candy companion chip @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 7
+130582722|Info:    [ProfileManager] Profile loading: Succeeded for G502 X PLUS @ HID: \\?\HID#VID_046D&PID_C53A&MI_02&Col01#7&DEVICE001&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030} (Receiver) 
+Wireless Index: 1
+130582722|Info:    [ProfileManager] Profile loading: Succeeded for ASUS ROG MAXIMUS Z790 FORMULA @ HID: \\?\HID#VID_0B05&PID_18F3&MI_02#7&DEVICE002&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}
+130582722|Info:    [ProfileManager] Profile loading: Succeeded for NVIDIA GeForce RTX 4090 FE @ 

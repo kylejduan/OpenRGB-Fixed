@@ -1,0 +1,8 @@
+Keyboard selection did not establish Direct mode
+At C:\OpenRGB-Diagnostics\2026-09-12-g502\direct-keyboard-green.ps1:25 char:27
++ ...  'Direct') {throw 'Keyboard selection did not establish Direct mode'} ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Keyboard select...ish Direct mode:String) [], RuntimeException
+    + FullyQualifiedErrorId : Keyboard selection did not establish Direct mode
+ 
+

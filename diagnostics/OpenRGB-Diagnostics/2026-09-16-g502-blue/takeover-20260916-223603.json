@@ -1,0 +1,92 @@
+{
+    "Time":  "2026-09-16T22:36:03.4503622-07:00",
+    "ControlBefore":  [
+                          0,
+                          3,
+                          5
+                      ],
+    "Released":  [
+                     1,
+                     0,
+                     6
+                 ],
+    "ReclaimedAfterSeconds":  28.3,
+    "Samples":  [
+                    {
+                        "Seconds":  2,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  4,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  6.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  8.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  10.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  12.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  14.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  16.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  18.2,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  20.2,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  22.2,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  24.2,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  26.3,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  28.3,
+                        "Control":  3,
+                        "Events":  5
+                    }
+                ],
+    "OpenRGB":  [
+                    {
+                        "Id":  54416,
+                        "StartTime":  "\/Date(1789623310396)\/"
+                    }
+                ]
+}

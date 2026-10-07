@@ -1,0 +1,17 @@
+{
+    "Time":  "2026-09-13T02:17:09.1206285-07:00",
+    "Action":  "Restore",
+    "Service":  {
+                    "Name":  "logi_lamparray_service",
+                    "State":  "Running",
+                    "StartMode":  "Auto",
+                    "ProcessId":  18092
+                },
+    "OpenRGB":  [
+                    {
+                        "Id":  37080,
+                        "Path":  "C:\\Program Files\\OpenRGB\\OpenRGB.exe",
+                        "StartTime":  "\/Date(1789289362679)\/"
+                    }
+                ]
+}

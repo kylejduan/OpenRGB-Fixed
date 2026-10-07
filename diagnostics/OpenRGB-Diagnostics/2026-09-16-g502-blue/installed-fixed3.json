@@ -1,0 +1,28 @@
+{
+    "Time":  "2026-09-16T21:07:34.5067500-07:00",
+    "SourceRevision":  "a34358014701c39107f08eb03d52ca1c3b46f733",
+    "OldSHA256":  "2b6a6d77bb46cdad0372d46446e7a0d8157e309b90d40f6f604ab6f3cd3cb2ea",
+    "NewSHA256":  "4081331c629e416c0f9012e48bf2a3ee410a7ec45086ebef4acf26d10a76e630",
+    "CleanExit":  {
+                      "Pid":  19044,
+                      "ExitCode":  0,
+                      "Time":  "2026-09-16T21:07:33.7042357-07:00"
+                  },
+    "NewPid":  46496,
+    "StartedBy":  "Scheduled task OpenRGB",
+    "MainSHA256":  "8a286ce6feb191c7e199944d3509ac3da21573efd95f531ecf4f50f84ba473cd",
+    "PackageFiles":  53,
+    "Rollback":  "C:\\OpenRGB-Diagnostics\\2026-09-16-g502-blue\\rollback-before-fixed3",
+    "Services":  [
+                     {
+                         "Name":  "LGHUBUpdaterService",
+                         "Status":  4,
+                         "StartType":  2
+                     },
+                     {
+                         "Name":  "logi_lamparray_service",
+                         "Status":  1,
+                         "StartType":  3
+                     }
+                 ]
+}

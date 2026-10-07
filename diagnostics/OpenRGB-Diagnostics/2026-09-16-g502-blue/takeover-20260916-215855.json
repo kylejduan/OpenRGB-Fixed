@@ -1,0 +1,62 @@
+{
+    "Time":  "2026-09-16T21:58:55.7263077-07:00",
+    "ControlBefore":  [
+                          0,
+                          3,
+                          5
+                      ],
+    "Released":  [
+                     1,
+                     0,
+                     6
+                 ],
+    "ReclaimedAfterSeconds":  16.2,
+    "Samples":  [
+                    {
+                        "Seconds":  2,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  4.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  6.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  8.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  10.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  12.1,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  14.2,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  16.2,
+                        "Control":  3,
+                        "Events":  5
+                    }
+                ],
+    "OpenRGB":  [
+                    {
+                        "Id":  47024,
+                        "StartTime":  "\/Date(1789621113709)\/"
+                    }
+                ]
+}

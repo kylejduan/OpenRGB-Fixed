@@ -1,0 +1,2155 @@
+diff --git a/Controllers/LogitechController/LogitechHIDPP20Controller/LogitechHIDPP20Controller.cpp b/Controllers/LogitechController/LogitechHIDPP20Controller/LogitechHIDPP20Controller.cpp
+index 30a74274a79c56c4102994d05f59723c6c455ea5..9d41d67ede09e3d49997949a730edddc0286d7a6 100644
+--- a/Controllers/LogitechController/LogitechHIDPP20Controller/LogitechHIDPP20Controller.cpp
++++ b/Controllers/LogitechController/LogitechHIDPP20Controller/LogitechHIDPP20Controller.cpp
+@@ -190,6 +190,7 @@ LogitechHIDPP20Controller::LogitechHIDPP20Controller
+     this->frame_counter                = 0;
+     this->retry_paint_deadline_.store(std::chrono::steady_clock::time_point{});
+     this->retry_paint_attempt_.store(0);
++    this->paint_flush_deadline_.store(std::chrono::steady_clock::time_point{});
+     this->wake_full_repaint_pending_.store(false);
+     this->init_generation      = 0;
+     this->log_tag              = "[LogitechHID++ " + std::string(path) + "]";
+@@ -256,6 +257,7 @@ LogitechHIDPP20Controller::~LogitechHIDPP20Controller()
+     \*-----------------------------------------------------*/
+     StopSenderThread();
+     StopPowerManager();
++    StopPaintFlushThread();
+ 
+     if(dev)
+     {
+@@ -3877,6 +3879,7 @@ void LogitechHIDPP20Controller::Shutdown()
+     \*-----------------------------------------------------*/
+     StopSenderThread();
+     StopPowerManager();
++    StopPaintFlushThread();
+ 
+     /*-----------------------------------------------------*\
+     | Release SW control                                    |
+@@ -4609,6 +4612,90 @@ void LogitechHIDPP20Controller::TickRetryPaintIfPending()
+     }
+ }
+ 
++bool LogitechHIDPP20Controller::SchedulePaintFlush(uint32_t delay_ms)
++{
++    std::chrono::steady_clock::time_point when = std::chrono::steady_clock::now()
++                                               + std::chrono::milliseconds(delay_ms);
++
++    {
++        std::lock_guard<std::mutex> lock(flush_mutex);
++
++        /*-------------------------------------------------*\
++        | Keep the earliest pending deadline: zones defer   |
++        | to different phase boundaries and the nearest     |
++        | one must fire first (later zones re-defer on      |
++        | that reconcile).                                  |
++        \*-------------------------------------------------*/
++        std::chrono::steady_clock::time_point cur = paint_flush_deadline_.load();
++
++        if(cur == std::chrono::steady_clock::time_point{} || when < cur)
++        {
++            paint_flush_deadline_.store(when);
++        }
++
++        if(!flush_thread_running.load())
++        {
++            flush_thread_running.store(true);
++            flush_thread = new std::thread(&LogitechHIDPP20Controller::FlushThreadFunc, this);
++        }
++    }
++
++    flush_cv.notify_all();
++    return true;
++}
++
++void LogitechHIDPP20Controller::FlushThreadFunc()
++{
++    std::unique_lock<std::mutex> lock(flush_mutex);
++
++    while(flush_thread_running.load())
++    {
++        std::chrono::steady_clock::time_point deadline = paint_flush_deadline_.load();
++
++        if(deadline == std::chrono::steady_clock::time_point{})
++        {
++            flush_cv.wait_for(lock, std::chrono::milliseconds(500));
++            continue;
++        }
++
++        if(std::chrono::steady_clock::now() < deadline)
++        {
++            flush_cv.wait_until(lock, deadline);
++            continue;
++        }
++
++        paint_flush_deadline_.store(std::chrono::steady_clock::time_point{});
++
++        /*-------------------------------------------------*\
++        | Fire outside the lock; the callback runs          |
++        | DeviceUpdateLEDs and may schedule the next        |
++        | flush, which takes flush_mutex.                   |
++        \*-------------------------------------------------*/
++        lock.unlock();
++
++        if(request_repaint_fn)
++        {
++            request_repaint_fn();
++        }
++
++        lock.lock();
++    }
++}
++
++void LogitechHIDPP20Controller::StopPaintFlushThread()
++{
++    flush_thread_running.store(false);
++    flush_cv.notify_all();
++
++    if(flush_thread && flush_thread->joinable())
++    {
++        flush_thread->join();
++    }
++
++    delete flush_thread;
++    flush_thread = nullptr;
++}
++
+ /*---------------------------------------------------------*\
+ | Per-key lighting (0x8081)                                 |
+ \*---------------------------------------------------------*/
+diff --git a/Controllers/LogitechController/LogitechHIDPP20Controller/LogitechHIDPP20Controller.h b/Controllers/LogitechController/LogitechHIDPP20Controller/LogitechHIDPP20Controller.h
+index 59f0e6e1f56e88147c29baffced687742e037cc9..26bc77ba71a4db2f2800409ee2724c51c1cce803 100644
+--- a/Controllers/LogitechController/LogitechHIDPP20Controller/LogitechHIDPP20Controller.h
++++ b/Controllers/LogitechController/LogitechHIDPP20Controller/LogitechHIDPP20Controller.h
+@@ -797,6 +797,17 @@ public:
+     void            CancelRetryPaint();
+     void            TickRetryPaintIfPending();
+ 
++    /*-----------------------------------------------------*\
++    | Deferred paint flush. The RGB controller's            |
++    | reconcile defers a color-only effect re-send to a     |
++    | phase boundary; a dedicated flush thread (lazily      |
++    | started, power thread not required: 0x8070 devices    |
++    | never run one) fires request_repaint_fn when the      |
++    | deadline expires so the deferred color always lands.  |
++    | Keeps the earliest pending deadline across zones.     |
++    \*-----------------------------------------------------*/
++    bool            SchedulePaintFlush(uint32_t delay_ms);
++
+     /*-----------------------------------------------------*\
+     | Observed per-key prep sequence. Two                   |
+     | SetEffectByIndex calls cloned byte-for-byte from a    |
+@@ -904,6 +915,19 @@ private:
+     \*-----------------------------------------------------*/
+     std::atomic<std::chrono::steady_clock::time_point>  retry_paint_deadline_;
+     std::atomic<uint8_t>                                retry_paint_attempt_;
++
++    /*-----------------------------------------------------*\
++    | Phase-boundary paint flush deadline; zero = none      |
++    | pending. Fired by the dedicated flush thread.         |
++    \*-----------------------------------------------------*/
++    std::atomic<std::chrono::steady_clock::time_point>  paint_flush_deadline_;
++    std::thread*                                        flush_thread = nullptr;
++    std::mutex                                          flush_mutex;
++    std::condition_variable                             flush_cv;
++    std::atomic<bool>                                   flush_thread_running{false};
++
++    void            FlushThreadFunc();
++    void            StopPaintFlushThread();
+     std::atomic<bool>                                   wake_full_repaint_pending_;
+     uint32_t                    init_generation;
+     std::string                 log_tag;
+diff --git a/Controllers/LogitechController/LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.cpp b/Controllers/LogitechController/LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.cpp
+index 5cf9361e7f0e0a1e71938de6ba6c34e389cf25ad..e16c59549186f4eb1d080b294373e0475a00bf25 100644
+--- a/Controllers/LogitechController/LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.cpp
++++ b/Controllers/LogitechController/LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.cpp
+@@ -99,6 +99,130 @@ static uint8_t WaveDirectionToWire(unsigned int dir)
+     }
+ }
+ 
++/*---------------------------------------------------------*\
++| Color-only re-sends to a running animated effect restart  |
++| its phase on the wire (no phase parameter or in-place     |
++| color update exists on 0x8070/0x8071). They are always    |
++| deferred to the effect's next phase boundary, computed    |
++| from the last send time and period, so the restart lands  |
++| where the animation already is; the latest color wins at  |
++| the boundary. Effects faster than the minimum period      |
++| skip the dance: their restart is imperceptible.           |
++\*---------------------------------------------------------*/
++static const uint64_t HIDPP20_PHASE_WINDOW_MS     = 100;
++static const uint16_t HIDPP20_PHASE_MIN_PERIOD_MS = 400;
++
++/*---------------------------------------------------------*\
++| Frame-delay effects (Ripple) restart visibly on every     |
++| re-send, so their color is locked at apply time and       |
++| never follows the draw buffer; recoloring takes an        |
++| explicit mode, param, or swatch change.                   |
++\*---------------------------------------------------------*/
++static bool EffectColorLockedWhileRunning(int mode_value)
++{
++    return (mode_value == 0x000B || mode_value == 0x0017);
++}
++
++/*---------------------------------------------------------*\
++| Effects that render an RGB parameter. Others get color 0  |
++| in the zone state so color paints never dirty them.       |
++\*---------------------------------------------------------*/
++/*---------------------------------------------------------*\
++| Long timed loops group by family, so zones with the same  |
++| underlying loop and period share a starting point even    |
++| across effect ids: the self-cycle Visualizer runs the     |
++| same color loop as Spectrum Cycle with audio modulation   |
++| on top, and the saturation variants are the same loops    |
++| as their base effects. Ripple and Decomposition/          |
++| Signature use their timer as a frame delay, not a loop,   |
++| and never group. Returns -1 for non-looping effects; the  |
++| Visualizer loops only in self-cycle mode (color 0).       |
++\*---------------------------------------------------------*/
++static int EffectLoopFamily(const HIDPP20ZoneState& s)
++{
++    switch(s.mode_value)
++    {
++        case 0x0003:    // Spectrum Cycle
++        case 0x0015:    // Cycle (saturation variant)
++            return 0x0003;
++        case 0x0007:    // Audio Visualizer (modulated color loop)
++            return (s.color == 0) ? 0x0003 : -1;
++        case 0x0004:    // Color Wave
++        case 0x0016:    // Wave (saturation variant)
++            return 0x0004;
++        case 0x000A:    // Breathing
++            return 0x000A;
++        default:
++            return -1;
++    }
++}
++
++static bool EffectUsesColor(int mode_value)
++{
++    switch(mode_value)
++    {
++        case HIDPP20_MODE_VALUE_DIRECT:
++        case HIDPP20_MODE_VALUE_DARK_VISUALIZER:
++        case 0x0001:    // Static
++        case 0x0007:    // Audio Visualizer
++        case 0x000A:    // Breathing
++        case 0x000B:    // Ripple
++        case 0x0017:    // Ripple (saturation variant)
++            return true;
++        default:
++            return false;
++    }
++}
++
++/*---------------------------------------------------------*\
++| Dark Visualizer: a pseudo-mode offered alongside the      |
++| stock Audio Visualizer (0x0007). It audio-pulses the      |
++| zone's literal color, but a black zone renders black      |
++| instead of the firmware self-cycle: painted zones emit    |
++| 0x0007, black zones emit Static black.                    |
++\*---------------------------------------------------------*/
++static mode MakeDarkVisualizerMode(bool per_led_colors)
++{
++    mode out;
++
++    out.name       = "Dark Visualizer";
++    out.value      = HIDPP20_MODE_VALUE_DARK_VISUALIZER;
++    out.speed_min  = HIDPP20_SPEED_SLIDER_MIN;
++    out.speed_max  = HIDPP20_SPEED_SLIDER_MAX;
++    out.speed      = 80;
++
++    if(per_led_colors)
++    {
++        out.flags      = MODE_FLAG_HAS_PER_LED_COLOR
++                       | MODE_FLAG_HAS_SPEED;
++        out.color_mode = MODE_COLORS_PER_LED;
++    }
++    else
++    {
++        out.flags      = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR
++                       | MODE_FLAG_HAS_SPEED;
++        out.colors_min = 1;
++        out.colors_max = 1;
++        out.color_mode = MODE_COLORS_MODE_SPECIFIC;
++        out.colors.resize(1);
++    }
++
++    return out;
++}
++
++/*---------------------------------------------------------*\
++| Wire-relevant equality: what the device would actually    |
++| render, and so the only reason to re-send.                |
++\*---------------------------------------------------------*/
++static bool SameWireState(const HIDPP20ZoneState& a, const HIDPP20ZoneState& b)
++{
++    return a.mode_value == b.mode_value
++        && a.color      == b.color
++        && a.speed      == b.speed
++        && a.brightness == b.brightness
++        && a.direction  == b.direction;
++}
++
+ /**------------------------------------------------------------------*\
+     @name Logitech HID++ 2.0
+     @category Keyboard,Mouse,Headset
+@@ -890,6 +1014,278 @@ static const Kb8080Strip* FindKb8080Strip(uint16_t pid_wired, uint16_t pid_wirel
+     return(nullptr);
+ }
+ 
++static bool ClusterHasEffect(const HIDPP20ZoneCluster& cluster, uint16_t effect_id)
++{
++    for(size_t i = 0; i < cluster.effects.size(); i++)
++    {
++        if(cluster.effects[i].effect_id == effect_id)
++        {
++            return true;
++        }
++    }
++    return false;
++}
++
++/*---------------------------------------------------------*\
++| Build an OpenRGB mode from a discovered effect.           |
++| per_led_colors selects per-LED color UX for color-        |
++| bearing effects (device-global modes on multi-cluster     |
++| devices); zone modes and single-cluster devices use a     |
++| single mode-specific color. Returns false for effect      |
++| ids with no mode mapping.                                 |
++\*---------------------------------------------------------*/
++static bool ModeFromEffect(const HIDPP20Effect& fx, bool per_led_colors, mode& out)
++{
++    switch(fx.effect_id)
++    {
++        case 0x0001:    // Static / Fixed Color
++        {
++            out.name       = "Static";
++            out.value      = fx.effect_id;
++
++            /*---------------------------------------------*\
++            | Multi-cluster devices (mice with logo/        |
++            | scroll/DPI) get per-LED colors so each        |
++            | zone can be painted independently in          |
++            | Static. Single-cluster devices and zone       |
++            | modes keep the single-color                   |
++            | MODE_COLORS_MODE_SPECIFIC UX.                 |
++            \*---------------------------------------------*/
++            if(per_led_colors)
++            {
++                out.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
++                out.color_mode = MODE_COLORS_PER_LED;
++            }
++            else
++            {
++                out.flags      = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR;
++                out.colors_min = 1;
++                out.colors_max = 1;
++                out.color_mode = MODE_COLORS_MODE_SPECIFIC;
++                out.colors.resize(1);
++            }
++            return true;
++        }
++
++        case 0x0003:    // Color Cycle / Spectrum
++        {
++            out.name           = "Spectrum Cycle";
++            out.value          = fx.effect_id;
++            out.flags          = MODE_FLAG_HAS_SPEED
++                               | MODE_FLAG_HAS_BRIGHTNESS;
++            out.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
++            out.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
++            out.speed          = 80;     /* ~4.9s, lively medium */
++            out.brightness_min = 1;
++            out.brightness_max = 100;
++            out.brightness     = 100;
++            out.color_mode     = MODE_COLORS_NONE;
++            return true;
++        }
++
++        case 0x000A:    // Breathing
++        {
++            out.name           = "Breathing";
++            out.value          = fx.effect_id;
++            out.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
++            out.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
++            out.speed          = 70;     /* ~6.8s, calm medium */
++            out.brightness_min = 1;
++            out.brightness_max = 100;
++            out.brightness     = 100;
++
++            /*---------------------------------------------*\
++            | See Static above, multi-cluster gets          |
++            | per-LED colors.                               |
++            \*---------------------------------------------*/
++            if(per_led_colors)
++            {
++                out.flags      = MODE_FLAG_HAS_PER_LED_COLOR
++                               | MODE_FLAG_HAS_SPEED
++                               | MODE_FLAG_HAS_BRIGHTNESS;
++                out.color_mode = MODE_COLORS_PER_LED;
++            }
++            else
++            {
++                out.flags      = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR
++                               | MODE_FLAG_HAS_SPEED
++                               | MODE_FLAG_HAS_BRIGHTNESS;
++                out.colors_min = 1;
++                out.colors_max = 1;
++                out.color_mode = MODE_COLORS_MODE_SPECIFIC;
++                out.colors.resize(1);
++            }
++            return true;
++        }
++
++        case 0x0007:    // Audio visualizer (G560 factory default)
++        {
++            /*---------------------------------------------*\
++            | Pulses brightness with audio. A painted       |
++            | zone pulses its own color; a black zone       |
++            | self-cycles like the factory default.         |
++            \*---------------------------------------------*/
++            out.name       = "Audio Visualizer";
++            out.value      = fx.effect_id;
++            out.speed_min  = HIDPP20_SPEED_SLIDER_MIN;
++            out.speed_max  = HIDPP20_SPEED_SLIDER_MAX;
++            out.speed      = 80;     /* ~4.9s, near the 5s firmware default */
++
++            if(per_led_colors)
++            {
++                out.flags      = MODE_FLAG_HAS_PER_LED_COLOR
++                               | MODE_FLAG_HAS_SPEED;
++                out.color_mode = MODE_COLORS_PER_LED;
++            }
++            else
++            {
++                out.flags      = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR
++                               | MODE_FLAG_HAS_SPEED;
++                out.colors_min = 1;
++                out.colors_max = 1;
++                out.color_mode = MODE_COLORS_MODE_SPECIFIC;
++                out.colors.resize(1);
++            }
++            return true;
++        }
++
++        case 0x0004:    // Color Wave
++        {
++            out.name           = "Rainbow Wave";
++            out.value          = fx.effect_id;
++            out.flags          = MODE_FLAG_HAS_SPEED
++                               | MODE_FLAG_HAS_BRIGHTNESS;
++            out.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
++            out.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
++            out.speed          = 80;     /* ~4.9s, lively medium */
++            out.brightness_min = 1;
++            out.brightness_max = 100;
++            out.brightness     = 100;
++            out.color_mode     = MODE_COLORS_NONE;
++            return true;
++        }
++
++        case 0x000B:    // Ripple
++        {
++            out.name           = "Ripple";
++            out.value          = fx.effect_id;
++            out.flags          = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR
++                               | MODE_FLAG_HAS_SPEED
++                               | MODE_FLAG_HAS_BRIGHTNESS;
++            out.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
++            out.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
++            out.speed          = 70;     /* ~6.8s, calm medium */
++            out.brightness_min = 1;
++            out.brightness_max = 100;
++            out.brightness     = 100;
++            out.colors_min     = 1;
++            out.colors_max     = 1;
++            out.color_mode     = MODE_COLORS_MODE_SPECIFIC;
++            out.colors.resize(1);
++            return true;
++        }
++
++        case 0x0015:    // Cycle (saturation variant)
++        {
++            /*---------------------------------------------*\
++            | Saturation-bearing variant of 0x0003.         |
++            | Same UI (speed = period, brightness =         |
++            | intensity); the saturation byte is            |
++            | hardcoded full on the wire.                   |
++            \*---------------------------------------------*/
++            out.name           = "Spectrum Cycle";
++            out.value          = fx.effect_id;
++            out.flags          = MODE_FLAG_HAS_SPEED
++                               | MODE_FLAG_HAS_BRIGHTNESS;
++            out.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
++            out.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
++            out.speed          = 80;     /* ~4.9s, lively medium */
++            out.brightness_min = 1;
++            out.brightness_max = 100;
++            out.brightness     = 100;
++            out.color_mode     = MODE_COLORS_NONE;
++            return true;
++        }
++
++        case 0x0016:    // Wave (saturation variant)
++        {
++            /*---------------------------------------------*\
++            | Saturation-bearing variant of 0x0004.         |
++            | Period is a BE16 ms value on the standard     |
++            | 1..20s range (Solaar's LEDEffects table has   |
++            | no period range override for Wave);           |
++            | saturation is hardcoded on the wire.          |
++            \*---------------------------------------------*/
++            out.name           = "Rainbow Wave";
++            out.value          = fx.effect_id;
++            out.flags          = MODE_FLAG_HAS_SPEED
++                               | MODE_FLAG_HAS_BRIGHTNESS
++                               | MODE_FLAG_HAS_DIRECTION_LR
++                               | MODE_FLAG_HAS_DIRECTION_UD
++                               | MODE_FLAG_HAS_DIRECTION_HV;
++            out.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
++            out.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
++            out.speed          = 80;     /* ~4.9s, lively medium */
++            out.brightness_min = 1;
++            out.brightness_max = 100;
++            out.brightness     = 100;
++            out.direction      = MODE_DIRECTION_RIGHT;
++            out.color_mode     = MODE_COLORS_NONE;
++            return true;
++        }
++
++        case 0x0017:    // Ripple (saturation variant)
++        {
++            /*---------------------------------------------*\
++            | Saturation-bearing variant of 0x000B.         |
++            | Carries color + period only, no intensity     |
++            | param, so no brightness slider. Saturation    |
++            | is hardcoded full on the wire.                |
++            \*---------------------------------------------*/
++            out.name           = "Ripple";
++            out.value          = fx.effect_id;
++            out.flags          = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR
++                               | MODE_FLAG_HAS_SPEED;
++            out.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
++            out.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
++            out.speed          = 70;     /* mid, fast ripple range */
++            out.colors_min     = 1;
++            out.colors_max     = 1;
++            out.color_mode     = MODE_COLORS_MODE_SPECIFIC;
++            out.colors.resize(1);
++            return true;
++        }
++
++        case 0x000E:    // Decomposition
++        case 0x000F:    // Signature1
++        case 0x0010:    // Signature2
++        {
++            /*---------------------------------------------*\
++            | Animated, no user color (period + intensity   |
++            | only), per Solaar's LEDEffects table. Wire    |
++            | param offsets handled in SetZoneEffect.       |
++            \*---------------------------------------------*/
++            out.name           = (fx.effect_id == 0x000E) ? "Decomposition"
++                               : (fx.effect_id == 0x000F) ? "Signature 1"
++                               :                            "Signature 2";
++            out.value          = fx.effect_id;
++            out.flags          = MODE_FLAG_HAS_SPEED
++                               | MODE_FLAG_HAS_BRIGHTNESS;
++            out.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
++            out.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
++            out.speed          = 80;
++            out.brightness_min = 1;
++            out.brightness_max = 100;
++            out.brightness     = 100;
++            out.color_mode     = MODE_COLORS_NONE;
++            return true;
++        }
++
++        default:
++            return false;
++    }
++}
++
+ RGBController_LogitechHIDPP20::RGBController_LogitechHIDPP20(LogitechHIDPP20Controller* controller_ptr, std::function<void ()> callback)
+ {
+     controller = controller_ptr;
+@@ -951,7 +1347,7 @@ RGBController_LogitechHIDPP20::RGBController_LogitechHIDPP20(LogitechHIDPP20Cont
+     {
+         mode Direct;
+         Direct.name       = "Direct";
+-        Direct.value      = 0;
++        Direct.value      = HIDPP20_MODE_VALUE_DIRECT;
+         Direct.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
+         Direct.color_mode = MODE_COLORS_PER_LED;
+         modes.push_back(Direct);
+@@ -965,12 +1361,27 @@ RGBController_LogitechHIDPP20::RGBController_LogitechHIDPP20(LogitechHIDPP20Cont
+     {
+         mode Direct;
+         Direct.name       = "Direct";
+-        Direct.value      = 0;
++        Direct.value      = HIDPP20_MODE_VALUE_DIRECT;
+         Direct.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
+         Direct.color_mode = MODE_COLORS_PER_LED;
+         modes.push_back(Direct);
+     }
+ 
++    /*-----------------------------------------------------*\
++    | Custom: manual per-key painting with the keymap.      |
++    | Direct stays the plugin/SDK stream intake; Static     |
++    | is the fixed-color zone effect.                       |
++    \*-----------------------------------------------------*/
++    if(caps.has_perkey || PerKey8080Capable())
++    {
++        mode Custom;
++        Custom.name       = "Custom";
++        Custom.value      = HIDPP20_MODE_VALUE_CUSTOM;
++        Custom.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
++        Custom.color_mode = MODE_COLORS_PER_LED;
++        modes.push_back(Custom);
++    }
++
+     /*-----------------------------------------------------*\
+     | Direct mode: zone-only devices (G560, G810            |
+     | family). One LED per cluster, colors ride             |
+@@ -981,7 +1392,7 @@ RGBController_LogitechHIDPP20::RGBController_LogitechHIDPP20(LogitechHIDPP20Cont
+     {
+         mode Direct;
+         Direct.name       = "Direct";
+-        Direct.value      = 0;
++        Direct.value      = HIDPP20_MODE_VALUE_DIRECT;
+         Direct.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
+         Direct.color_mode = MODE_COLORS_PER_LED;
+         modes.push_back(Direct);
+@@ -993,7 +1404,7 @@ RGBController_LogitechHIDPP20::RGBController_LogitechHIDPP20(LogitechHIDPP20Cont
+     {
+         mode Off;
+         Off.name       = "Off";
+-        Off.value      = 0xFF;
++        Off.value      = HIDPP20_MODE_VALUE_OFF;
+         Off.flags      = 0;
+         Off.color_mode = MODE_COLORS_NONE;
+         modes.push_back(Off);
+@@ -1009,21 +1420,23 @@ RGBController_LogitechHIDPP20::RGBController_LogitechHIDPP20(LogitechHIDPP20Cont
+     {
+         mode Direct;
+         Direct.name       = "Direct";
+-        Direct.value      = 0;
++        Direct.value      = HIDPP20_MODE_VALUE_DIRECT;
+         Direct.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
+         Direct.color_mode = MODE_COLORS_PER_LED;
+         modes.push_back(Direct);
+     }
+ 
+     /*-----------------------------------------------------*\
+-    | Effect modes from zone cluster discovery              |
+-    | Scan effects from the first cluster (effects          |
+-    | are usually the same across clusters)                 |
++    | Effect modes from zone cluster discovery. The         |
++    | device-global list is the intersection of effect      |
++    | ids across all clusters so the global control         |
++    | never skips a zone. Effects a cluster has beyond      |
++    | the intersection are reachable through that zone's    |
++    | own mode list (SetupZones).                           |
+     \*-----------------------------------------------------*/
+     if(caps.has_zone_effects && !caps.zone_clusters.empty() && !caps.is_headset_rgb_hostmode)
+     {
+         const HIDPP20ZoneCluster& cluster = caps.zone_clusters[0];
+-
+         /*-------------------------------------------------*\
+         | Per-LED effect colors: multi-cluster devices      |
+         | whose only paint path is zone effects, one color  |
+@@ -1031,9 +1444,9 @@ RGBController_LogitechHIDPP20::RGBController_LogitechHIDPP20(LogitechHIDPP20Cont
+         | color: the UI repaints per-key on any per-LED     |
+         | mode set, which overwrites the zone effect.       |
+         \*-------------------------------------------------*/
+-        const bool per_led_colors = (caps.zone_clusters.size() > 1)
+-                                 && !caps.has_perkey
+-                                 && !PerKey8080Capable();
++        const bool per_led = (caps.zone_clusters.size() > 1)
++                          && !caps.has_perkey
++                          && !PerKey8080Capable();
+ 
+         /*-------------------------------------------------*\
+         | 0x8070 keyboard firmware ignores the Cycle, Wave  |
+@@ -1049,277 +1462,41 @@ RGBController_LogitechHIDPP20::RGBController_LogitechHIDPP20(LogitechHIDPP20Cont
+         {
+             const HIDPP20Effect& fx = cluster.effects[i];
+ 
+-            switch(fx.effect_id)
++            bool in_all = true;
++            for(size_t c = 1; c < caps.zone_clusters.size(); c++)
+             {
+-                case 0x0001:    // Static / Fixed Color
+-                {
+-                    mode Static;
+-                    Static.name       = "Static";
+-                    Static.value      = fx.index;
+-
+-                    if(per_led_colors)
+-                    {
+-                        Static.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
+-                        Static.color_mode = MODE_COLORS_PER_LED;
+-                    }
+-                    else
+-                    {
+-                        Static.flags      = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR;
+-                        Static.colors_min = 1;
+-                        Static.colors_max = 1;
+-                        Static.color_mode = MODE_COLORS_MODE_SPECIFIC;
+-                        Static.colors.resize(1);
+-                    }
+-                    modes.push_back(Static);
+-                    break;
+-                }
+-
+-                case 0x0003:    // Color Cycle / Spectrum
+-                {
+-                    mode Cycle;
+-                    Cycle.name           = "Spectrum Cycle";
+-                    Cycle.value          = fx.index;
+-                    Cycle.flags          = MODE_FLAG_HAS_SPEED;
+-                    if(effect_brightness)
+-                    {
+-                        Cycle.flags     |= MODE_FLAG_HAS_BRIGHTNESS;
+-                    }
+-                    Cycle.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
+-                    Cycle.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
+-                    Cycle.speed          = 80;     /* ~4.9s, lively medium */
+-                    Cycle.brightness_min = 1;
+-                    Cycle.brightness_max = 100;
+-                    Cycle.brightness     = 100;
+-                    Cycle.color_mode     = MODE_COLORS_NONE;
+-                    modes.push_back(Cycle);
+-                    break;
+-                }
+-
+-                case 0x000A:    // Breathing
+-                {
+-                    mode Breathing;
+-                    Breathing.name           = "Breathing";
+-                    Breathing.value          = fx.index;
+-                    Breathing.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
+-                    Breathing.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
+-                    Breathing.speed          = 70;     /* ~6.8s, calm medium */
+-                    Breathing.brightness_min = 1;
+-                    Breathing.brightness_max = 100;
+-                    Breathing.brightness     = 100;
+-
+-                    if(per_led_colors)
+-                    {
+-                        Breathing.flags      = MODE_FLAG_HAS_PER_LED_COLOR
+-                                             | MODE_FLAG_HAS_SPEED
+-                                             | MODE_FLAG_HAS_BRIGHTNESS;
+-                        Breathing.color_mode = MODE_COLORS_PER_LED;
+-                    }
+-                    else
+-                    {
+-                        Breathing.flags      = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR
+-                                             | MODE_FLAG_HAS_SPEED
+-                                             | MODE_FLAG_HAS_BRIGHTNESS;
+-                        Breathing.colors_min = 1;
+-                        Breathing.colors_max = 1;
+-                        Breathing.color_mode = MODE_COLORS_MODE_SPECIFIC;
+-                        Breathing.colors.resize(1);
+-                    }
+-
+-                    if(!effect_brightness)
+-                    {
+-                        Breathing.flags &= ~MODE_FLAG_HAS_BRIGHTNESS;
+-                    }
+-
+-                    modes.push_back(Breathing);
+-                    break;
+-                }
+-
+-                case 0x0007:    // Audio visualizer (G560 factory default)
+-                {
+-                    /*-------------------------------------*\
+-                    | Pulses brightness with audio. A       |
+-                    | painted zone pulses its own           |
+-                    | color; a black zone self-cycles       |
+-                    | like the factory default.             |
+-                    \*-------------------------------------*/
+-                    mode Visualizer;
+-                    Visualizer.name       = "Audio Visualizer";
+-                    Visualizer.value      = fx.index;
+-                    Visualizer.speed_min  = HIDPP20_SPEED_SLIDER_MIN;
+-                    Visualizer.speed_max  = HIDPP20_SPEED_SLIDER_MAX;
+-                    Visualizer.speed      = 80;     /* ~4.9s, near the 5s firmware default */
+-
+-                    if(per_led_colors)
+-                    {
+-                        Visualizer.flags      = MODE_FLAG_HAS_PER_LED_COLOR
+-                                              | MODE_FLAG_HAS_SPEED;
+-                        Visualizer.color_mode = MODE_COLORS_PER_LED;
+-                    }
+-                    else
+-                    {
+-                        Visualizer.flags      = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR
+-                                              | MODE_FLAG_HAS_SPEED;
+-                        Visualizer.colors_min = 1;
+-                        Visualizer.colors_max = 1;
+-                        Visualizer.color_mode = MODE_COLORS_MODE_SPECIFIC;
+-                        Visualizer.colors.resize(1);
+-                    }
+-                    modes.push_back(Visualizer);
+-                    break;
+-                }
+-
+-                case 0x0004:    // Color Wave
+-                {
+-                    mode Wave;
+-                    Wave.name           = "Color Wave";
+-                    Wave.value          = fx.index;
+-                    Wave.flags          = MODE_FLAG_HAS_SPEED;
+-                    if(effect_brightness)
+-                    {
+-                        Wave.flags     |= MODE_FLAG_HAS_BRIGHTNESS;
+-                    }
+-                    Wave.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
+-                    Wave.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
+-                    Wave.speed          = 80;     /* ~4.9s, lively medium */
+-                    Wave.brightness_min = 1;
+-                    Wave.brightness_max = 100;
+-                    Wave.brightness     = 100;
+-                    Wave.color_mode     = MODE_COLORS_NONE;
+-                    modes.push_back(Wave);
+-                    break;
+-                }
+-
+-                case 0x000B:    // Ripple
+-                {
+-                    mode Ripple;
+-                    Ripple.name           = "Ripple";
+-                    Ripple.value          = fx.index;
+-                    Ripple.flags          = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR
+-                                          | MODE_FLAG_HAS_SPEED
+-                                          | MODE_FLAG_HAS_BRIGHTNESS;
+-                    Ripple.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
+-                    Ripple.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
+-                    Ripple.speed          = 70;     /* ~6.8s, calm medium */
+-                    Ripple.brightness_min = 1;
+-                    Ripple.brightness_max = 100;
+-                    Ripple.brightness     = 100;
+-                    Ripple.colors_min     = 1;
+-                    Ripple.colors_max     = 1;
+-                    Ripple.color_mode     = MODE_COLORS_MODE_SPECIFIC;
+-                    Ripple.colors.resize(1);
+-                    modes.push_back(Ripple);
+-                    break;
+-                }
+-
+-                case 0x0015:    // Cycle (saturation variant)
++                if(!ClusterHasEffect(caps.zone_clusters[c], fx.effect_id))
+                 {
+-                    /*-------------------------------------*\
+-                    | Saturation-bearing variant of 0x0003. |
+-                    | Same UI (speed = period, brightness = |
+-                    | intensity); the saturation byte is    |
+-                    | hardcoded full on the wire.           |
+-                    \*-------------------------------------*/
+-                    mode Cycle;
+-                    Cycle.name           = "Spectrum Cycle";
+-                    Cycle.value          = fx.index;
+-                    Cycle.flags          = MODE_FLAG_HAS_SPEED
+-                                         | MODE_FLAG_HAS_BRIGHTNESS;
+-                    Cycle.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
+-                    Cycle.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
+-                    Cycle.speed          = 80;     /* ~4.9s, lively medium */
+-                    Cycle.brightness_min = 1;
+-                    Cycle.brightness_max = 100;
+-                    Cycle.brightness     = 100;
+-                    Cycle.color_mode     = MODE_COLORS_NONE;
+-                    modes.push_back(Cycle);
++                    in_all = false;
+                     break;
+                 }
++            }
++            if(!in_all)
++            {
++                continue;
++            }
+ 
+-                case 0x0016:    // Wave (saturation variant)
+-                {
+-                    /*-------------------------------------*\
+-                    | Saturation-bearing variant of 0x0004. |
+-                    | Period is a BE16 ms value on the      |
+-                    | standard 1..20s range (Solaar's       |
+-                    | LEDEffects table has no period range  |
+-                    | override for Wave); saturation is     |
+-                    | hardcoded on the wire.                |
+-                    \*-------------------------------------*/
+-                    mode Wave;
+-                    Wave.name           = "Color Wave";
+-                    Wave.value          = fx.index;
+-                    Wave.flags          = MODE_FLAG_HAS_SPEED
+-                                        | MODE_FLAG_HAS_BRIGHTNESS
+-                                        | MODE_FLAG_HAS_DIRECTION_LR
+-                                        | MODE_FLAG_HAS_DIRECTION_UD
+-                                        | MODE_FLAG_HAS_DIRECTION_HV;
+-                    Wave.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
+-                    Wave.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
+-                    Wave.speed          = 80;     /* ~4.9s, lively medium */
+-                    Wave.brightness_min = 1;
+-                    Wave.brightness_max = 100;
+-                    Wave.brightness     = 100;
+-                    Wave.direction      = MODE_DIRECTION_RIGHT;
+-                    Wave.color_mode     = MODE_COLORS_NONE;
+-                    modes.push_back(Wave);
+-                    break;
+-                }
++            mode fx_mode;
++            if(!ModeFromEffect(fx, per_led, fx_mode))
++            {
++                continue;
++            }
+ 
+-                case 0x0017:    // Ripple (saturation variant)
+-                {
+-                    /*-------------------------------------*\
+-                    | Saturation-bearing variant of         |
+-                    | 0x000B. Carries color + period        |
+-                    | only, no intensity param, so no       |
+-                    | brightness slider. Saturation         |
+-                    | is hardcoded full on the wire.        |
+-                    \*-------------------------------------*/
+-                    mode Ripple;
+-                    Ripple.name           = "Ripple";
+-                    Ripple.value          = fx.index;
+-                    Ripple.flags          = MODE_FLAG_HAS_MODE_SPECIFIC_COLOR
+-                                          | MODE_FLAG_HAS_SPEED;
+-                    Ripple.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
+-                    Ripple.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
+-                    Ripple.speed          = 70;     /* mid, fast ripple range */
+-                    Ripple.colors_min     = 1;
+-                    Ripple.colors_max     = 1;
+-                    Ripple.color_mode     = MODE_COLORS_MODE_SPECIFIC;
+-                    Ripple.colors.resize(1);
+-                    modes.push_back(Ripple);
+-                    break;
+-                }
++            if(!effect_brightness
++            && (fx.effect_id == 0x0003 || fx.effect_id == 0x0004 || fx.effect_id == 0x000A))
++            {
++                fx_mode.flags &= ~MODE_FLAG_HAS_BRIGHTNESS;
++            }
+ 
+-                case 0x000E:    // Decomposition
+-                case 0x000F:    // Signature1
+-                case 0x0010:    // Signature2
+-                {
+-                    /*-------------------------------------*\
+-                    | Animated, no user color (period +     |
+-                    | intensity only), per Solaar's         |
+-                    | LEDEffects table. Wire param          |
+-                    | offsets handled in SetZoneEffect.     |
+-                    \*-------------------------------------*/
+-                    mode Anim;
+-                    Anim.name           = (fx.effect_id == 0x000E) ? "Decomposition"
+-                                        : (fx.effect_id == 0x000F) ? "Signature 1"
+-                                        :                            "Signature 2";
+-                    Anim.value          = fx.index;
+-                    Anim.flags          = MODE_FLAG_HAS_SPEED
+-                                        | MODE_FLAG_HAS_BRIGHTNESS;
+-                    Anim.speed_min      = HIDPP20_SPEED_SLIDER_MIN;
+-                    Anim.speed_max      = HIDPP20_SPEED_SLIDER_MAX;
+-                    Anim.speed          = 80;
+-                    Anim.brightness_min = 1;
+-                    Anim.brightness_max = 100;
+-                    Anim.brightness     = 100;
+-                    Anim.color_mode     = MODE_COLORS_NONE;
+-                    modes.push_back(Anim);
+-                    break;
+-                }
++            modes.push_back(fx_mode);
+ 
+-                default:
+-                    break;
++            /*---------------------------------------------*\
++            | Offer Dark Visualizer next to the stock Audio |
++            | Visualizer (0x0007)                           |
++            \*---------------------------------------------*/
++            if(fx.effect_id == 0x0007)
++            {
++                modes.push_back(MakeDarkVisualizerMode(per_led));
+             }
+         }
+     }
+@@ -1339,7 +1516,8 @@ RGBController_LogitechHIDPP20::RGBController_LogitechHIDPP20(LogitechHIDPP20Cont
+     {
+         for(size_t i = 0; i < modes.size(); i++)
+         {
+-            if(modes[i].name != "Direct")
++            if(modes[i].value != HIDPP20_MODE_VALUE_DIRECT
++            && modes[i].value != HIDPP20_MODE_VALUE_CUSTOM)
+             {
+                 modes[i].flags |= MODE_FLAG_MANUAL_SAVE;
+             }
+@@ -1394,8 +1572,34 @@ void RGBController_LogitechHIDPP20::OnRepaintRequest()
+         {
+             sent_colors[i] = HIDPP20_UNCOMMITTED;
+         }
++
++        /*-------------------------------------------------*\
++        | Zone state: re-push host-painted colors           |
++        | (Direct/Static) after wake; animated firmware     |
++        | effects persist in the device and are left        |
++        | running to avoid phase restarts.                  |
++        \*-------------------------------------------------*/
++        for(size_t i = 0; i < zone_desired.size(); i++)
++        {
++            if(zone_desired[i].mode_value == HIDPP20_MODE_VALUE_DIRECT
++            || zone_desired[i].mode_value == 0x0001)
++            {
++                zone_committed_valid[i] = false;
++            }
++        }
+     }
+     DeviceUpdateLEDs();
++
++    /*-----------------------------------------------------*\
++    | Per-key devices exit DeviceUpdateLEDs through the     |
++    | per-key branches without reconciling, so a deferred   |
++    | cluster color flush would never land there. A second  |
++    | reconcile on zone-state devices is a no-op.           |
++    \*-----------------------------------------------------*/
++    if(!zone_desired.empty())
++    {
++        ReconcileZones();
++    }
+ }
+ 
+ RGBController_LogitechHIDPP20::~RGBController_LogitechHIDPP20()
+@@ -1833,6 +2037,85 @@ void RGBController_LogitechHIDPP20::SetupZones()
+             new_zone.leds_min   = 1;
+             new_zone.leds_max   = 1;
+             new_zone.leds_count = 1;
++
++            /*---------------------------------------------*\
++            | Per-zone mode list from this cluster's own    |
++            | effects. All color-bearing zone modes are     |
++            | per-LED: a zone is one LED, so its effect     |
++            | renders the same colors[] entry every view    |
++            | paints. Direct rides Static with the zone's   |
++            | live color; Off rides Static black with       |
++            | effect 0x0000 as the fallback for clusters    |
++            | without Static.                               |
++            \*---------------------------------------------*/
++            if(ClusterHasEffect(cluster, 0x0001))
++            {
++                mode zone_direct;
++                zone_direct.name       = "Direct";
++                zone_direct.value      = HIDPP20_MODE_VALUE_DIRECT;
++                zone_direct.flags      = MODE_FLAG_HAS_PER_LED_COLOR;
++                zone_direct.color_mode = MODE_COLORS_PER_LED;
++                new_zone.modes.push_back(zone_direct);
++                new_zone.active_mode   = 0;
++            }
++
++            if(ClusterHasEffect(cluster, 0x0001) || ClusterHasEffect(cluster, 0x0000))
++            {
++                mode zone_off;
++                zone_off.name       = "Off";
++                zone_off.value      = HIDPP20_MODE_VALUE_OFF;
++                zone_off.flags      = 0;
++                zone_off.color_mode = MODE_COLORS_NONE;
++                new_zone.modes.push_back(zone_off);
++            }
++
++            for(size_t j = 0; j < cluster.effects.size(); j++)
++            {
++                mode zone_mode;
++                if(!ModeFromEffect(cluster.effects[j], true, zone_mode))
++                {
++                    continue;
++                }
++
++                /*-----------------------------------------*\
++                | Mode-specific holdouts (Ripple) also go   |
++                | per-LED at zone level; the zone's color   |
++                | is the only color.                        |
++                \*-----------------------------------------*/
++                if(zone_mode.color_mode == MODE_COLORS_MODE_SPECIFIC)
++                {
++                    zone_mode.flags      &= ~MODE_FLAG_HAS_MODE_SPECIFIC_COLOR;
++                    zone_mode.flags      |= MODE_FLAG_HAS_PER_LED_COLOR;
++                    zone_mode.color_mode  = MODE_COLORS_PER_LED;
++                    zone_mode.colors_min  = 0;
++                    zone_mode.colors_max  = 0;
++                    zone_mode.colors.clear();
++                }
++                new_zone.modes.push_back(zone_mode);
++
++                /*-----------------------------------------*\
++                | Offer Dark Visualizer right after the     |
++                | stock Audio Visualizer (0x0007) so the    |
++                | per-zone list order matches the device-   |
++                | global one                                |
++                \*-----------------------------------------*/
++                if(cluster.effects[j].effect_id == 0x0007)
++                {
++                    new_zone.modes.push_back(MakeDarkVisualizerMode(true));
++                }
++            }
++
++            if(caps.rgb_feature_page == HIDPP20_FEAT_COLOR_LED_EFFECTS)
++            {
++                for(size_t j = 0; j < new_zone.modes.size(); j++)
++                {
++                    if(new_zone.modes[j].value != HIDPP20_MODE_VALUE_DIRECT)
++                    {
++                        new_zone.modes[j].flags |= MODE_FLAG_MANUAL_SAVE;
++                    }
++                }
++            }
++
+             zones.push_back(new_zone);
+ 
+             led new_led;
+@@ -1862,6 +2145,18 @@ void RGBController_LogitechHIDPP20::SetupZones()
+         }
+     }
+ 
++    /*-----------------------------------------------------*\
++    | Cluster state for every device with clusters: the     |
++    | zone-mode layout uses the full contract, per-key      |
++    | devices route their animated-effect fall-through      |
++    | through the same reconcile.                           |
++    \*-----------------------------------------------------*/
++    zone_desired.assign(caps.zone_clusters.size(), HIDPP20ZoneState());
++    zone_committed.assign(caps.zone_clusters.size(), HIDPP20ZoneState());
++    zone_committed_valid.assign(caps.zone_clusters.size(), false);
++    zone_last_effect_send.assign(caps.zone_clusters.size(),
++                                 std::chrono::steady_clock::time_point());
++
+     SetupColors();
+ }
+ 
+@@ -2328,6 +2623,12 @@ void RGBController_LogitechHIDPP20::DeviceUpdateLEDs()
+         {
+             controller->SetPerKey8080(by_type);
+             controller->PerKeyCommit8080();
++
++            /*---------------------------------------------*\
++            | Per-key writes override the cluster effect    |
++            | layer; committed cluster state is stale now.  |
++            \*---------------------------------------------*/
++            zone_committed_valid.assign(zone_committed_valid.size(), false);
+         }
+ 
+         return;
+@@ -2345,65 +2646,65 @@ void RGBController_LogitechHIDPP20::DeviceUpdateLEDs()
+     }
+ 
+     /*-----------------------------------------------------*\
+-    | Zone-effect devices without per-key (G560,            |
+-    | G810 family): one LED per cluster. Re-issue           |
+-    | the active effect on each changed zone with           |
+-    | that LED's color; Direct rides Static.                |
++    | Zone-effect devices without per-key (G560, G810       |
++    | family): color intent only. Fold the LED buffer       |
++    | into the desired state of every zone whose            |
++    | governing mode takes per-LED color; the reconcile     |
++    | re-renders each changed zone with whatever effect     |
++    | it is currently running.                              |
+     \*-----------------------------------------------------*/
+-    if(caps.has_zone_effects && !caps.has_perkey && !PerKey8080Capable() &&
+-       (unsigned int)active_mode < modes.size() &&
+-       modes[active_mode].color_mode == MODE_COLORS_PER_LED)
++    if(IsZoneStateLayout())
+     {
+-        const mode& current = modes[active_mode];
+-
+-        bool          full_update = (sent_colors.size() != colors.size());
+-        bool          is_direct   = (current.name == "Direct");
+-        uint16_t      period      = SpeedSliderToPeriodMs(current.speed);
+-        unsigned char brightness  = (current.flags & MODE_FLAG_HAS_BRIGHTNESS)
+-                                  ? (unsigned char)current.brightness
+-                                  : 100;
+-
+         for(size_t i = 0; i < caps.zone_clusters.size() && i < colors.size(); i++)
+         {
+-            if(!full_update && sent_colors[i] == colors[i])
++            if(i >= zone_desired.size()
++               || !EffectUsesColor(zone_desired[i].mode_value)
++               || EffectColorLockedWhileRunning(zone_desired[i].mode_value))
+             {
+                 continue;
+             }
+ 
+-            const HIDPP20ZoneCluster& cluster = caps.zone_clusters[i];
+-
+-            uint8_t  eff_idx = 0;
+-            uint16_t eff_id  = 0;
++            const mode* governing = GoverningMode(i);
+ 
+-            for(size_t j = 0; j < cluster.effects.size(); j++)
++            if(governing != nullptr && governing->color_mode == MODE_COLORS_PER_LED)
+             {
+-                bool match = is_direct ? (cluster.effects[j].effect_id == 0x0001)
+-                                       : (cluster.effects[j].index == (uint8_t)current.value);
+-
+-                if(match)
+-                {
+-                    eff_idx = cluster.effects[j].index;
+-                    eff_id  = cluster.effects[j].effect_id;
+-                    break;
+-                }
++                zone_desired[i].color = colors[i];
+             }
++        }
+ 
+-            if(eff_id == 0)
+-            {
+-                continue;
+-            }
+-
+-            controller->SetZoneEffect(cluster.index, eff_idx, eff_id,
+-                                      RGBGetRValue(colors[i]),
+-                                      RGBGetGValue(colors[i]),
+-                                      RGBGetBValue(colors[i]),
+-                                      period, brightness, 0, false);
+-        }
+-
+-        sent_colors.assign(colors.begin(), colors.end());
++        ReconcileZones();
+         controller->UpgradeSwControlAfterFirstPaint();
+         return;
+     }
++
++    /*-----------------------------------------------------*\
++    | Per-key devices running a mode-specific cluster       |
++    | effect (Breathing on the mice): with a black (auto)   |
++    | mode color the effect follows the draw buffer, so     |
++    | recompute the borrowed color on every paint and let   |
++    | the reconcile land it phase-timed. An explicitly set  |
++    | mode color stays fixed.                               |
++    \*-----------------------------------------------------*/
++    if(!zone_desired.empty() && (unsigned int)active_mode < modes.size())
++    {
++        const mode& current = modes[active_mode];
++
++        if(current.value > 0
++           && EffectUsesColor(current.value)
++           && !EffectColorLockedWhileRunning(current.value)
++           && current.color_mode == MODE_COLORS_MODE_SPECIFIC)
++        {
++            for(size_t i = 0; i < caps.zone_clusters.size() && i < zone_desired.size(); i++)
++            {
++                if(zone_desired[i].mode_value == current.value)
++                {
++                    zone_desired[i].color = DesiredFromMode(current, i).color;
++                }
++            }
++
++            ReconcileZones();
++        }
++    }
+ }
+ 
+ /*---------------------------------------------------------*\
+@@ -2443,6 +2744,14 @@ void RGBController_LogitechHIDPP20::SendPerKeyFrame(std::vector<RGBColor>& snaps
+         return;
+     }
+ 
++    /*-----------------------------------------------------*\
++    | Per-key frames override the cluster effect layer on   |
++    | the wire; the committed cluster state is no longer    |
++    | trustworthy, so the next effect pick must re-send     |
++    | even if it matches.                                   |
++    \*-----------------------------------------------------*/
++    zone_committed_valid.assign(zone_committed_valid.size(), false);
++
+     uint8_t perkey_idx = (caps.idx_perkey_v2 != 0) ? caps.idx_perkey_v2 : caps.idx_perkey_v1;
+ 
+     /*-----------------------------------------------------*\
+@@ -2954,14 +3263,52 @@ void RGBController_LogitechHIDPP20::DeviceUpdateMode()
+     const mode& current = modes[active_mode];
+ 
+     /*-----------------------------------------------------*\
+-    | Direct mode: invalidate delta tracking so the         |
+-    | next DeviceUpdateLEDs sends a full frame with         |
+-    | actual colors.                                        |
++    | Direct mode: the stream intake. Zone-state devices    |
++    | stamp nothing and keep their display; per-key         |
++    | devices arm the intake without repainting so the      |
++    | running effect survives until a stream arrives.       |
+     \*-----------------------------------------------------*/
+-    if(current.name == "Direct")
++    if(current.value == HIDPP20_MODE_VALUE_DIRECT)
+     {
+-        sent_colors.clear();
+-        DeviceUpdateLEDs();
++        if(IsZoneStateLayout())
++        {
++            ApplyGlobalToZones(current);
++
++            /*---------------------------------------------*\
++            | Direct opens the stream intake and changes    |
++            | no zone, so keep the device mode display on   |
++            | the last real mode when a plugin or SDK       |
++            | client forces Direct. Both are fire-and-      |
++            | forget: nothing reads the mode back before    |
++            | streaming. A fresh device (no real mode yet)  |
++            | keeps showing Direct.                         |
++            \*---------------------------------------------*/
++            if((unsigned int)last_nondirect_mode < modes.size()
++               && modes[last_nondirect_mode].value != HIDPP20_MODE_VALUE_DIRECT)
++            {
++                active_mode = last_nondirect_mode;
++            }
++        }
++        else if(internal_reapply)
++        {
++            /*---------------------------------------------*\
++            | Reconnect/wake reapply restores the per-key   |
++            | frame in full.                                |
++            \*---------------------------------------------*/
++            sent_colors.clear();
++            DeviceUpdateLEDs();
++        }
++        else
++        {
++            /*---------------------------------------------*\
++            | Direct arms the stream intake only: no        |
++            | repaint, so a running firmware effect keeps   |
++            | going until a stream or UI paint actually     |
++            | arrives. Clearing the delta makes the first   |
++            | arriving frame a full push.                   |
++            \*---------------------------------------------*/
++            sent_colors.clear();
++        }
+ 
+         /*-------------------------------------------------*\
+         | Start power manager (reader + power               |
+@@ -2977,6 +3324,24 @@ void RGBController_LogitechHIDPP20::DeviceUpdateMode()
+         return;
+     }
+ 
++    /*-----------------------------------------------------*\
++    | Any non-Direct apply is a real device mode; remember  |
++    | it so a later forced Direct keeps displaying it.      |
++    \*-----------------------------------------------------*/
++    last_nondirect_mode = active_mode;
++
++    /*-----------------------------------------------------*\
++    | Custom is manual per-key painting: same per-key       |
++    | frame path as Direct, no cluster fill.                |
++    \*-----------------------------------------------------*/
++    if((caps.has_perkey || PerKey8080Capable())
++       && current.value == HIDPP20_MODE_VALUE_CUSTOM)
++    {
++        sent_colors.clear();
++        DeviceUpdateLEDs();
++        return;
++    }
++
+     sent_colors.clear();
+ 
+     /*-----------------------------------------------------*\
+@@ -2994,7 +3359,7 @@ void RGBController_LogitechHIDPP20::DeviceUpdateMode()
+     \*-----------------------------------------------------*/
+     if(PerKey8080Capable())
+     {
+-        if(current.value == 0xFF)
++        if(current.value == HIDPP20_MODE_VALUE_OFF)
+         {
+             std::vector<std::pair<uint16_t, std::vector<std::pair<uint8_t, RGBColor>>>> by_type;
+ 
+@@ -3016,6 +3381,7 @@ void RGBController_LogitechHIDPP20::DeviceUpdateMode()
+                 controller->PerKeyCommit8080();
+             }
+ 
++            zone_committed_valid.assign(zone_committed_valid.size(), false);
+             return;
+         }
+ 
+@@ -3030,10 +3396,11 @@ void RGBController_LogitechHIDPP20::DeviceUpdateMode()
+         /*-------------------------------------------------*\
+         | Off mode via per-key: set all LEDs to black       |
+         \*-------------------------------------------------*/
+-        if(current.value == 0xFF)
++        if(current.value == HIDPP20_MODE_VALUE_OFF)
+         {
+             controller->SetAllPerKeyColor(ToRGBColor(0, 0, 0));
+             controller->PerKeyFrameEnd();
++            zone_committed_valid.assign(zone_committed_valid.size(), false);
+             return;
+         }
+ 
+@@ -3068,145 +3435,524 @@ void RGBController_LogitechHIDPP20::DeviceUpdateMode()
+ 
+     /*-----------------------------------------------------*\
+     | Zone effect modes (devices without per-key, or        |
+-    | animated effects that can't be done via per-key)      |
+-    |                                                       |
+-    | persist branching: 0x8070: ephemeral by default;      |
+-    | becomes persist=true only when DeviceSaveMode has     |
+-    | set save_pending. 0x8071/0x0600: keeps the pre-       |
+-    | existing per-branch hardcoded values (Off=false,      |
+-    | Effect=true) pending 0x8071 save research.            |
++    | animated effects that can't be done via per-key):     |
++    | stamp the global mode into the cluster state and      |
++    | reconcile.                                            |
+     \*-----------------------------------------------------*/
+-    const bool is_8070 = (caps.rgb_feature_page == HIDPP20_FEAT_COLOR_LED_EFFECTS);
++    ApplyGlobalToZones(current);
++}
+ 
+-    /*-----------------------------------------------------*\
+-    | Off mode: set static black on all clusters            |
+-    \*-----------------------------------------------------*/
+-    if(current.value == 0xFF)
+-    {
+-        const bool off_persist = is_8070 ? save_pending : false;
++bool RGBController_LogitechHIDPP20::IsZoneStateLayout() const
++{
++    const HIDPP20DeviceCapabilities& caps = controller->GetCapabilities();
+ 
+-        for(size_t i = 0; i < caps.zone_clusters.size(); i++)
++    return caps.has_zone_effects && !caps.has_perkey && !PerKey8080Capable()
++        && !caps.is_headset_rgb_hostmode;
++}
++
++/*---------------------------------------------------------*\
++| Build a zone state from a mode. Per-LED modes take the    |
++| zone's own LED color; mode-specific ones take the mode    |
++| color; effects that render no RGB get color 0 so color    |
++| paints never dirty them.                                  |
++\*---------------------------------------------------------*/
++HIDPP20ZoneState RGBController_LogitechHIDPP20::DesiredFromMode(const mode& m, size_t zone_idx) const
++{
++    HIDPP20ZoneState s;
++
++    s.mode_value = m.value;
++    s.speed      = m.speed;
++    s.brightness = (m.flags & MODE_FLAG_HAS_BRIGHTNESS) ? m.brightness : 100;
++    s.direction  = m.direction;
++    s.color      = 0;
++
++    if(EffectUsesColor(m.value))
++    {
++        if(m.color_mode == MODE_COLORS_PER_LED && zone_idx < colors.size())
+         {
+-            for(size_t j = 0; j < caps.zone_clusters[i].effects.size(); j++)
++            s.color = colors[zone_idx];
++        }
++        else if(m.color_mode == MODE_COLORS_MODE_SPECIFIC && !m.colors.empty())
++        {
++            s.color = m.colors[0];
++
++            /*---------------------------------------------*\
++            | A black mode color renders these effects      |
++            | invisible and usually means "never set";      |
++            | borrow the first painted color from the draw  |
++            | buffer instead. The Visualizer is excluded:   |
++            | color 0 selects its self-cycle mode.          |
++            \*---------------------------------------------*/
++            if(s.color == 0 && m.value != 0x0007)
+             {
+-                if(caps.zone_clusters[i].effects[j].effect_id == 0x0001)
++                for(size_t k = 0; k < colors.size(); k++)
+                 {
+-                    controller->SetZoneEffect(
+-                        caps.zone_clusters[i].index,
+-                        caps.zone_clusters[i].effects[j].index,
+-                        0x0001, 0, 0, 0, 0, 100, 0, off_persist);
+-                    break;
++                    if(colors[k] != 0)
++                    {
++                        s.color = colors[k];
++                        break;
++                    }
+                 }
+             }
+         }
+-        controller->UpgradeSwControlAfterFirstPaint();
+-        return;
+     }
++    return s;
++}
++
++/*---------------------------------------------------------*\
++| Picking a device-level effect means the whole device      |
++| runs it, so drop the per-zone overrides back to "follow   |
++| the device" first. The rebuild in the apply that follows  |
++| then resolves every zone to the new effect, and they go   |
++| out together and in phase.                                |
++|                                                           |
++| Only this entry point does it. A profile restores per     |
++| zone modes and assigns active_mode directly rather than   |
++| calling here, so a restore never clears the zone modes    |
++| it is in the middle of putting back.                      |
++|                                                           |
++| Direct is exempt: it claims no zone, so it releases none  |
++| either. Plugins force Direct through here to open the     |
++| stream intake, and that must not drop the per-zone        |
++| effects the user set.                                     |
++\*---------------------------------------------------------*/
++void RGBController_LogitechHIDPP20::SetActiveMode(int mode)
++{
++    const bool direct = (mode >= 0 && (size_t)mode < modes.size()
++                      && modes[mode].value == HIDPP20_MODE_VALUE_DIRECT);
++
++    if(IsZoneStateLayout() && !direct)
++    {
++        AccessMutex.lock();
++
++        for(size_t i = 0; i < zones.size(); i++)
++        {
++            zones[i].active_mode = -1;
++        }
++
++        AccessMutex.unlock();
++    }
++
++    RGBController::SetActiveMode(mode);
++}
++
++/*---------------------------------------------------------*\
++| Which mode governs one cluster. A zone with its own       |
++| active_mode runs that; otherwise it follows the device    |
++| mode. active_mode < 0 is the framework's "follow the      |
++| device" sentinel, the same one SetZoneActiveMode(-1)      |
++| writes, so the answer is always read from the framework   |
++| state rather than tracked alongside it.                   |
++\*---------------------------------------------------------*/
++const mode* RGBController_LogitechHIDPP20::GoverningMode(size_t zone_idx) const
++{
++    if(zone_idx < zones.size()
++       && zones[zone_idx].active_mode >= 0
++       && zones[zone_idx].active_mode < (int)zones[zone_idx].modes.size())
++    {
++        return &zones[zone_idx].modes[zones[zone_idx].active_mode];
++    }
++
++    if((unsigned int)active_mode < modes.size())
++    {
++        return &modes[active_mode];
++    }
++
++    return nullptr;
++}
++
++/*---------------------------------------------------------*\
++| Recompute every cluster's desired state from the          |
++| framework state. Cheap (no wire traffic): ReconcileZones  |
++| diffs against committed and sends only what changed, so   |
++| a device-level change rewrites every zone and goes out    |
++| in one pass, while a zone-level change reduces to that    |
++| one zone.                                                 |
++|                                                           |
++| Rebuilding rather than stamping is what makes this order  |
++| insensitive. A profile restores per-zone modes and the    |
++| device mode in either order; whichever apply runs last    |
++| resolves from the final state, so neither can overwrite   |
++| the other.                                                |
++\*---------------------------------------------------------*/
++void RGBController_LogitechHIDPP20::RebuildZoneDesired()
++{
++    const HIDPP20DeviceCapabilities& caps = controller->GetCapabilities();
++
++    for(size_t i = 0; i < caps.zone_clusters.size() && i < zone_desired.size(); i++)
++    {
++        const mode* governing = GoverningMode(i);
++
++        if(governing != nullptr)
++        {
++            zone_desired[i] = DesiredFromMode(*governing, i);
++        }
++    }
++}
++
++/*---------------------------------------------------------*\
++| Device-level apply. A NEW effect pick stamps every zone;  |
++| re-applying the same effect (param tweaks) only           |
++| refreshes zones still tracking the global mode, so        |
++| zone-level divergence survives. Internal re-applies       |
++| (reconnect, heal, save replay) refresh nothing and just   |
++| re-send whatever each zone already holds. Per-key         |
++| devices mirror the global mode into their cluster state   |
++| with no zone stamping (their zones are key zones).        |
++\*---------------------------------------------------------*/
++void RGBController_LogitechHIDPP20::ApplyGlobalToZones(const mode& current)
++{
++    const HIDPP20DeviceCapabilities& caps = controller->GetCapabilities();
+ 
+     /*-----------------------------------------------------*\
+-    | Effect mode: apply to all clusters.                   |
+-    |                                                       |
+-    | Color source per cluster:                             |
+-    | MODE_COLORS_PER_LED: current.colors[i] maps to        |
+-    | caps.zone_clusters[i]                                 |
+-    | (one LED per cluster on the                           |
+-    | 0x8070 zone path)                                     |
+-    | MODE_COLORS_MODE_SPECIFIC, current.colors[0] for all  |
+-    | MODE_COLORS_NONE: zero (effect ignores RGB)           |
++    | Direct is the streaming mode: it feeds the draw       |
++    | buffer and claims NO zone; every zone keeps its own   |
++    | mode and renders the buffer through it. It is also    |
++    | what plugins force at startup for a safe fast-update  |
++    | path. A zone reaches Direct rendering explicitly:     |
++    | zone-level set, Follow Device Mode resync, or the     |
++    | initial state.                                        |
+     \*-----------------------------------------------------*/
+-    uint16_t period = SpeedSliderToPeriodMs(current.speed);
++    const bool direct_stream = (current.value == HIDPP20_MODE_VALUE_DIRECT);
++
++    if(!IsZoneStateLayout())
++    {
++        /*-------------------------------------------------*\
++        | Per-key devices mirror the device mode into every |
++        | cluster: their zones are key zones and carry no   |
++        | mode of their own.                                |
++        \*-------------------------------------------------*/
++        for(size_t i = 0; i < caps.zone_clusters.size() && i < zone_desired.size(); i++)
++        {
++            zone_desired[i] = DesiredFromMode(current, i);
++        }
++    }
++    else if(!direct_stream)
++    {
++        RebuildZoneDesired();
++    }
++
++    ReconcileZones();
+ 
+     /*-----------------------------------------------------*\
+-    | Brightness defaults to 100 for modes that             |
+-    | don't expose a brightness slider; those               |
+-    | modes ignore the value at the wire level              |
+-    | anyway. Modes flagged HAS_BRIGHTNESS take             |
+-    | the user-set value from current.brightness.           |
++    | The zone effects are now committed, safe to upgrade   |
++    | from flags=6 to flags=5. Without this, devices that   |
++    | only use zone effects (no per-key Direct path) would  |
++    | stay at flags=6 forever and the firmware would never  |
++    | send onUserActivity events for idle/sleep.            |
+     \*-----------------------------------------------------*/
+-    unsigned char brightness = (current.flags & MODE_FLAG_HAS_BRIGHTNESS)
+-                             ? (unsigned char)current.brightness
+-                             : 100;
++    controller->UpgradeSwControlAfterFirstPaint();
++}
+ 
+-    for(size_t i = 0; i < caps.zone_clusters.size(); i++)
++/*---------------------------------------------------------*\
++| Resolve a zone state to this cluster's own effect index   |
++| and send one SetZoneEffect. The wire takes per-cluster    |
++| indices, which vary between clusters, so a cluster that   |
++| doesn't advertise the effect is skipped rather than       |
++| sent a stale index.                                       |
++\*---------------------------------------------------------*/
++bool RGBController_LogitechHIDPP20::ApplyZoneState(size_t cluster_pos, const HIDPP20ZoneState& s)
++{
++    const HIDPP20DeviceCapabilities& caps = controller->GetCapabilities();
++
++    if(cluster_pos >= caps.zone_clusters.size())
+     {
+-        uint16_t eff_id = 0;
++        return false;
++    }
++
++    const HIDPP20ZoneCluster& cluster = caps.zone_clusters[cluster_pos];
++    const bool is_8070   = (caps.rgb_feature_page == HIDPP20_FEAT_COLOR_LED_EFFECTS);
++    const bool is_off    = (s.mode_value == HIDPP20_MODE_VALUE_OFF);
++    const bool is_direct = (s.mode_value == HIDPP20_MODE_VALUE_DIRECT);
++    const bool is_dark   = (s.mode_value == HIDPP20_MODE_VALUE_DARK_VISUALIZER);
++    const bool off_like  = is_off || (is_dark && s.color == 0);
+ 
+-        const std::vector<HIDPP20Effect>& cluster_effects = caps.zone_clusters[i].effects;
+-        for(size_t j = 0; j < cluster_effects.size(); j++)
++    /*-----------------------------------------------------*\
++    | Direct rides Static with the zone's live color. Off   |
++    | and a black Dark Visualizer zone ride Static black;   |
++    | effect 0x0000 (Disabled) is the fallback for clusters |
++    | without Static. A painted Dark Visualizer zone runs   |
++    | the audio pulse (0x0007), just not the black self-    |
++    | cycle the stock Audio Visualizer would.               |
++    \*-----------------------------------------------------*/
++    uint16_t target = (off_like || is_direct) ? 0x0001
++                    : is_dark                 ? 0x0007
++                    : (uint16_t)s.mode_value;
++
++    const HIDPP20Effect* fx = nullptr;
++
++    for(size_t j = 0; j < cluster.effects.size(); j++)
++    {
++        if(cluster.effects[j].effect_id == target)
++        {
++            fx = &cluster.effects[j];
++            break;
++        }
++    }
++
++    if(fx == nullptr && off_like)
++    {
++        for(size_t j = 0; j < cluster.effects.size(); j++)
+         {
+-            if(cluster_effects[j].index == (uint8_t)current.value)
++            if(cluster.effects[j].effect_id == 0x0000)
+             {
+-                eff_id = cluster_effects[j].effect_id;
++                fx = &cluster.effects[j];
+                 break;
+             }
+         }
++    }
++
++    if(fx == nullptr)
++    {
++        return false;
++    }
+ 
+-        unsigned char r = 0, g = 0, b = 0;
++    if(off_like)
++    {
++        controller->SetZoneEffect(cluster.index, fx->index, fx->effect_id,
++                                  0, 0, 0, 0, 100, 0,
++                                  is_8070 ? save_pending : false);
++        return true;
++    }
+ 
++    if(is_direct)
++    {
+         /*-------------------------------------------------*\
+-        | Per-LED modes carry their colors in               |
+-        | the LED buffer, not the mode color                |
+-        | list, the UI paints leds/colors.                  |
++        | Ephemeral paint: persist=false is the proven      |
++        | Direct path on both feature pages.                |
+         \*-------------------------------------------------*/
+-        if(current.color_mode == MODE_COLORS_PER_LED && i < colors.size())
+-        {
+-            r = RGBGetRValue(colors[i]);
+-            g = RGBGetGValue(colors[i]);
+-            b = RGBGetBValue(colors[i]);
+-        }
+-        else if(current.color_mode == MODE_COLORS_MODE_SPECIFIC && !current.colors.empty())
++        controller->SetZoneEffect(cluster.index, fx->index, fx->effect_id,
++                                  RGBGetRValue(s.color),
++                                  RGBGetGValue(s.color),
++                                  RGBGetBValue(s.color),
++                                  SpeedSliderToPeriodMs(s.speed),
++                                  (unsigned char)s.brightness, 0, false);
++        return true;
++    }
++
++    /*-----------------------------------------------------*\
++    | Ripple wants a narrower, much faster period range     |
++    | (2..200ms) than the breathing/wave baseline of        |
++    | 1..20s, mirroring Solaar's LEDEffects table where     |
++    | only Ripple carries a period range override.          |
++    \*-----------------------------------------------------*/
++    uint16_t period = (fx->effect_id == 0x000B || fx->effect_id == 0x0017)
++                    ? RippleSpeedSliderToPeriodMs(s.speed)
++                    : SpeedSliderToPeriodMs(s.speed);
++
++    /*-----------------------------------------------------*\
++    | Persist: 0x8071/0x0600 use persist=true, matching     |
++    | the observed vendor-app wire capture for every        |
++    | mode-set; with persist=false the firmware accepts     |
++    | the command without committing the new effect.        |
++    | 0x8070 live writes are ephemeral; DeviceSaveMode      |
++    | sets save_pending to replay the active state with     |
++    | persist=true and commit to NVM.                       |
++    \*-----------------------------------------------------*/
++    controller->SetZoneEffect(cluster.index, fx->index, fx->effect_id,
++                              RGBGetRValue(s.color),
++                              RGBGetGValue(s.color),
++                              RGBGetBValue(s.color),
++                              period, (unsigned char)s.brightness,
++                              WaveDirectionToWire(s.direction),
++                              is_8070 ? save_pending : true);
++    return true;
++}
++
++/*---------------------------------------------------------*\
++| Diff desired against committed and send only changed      |
++| zones. Mode and param changes always send immediately.    |
++| Color-only changes to a running cyclic effect are         |
++| deferred to the effect's next phase boundary so the       |
++| restart lands where the animation already is; the flush   |
++| thread fires a reconcile at the boundary so the latest    |
++| color always lands. Any send that restarts a cyclic       |
++| effect also restarts every other zone running the same    |
++| effect at the same period, so grouped zones share one     |
++| phase origin and stay in sync; at a shared boundary the   |
++| joint restart is invisible. Unresolvable effects commit   |
++| too: the skip is permanent for that value, so there is    |
++| no retry storm.                                           |
++\*---------------------------------------------------------*/
++void RGBController_LogitechHIDPP20::ReconcileZones()
++{
++    const HIDPP20DeviceCapabilities& caps = controller->GetCapabilities();
++
++    const std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
++
++    size_t n = caps.zone_clusters.size();
++    if(n > zone_desired.size())
++    {
++        n = zone_desired.size();
++    }
++
++    std::vector<bool>                     sent(n, false);
++    std::vector<std::pair<int, int>>      restarted_groups;
++
++    for(size_t i = 0; i < n; i++)
++    {
++        const HIDPP20ZoneState& want = zone_desired[i];
++
++        if(zone_committed_valid[i] && SameWireState(want, zone_committed[i]))
+         {
+-            r = RGBGetRValue(current.colors[0]);
+-            g = RGBGetGValue(current.colors[0]);
+-            b = RGBGetBValue(current.colors[0]);
++            continue;
+         }
+ 
+         /*-------------------------------------------------*\
+-        | Ripple wants a narrower, much faster period       |
+-        | range (2..200ms) than the breathing/wave          |
+-        | baseline of 1..20s. Both Ripple variants, 0x000B  |
+-        | and the saturation 0x0017: use the fast range;    |
+-        | this mirrors Solaar's LEDEffects table, where     |
+-        | only Ripple carries a period range override.      |
+-        | Cycle (0x0003/0x0015) and Wave (0x0004/0x0016)    |
+-        | stay on the standard 1..20s range.                |
++        | Phase timing only matters where a color pairs     |
++        | with a visible loop: Breathing. Ripple's timer    |
++        | is a frame delay, the Visualizer is audio-        |
++        | driven; both take color changes immediately.      |
+         \*-------------------------------------------------*/
+-        uint16_t cluster_period = (eff_id == 0x000B
+-                                || eff_id == 0x0017)
+-                                ? RippleSpeedSliderToPeriodMs(current.speed)
+-                                : period;
++        bool cyclic     = (want.mode_value == 0x000A);
++        bool color_only = cyclic && zone_committed_valid[i]
++                       && zone_committed[i].mode_value == want.mode_value
++                       && zone_committed[i].speed      == want.speed
++                       && zone_committed[i].brightness == want.brightness
++                       && zone_committed[i].direction  == want.direction;
++
++        uint16_t period_ms = (want.mode_value == 0x000B || want.mode_value == 0x0017)
++                           ? RippleSpeedSliderToPeriodMs(want.speed)
++                           : SpeedSliderToPeriodMs(want.speed);
++
++        bool phase_managed = cyclic && (period_ms > HIDPP20_PHASE_MIN_PERIOD_MS);
++
++        if(color_only && phase_managed)
++        {
++            uint64_t since_ms = (uint64_t)std::chrono::duration_cast<std::chrono::milliseconds>
++                                (now - zone_last_effect_send[i]).count();
++            uint64_t in_phase = since_ms % period_ms;
++
++            /*---------------------------------------------*\
++            | A legal color re-send moment is only a loop   |
++            | boundary at least one full cycle after the    |
++            | last restart. Right after a send in_phase is  |
++            | small again; accepting that side without the  |
++            | full-cycle gate lets a rapid stream restart   |
++            | the effect on every change and pin it at the  |
++            | start of the cycle. The low side exists only  |
++            | for the flush firing a tick late.             |
++            \*---------------------------------------------*/
++            bool at_boundary = (since_ms + HIDPP20_PHASE_WINDOW_MS >= period_ms)
++                            && (in_phase >= period_ms - HIDPP20_PHASE_WINDOW_MS
++                             || in_phase <= HIDPP20_PHASE_WINDOW_MS);
++
++            if(!at_boundary)
++            {
++                if(controller->SchedulePaintFlush((uint32_t)(period_ms - in_phase)))
++                {
++                    continue;
++                }
++            }
++        }
++
++        ApplyZoneState(i, want);
++
++        zone_committed[i]       = want;
++        zone_committed_valid[i] = true;
+ 
+         /*-------------------------------------------------*\
+-        | 0x8071/0x0600: persist=true matches what the      |
+-        | observed vendor-app wire capture does for every   |
+-        | mode-set on these devices. With persist=false     |
+-        | the firmware appears to accept the command        |
+-        | without actually committing the new effect,       |
+-        | which is consistent with Static (which gets       |
+-        | prepped with persist=true at startup) being the   |
+-        | only effect that visibly works.                   |
+-        |                                                   |
+-        | 0x8070: ephemeral (persist=false) on live         |
+-        | writes; DeviceSaveMode flips save_pending         |
+-        | true to replay the active mode with               |
+-        | persist=true and commit to NVM.                   |
++        | Each zone's loop restarts when its own ACKed      |
++        | send lands, so stamp the phase origin per zone    |
++        | after the send, not with the pass start time.     |
+         \*-------------------------------------------------*/
+-        const bool effect_persist = is_8070 ? save_pending : true;
++        zone_last_effect_send[i] = std::chrono::steady_clock::now();
++        sent[i] = true;
+ 
+-        controller->SetZoneEffect(
+-            caps.zone_clusters[i].index,
+-            current.value,
+-            eff_id, r, g, b, cluster_period, brightness,
+-            WaveDirectionToWire(current.direction), effect_persist);
++        int family = EffectLoopFamily(want);
++
++        if(family >= 0 && period_ms > HIDPP20_PHASE_MIN_PERIOD_MS)
++        {
++            std::pair<int, int> key(family, want.speed);
++
++            if(std::find(restarted_groups.begin(), restarted_groups.end(), key)
++               == restarted_groups.end())
++            {
++                restarted_groups.push_back(key);
++            }
++        }
+     }
+ 
+     /*-----------------------------------------------------*\
+-    | The zone effects are now committed, safe to upgrade   |
+-    | from flags=6 to flags=5. Without this, devices that   |
+-    | only use zone effects (no per-key Direct path) would  |
+-    | stay at flags=6 forever and the firmware would never  |
+-    | send onUserActivity events for idle/sleep.            |
++    | Sync groups: restarting one timed loop resets its     |
++    | starting point, so restart every other zone running   |
++    | the same effect at the same period in the same pass.  |
++    | All members share one phase origin from here on;      |
++    | their boundaries coincide, so later joint restarts    |
++    | at a boundary are invisible.                          |
++    \*-----------------------------------------------------*/
++    for(size_t g = 0; g < restarted_groups.size(); g++)
++    {
++        for(size_t j = 0; j < n; j++)
++        {
++            const HIDPP20ZoneState& want = zone_desired[j];
++
++            if(sent[j] || !zone_committed_valid[j]
++               || EffectLoopFamily(want) != restarted_groups[g].first
++               || want.speed             != restarted_groups[g].second)
++            {
++                continue;
++            }
++
++            ApplyZoneState(j, want);
++
++            zone_committed[j]        = want;
++            zone_last_effect_send[j] = std::chrono::steady_clock::now();
++            sent[j] = true;
++        }
++    }
++}
++
++/*---------------------------------------------------------*\
++| Per-zone mode set. Zone index equals cluster position     |
++| on the zone-effect layout (one zone per cluster). An      |
++| active_mode below zero is the momentary "Follow Device    |
++| Mode" action: re-stamp the zone to the global mode so     |
++| the GUI snaps back to a real mode name.                   |
++\*---------------------------------------------------------*/
++void RGBController_LogitechHIDPP20::DeviceUpdateZoneMode(int zone)
++{
++    std::lock_guard<std::recursive_mutex> frame_guard(controller->TransactionMutex());
++
++    if(!controller->IsOnline())
++    {
++        return;
++    }
++
++    if(controller->GetPowerState() == HIDPP20_POWER_SLEEPING)
++    {
++        return;
++    }
++
++    if(!IsZoneStateLayout())
++    {
++        return;
++    }
++
++    const HIDPP20DeviceCapabilities& caps = controller->GetCapabilities();
++
++    if(zone < 0 || (size_t)zone >= zones.size()
++       || (size_t)zone >= caps.zone_clusters.size()
++       || (size_t)zone >= zone_desired.size())
++    {
++        return;
++    }
++
++    controller->ClaimSWControlIfNeeded();
++
++    /*-----------------------------------------------------*\
++    | Same resolution as the device-level apply, for one    |
++    | zone: its own mode if it has one, else the device     |
++    | mode.                                                 |
+     \*-----------------------------------------------------*/
++    const mode* governing = GoverningMode((size_t)zone);
++
++    if(governing != nullptr)
++    {
++        zone_desired[zone] = DesiredFromMode(*governing, (size_t)zone);
++    }
++
++    ReconcileZones();
+     controller->UpgradeSwControlAfterFirstPaint();
+ }
+ 
+@@ -3225,7 +3971,8 @@ void RGBController_LogitechHIDPP20::DeviceSaveMode()
+     | 0x8070: replay the active mode through                |
+     | DeviceUpdateMode with save_pending true so the        |
+     | zone effect writes go out with persist=true,          |
+-    | committing the currently-live effect to flash.        |
++    | committing the effective device state (global mode    |
++    | plus any per-zone overrides) to flash.                |
+     \*-----------------------------------------------------*/
+     const HIDPP20DeviceCapabilities& caps = controller->GetCapabilities();
+     if(caps.rgb_feature_page != HIDPP20_FEAT_COLOR_LED_EFFECTS)
+@@ -3233,9 +3980,19 @@ void RGBController_LogitechHIDPP20::DeviceSaveMode()
+         return;
+     }
+ 
+-    save_pending = true;
++    /*-----------------------------------------------------*\
++    | Invalidate committed state so the replay emits        |
++    | every zone with persist=true, not just deltas.        |
++    | Zone-level divergence needs no guarding: the          |
++    | rebuild resolves each zone from its own mode.         |
++    \*-----------------------------------------------------*/
++    zone_committed_valid.assign(zone_committed_valid.size(), false);
++
++    save_pending     = true;
++    internal_reapply = true;
+     DeviceUpdateMode();
+-    save_pending = false;
++    internal_reapply = false;
++    save_pending     = false;
+ }
+ 
+ bool RGBController_LogitechHIDPP20::ReapplyActiveMode()
+@@ -3254,11 +4011,11 @@ bool RGBController_LogitechHIDPP20::ReapplyActiveMode()
+     |    the final claim ACKed. ReconnectDevice's           |
+     |    fast-backoff loop uses this as the accept          |
+     |    signal.                                            |
+-    | 2. Clear sent_colors so the next frame is a           |
+-    |    full push. Per the 0x8071 lifecycle the            |
+-    |    device's LED buffer may not survive mode           |
+-    |    3->1 or a full reconnect, so we do not             |
+-    |    trust it to remember prior state.                  |
++    | 2. Invalidate the committed state (sent_colors and    |
++    |    the zone state) so the next pass is a full push.   |
++    |    Per the 0x8071 lifecycle the device's LED buffer   |
++    |    may not survive mode 3->1 or a full reconnect,     |
++    |    so we do not trust it to remember prior state.     |
+     | 3. Route through DeviceUpdateMode so both             |
+     |    per-key Direct (full per-key frame via             |
+     |    DeviceUpdateLEDs) and zone effects (SetEffect      |
+@@ -3266,9 +4023,14 @@ bool RGBController_LogitechHIDPP20::ReapplyActiveMode()
+     |    the case where active_mode changed in the GUI      |
+     |    while the device was fading; that change was       |
+     |    dropped then and lands here on wake.               |
++    |    The rebuild resolves each zone from its own        |
++    |    mode, so zone-level divergence survives.           |
+     \*-----------------------------------------------------*/
+     bool claimed = controller->ClaimSWControlIfNeeded();
+     sent_colors.clear();
++    zone_committed_valid.assign(zone_committed_valid.size(), false);
++    internal_reapply = true;
+     DeviceUpdateMode();
++    internal_reapply = false;
+     return claimed;
+ }
+diff --git a/Controllers/LogitechController/LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.h b/Controllers/LogitechController/LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.h
+index a701f6be454bc2f4936931eba00b1cf9739c6a23..cc23c891b29db3788a25cfabc54e156c37258cf1 100644
+--- a/Controllers/LogitechController/LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.h
++++ b/Controllers/LogitechController/LogitechHIDPP20Controller/RGBController_LogitechHIDPP20.h
+@@ -9,9 +9,37 @@
+ 
+ #pragma once
+ 
++#include <chrono>
+ #include "RGBController.h"
+ #include "LogitechHIDPP20Controller.h"
+ 
++/*---------------------------------------------------------*\
++| mode.value scheme: values >= 0 are HID++ effect ids,      |
++| stable across clusters and devices. The wire wants the    |
++| per-cluster effect index instead, which varies between    |
++| clusters, so it is resolved at send time. Negative        |
++| values are pseudo-modes with no firmware effect id.       |
++\*---------------------------------------------------------*/
++static const int HIDPP20_MODE_VALUE_DIRECT = -1;
++static const int HIDPP20_MODE_VALUE_OFF    = -2;
++static const int HIDPP20_MODE_VALUE_CUSTOM = -4;
++static const int HIDPP20_MODE_VALUE_DARK_VISUALIZER = -5;
++
++/*---------------------------------------------------------*\
++| Desired rendering state of one cluster: the effect it     |
++| should run, the zone's color, and the effect params.      |
++| Derived from zones[i].active_mode and the device mode,    |
++| never accumulated: see RebuildZoneDesired.                |
++\*---------------------------------------------------------*/
++struct HIDPP20ZoneState
++{
++    int          mode_value    = HIDPP20_MODE_VALUE_DIRECT;
++    RGBColor     color         = 0;
++    int          speed         = 0;
++    int          brightness    = 100;
++    unsigned int direction     = 0;
++};
++
+ class RGBController_LogitechHIDPP20 : public RGBController
+ {
+ public:
+@@ -26,7 +54,10 @@ public:
+     void        DeviceUpdateZoneLEDs(int zone);
+     void        DeviceUpdateSingleLED(int led);
+ 
++    void        SetActiveMode(int mode);
++
+     void        DeviceUpdateMode();
++    void        DeviceUpdateZoneMode(int zone);
+     void        DeviceSaveMode();
+ 
+     bool        ReapplyActiveMode();
+@@ -44,6 +75,34 @@ private:
+     \*-----------------------------------------------------*/
+     void                        OnRepaintRequest();
+ 
++    /*-----------------------------------------------------*\
++    | Zone state model, for every device with clusters      |
++    | (per-key devices route their animated fall-through    |
++    | here too, mirroring the device mode instead).         |
++    | zone_desired is the single representation of what     |
++    | each cluster should show; zone_committed is what      |
++    | the wire last got. ReconcileZones diffs them and      |
++    | sends only changed zones, coalescing color-only       |
++    | updates to animated effects. The UI entry points      |
++    | (mode/zone mode/LED updates) only mutate desired      |
++    | state; the reapply/save paths invalidate committed    |
++    | state to force a full re-send.                        |
++    \*-----------------------------------------------------*/
++    bool                        IsZoneStateLayout() const;
++    HIDPP20ZoneState            DesiredFromMode(const mode& m, size_t zone_idx) const;
++    const mode*                 GoverningMode(size_t zone_idx) const;
++    void                        RebuildZoneDesired();
++    void                        ApplyGlobalToZones(const mode& current);
++    void                        ReconcileZones();
++    bool                        ApplyZoneState(size_t cluster_pos, const HIDPP20ZoneState& s);
++
++    std::vector<HIDPP20ZoneState> zone_desired;
++    std::vector<HIDPP20ZoneState> zone_committed;
++    std::vector<bool>             zone_committed_valid;
++    std::vector<std::chrono::steady_clock::time_point> zone_last_effect_send;
++    int                         last_nondirect_mode      = 0;
++    bool                        internal_reapply         = false;
++
+     /*-----------------------------------------------------*\
+     | Per-key frame body. Registered with the               |
+     | controller as the frame sender callback and           |

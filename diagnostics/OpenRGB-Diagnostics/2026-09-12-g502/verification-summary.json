@@ -1,0 +1,20 @@
+{
+  "recorded_at_utc": "2026-09-13T07:14:23.326991+00:00",
+  "post_restart_fresh_green_command": {
+    "evidence": "green-after-restart.json",
+    "user_confirmed_physical_green": true
+  },
+  "automatic_saved_profile_restore": {
+    "evidence": "app-restart-from-green.json",
+    "user_confirmed_green_changed_back_to_saved_color": true
+  },
+  "main_profile_file_unchanged": true,
+  "logitech_lamparray_service": "Running / Auto",
+  "installed_binary_sha256": "04a7eb2b1fab4cef296cb60c99348a1ac7df4e4a5803e73cf1a76418457d6845",
+  "public_binary_sha256": "0cd2a86c2f7c6832cce605e2a10b7e1d72ab6b33bf49f3d899c314efda1be455",
+  "public_binary_physical_device_tested": false,
+  "os_reboot_or_sleep_tested": false,
+  "original_lighting_ownership_failure_trigger": "Unconfirmed; rescan and profile reload restored control",
+  "profile_mode_note": "The saved Main file contains G502 Direct mode. The GUI initially displayed Off after startup; that display alone did not establish the saved profile mode.",
+  "public_release_url": "https://github.com/kylejduan/OpenRGB-Fixed/releases/tag/v1.0rc3.1-fixed.1"
+}

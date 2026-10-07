@@ -1,0 +1,8 @@
+At C:\OpenRGB-Diagnostics\2026-09-13-g502-rcca\Apply-MouseColor.ps1:1 char:1
++ param([ValidatePattern('^[0-9A-F]{6}$')][string]$Color='FF0000',[stri ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This script contains malicious content and has been blocked by your antivirus software.
+    + CategoryInfo          : ParserError: (:) [], ParseException
+    + FullyQualifiedErrorId : ScriptContainedMaliciousContent
+ 
+

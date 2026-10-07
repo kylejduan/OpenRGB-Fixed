@@ -1,0 +1,12 @@
+{
+  "RuntimeReceipt": "runtime-20260913-032123.json",
+  "OpenRGBPid": 44952,
+  "ResumeProfile": {
+    "enabled": true,
+    "name": "Main"
+  },
+  "TaskState": "Running",
+  "RunLevel": "Highest",
+  "Arguments": "--startminimized --profile Main",
+  "TemporaryPortListening": false
+}

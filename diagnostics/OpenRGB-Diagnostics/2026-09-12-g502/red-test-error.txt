@@ -1,0 +1,8 @@
+Expected current G502 Direct mode
+At C:\OpenRGB-Diagnostics\2026-09-12-g502\test-mouse-red.ps1:12 char:109
++ ... rrent.Value -ne 'Direct') {throw 'Expected current G502 Direct mode'}
++                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Expected current G502 Direct mode:String) [], RuntimeException
+    + FullyQualifiedErrorId : Expected current G502 Direct mode
+ 
+

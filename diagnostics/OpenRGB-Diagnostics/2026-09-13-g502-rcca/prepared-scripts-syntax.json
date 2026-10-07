@@ -1,0 +1,37 @@
+[
+    {
+        "Script":  "install-wake-fixed2.ps1",
+        "SHA256":  "CBD6C417759F502327090ED1568C5B6228671136478732F67CC99353073A5F0F",
+        "Syntax":  "pass"
+    },
+    {
+        "Script":  "runtime-helpers.ps1",
+        "SHA256":  "19E4F5E90415608E7A5EDD0ED857BC71574ABF3D5F8EBBE615D6D25D3105BB05",
+        "Syntax":  "pass"
+    },
+    {
+        "Script":  "sdk-color-only.ps1",
+        "SHA256":  "307063B10706C44DE1FCB9E870E992ACE464ABA26036F28BDAF6A863D6A01D55",
+        "Syntax":  "pass"
+    },
+    {
+        "Script":  "sdk-inventory.ps1",
+        "SHA256":  "6108105E9F59BD3F3A82D208C8DE5C35286D617E690D2F7ACA0651BEA05569CC",
+        "Syntax":  "pass"
+    },
+    {
+        "Script":  "sdk-command.ps1",
+        "SHA256":  "8F6D66904FD2FFA6397C875C5D135E27B04263BAD861B8789E7C1C19B0AC1685",
+        "Syntax":  "pass"
+    },
+    {
+        "Script":  "rescan-once.ps1",
+        "SHA256":  "B6FF86D2903B1C8221A5C29FC208CDF6897D94AF9F1AA4F21553C0EC2D3895CB",
+        "Syntax":  "pass"
+    },
+    {
+        "Script":  "finish-on-startup-task.ps1",
+        "SHA256":  "5A6B7298D2BD94FB0241445772E8CFABB2171933D4BA51A105D03E5D54555449",
+        "Syntax":  "pass"
+    }
+]

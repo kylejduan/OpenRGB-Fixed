@@ -1,0 +1,20 @@
+{
+    "Time":  "2026-09-13T00:12:20.2513420-07:00",
+    "Pid":  22324,
+    "Responding":  true,
+    "Path":  "C:\\Program Files\\OpenRGB\\OpenRGB.exe",
+    "ExecutableHash":  "04A7EB2B1FAB4CEF296CB60C99348A1AC7DF4E4A5803E73CF1A76418457D6845",
+    "TaskState":  "Running",
+    "RunLevel":  "Highest",
+    "Arguments":  "--startminimized --profile Main",
+    "WorkingDirectory":  "C:\\Program Files\\OpenRGB",
+    "ServiceState":  "Running",
+    "ServiceStartMode":  "Auto",
+    "ProfileHash":  "8A286CE6FEB191C7E199944D3509AC3DA21573EFD95F531ECF4F50F84BA473CD",
+    "ProfileMatchesBefore":  true,
+    "OtherProbeProcesses":  [
+
+                            ],
+    "OpenRGBCrashEventsSinceStart":  0,
+    "OSRestarted":  false
+}

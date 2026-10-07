@@ -1,0 +1,14 @@
+{
+    "Time":  "2026-09-12T23:49:29.4990707-07:00",
+    "Profile":  "Main",
+    "Action":  "Load Profile",
+    "ProfileSaved":  false,
+    "Pid":  20028,
+    "Responding":  true,
+    "DeviceCount":  5,
+    "ServiceState":  "Running",
+    "ServiceStartMode":  "Auto",
+    "TaskState":  "Running",
+    "RunLevel":  "Highest",
+    "ExecutableHash":  "04A7EB2B1FAB4CEF296CB60C99348A1AC7DF4E4A5803E73CF1A76418457D6845"
+}

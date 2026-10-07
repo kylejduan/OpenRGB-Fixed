@@ -1,0 +1,329 @@
+{
+    "Time":  "2026-09-12T22:58:27.3125105-07:00",
+    "LastBoot":  "2026-09-11T10:38:56.5000000-07:00",
+    "OpenRGB":  {
+                    "Pid":  20028,
+                    "Path":  "C:\\Program Files\\OpenRGB\\OpenRGB.exe",
+                    "Responding":  true,
+                    "StartTime":  "2026-09-11T10:39:33.9862062-07:00",
+                    "MainWindow":  66606
+                },
+    "Services":  [
+                     {
+                         "Name":  "LGHUBUpdaterService",
+                         "DisplayName":  "LGHUB Updater Service",
+                         "State":  "Running",
+                         "StartMode":  "Auto",
+                         "ProcessId":  9864,
+                         "PathName":  "\"C:\\Program Files\\LGHUB\\lghub_updater.exe\" --run-as-service"
+                     },
+                     {
+                         "Name":  "logi_lamparray_service",
+                         "DisplayName":  "Logitech LampArray Service",
+                         "State":  "Running",
+                         "StartMode":  "Auto",
+                         "ProcessId":  8268,
+                         "PathName":  "C:\\Windows\\System32\\DriverStore\\FileRepository\\logi_lamparray_usb.inf_amd64_0efdf0d8d6ee547b\\logi_lamparray_service.AMD64.exe"
+                     }
+                 ],
+    "Lighting":  [
+                     {
+                         "Path":  "HKCU:\\Software\\Microsoft\\Lighting",
+                         "Properties":  {
+                                            "AmbientLightingEnabled":  0,
+                                            "EffectDefaultsApplied":  1,
+                                            "EffectType":  0,
+                                            "Brightness":  100,
+                                            "Speed":  7,
+                                            "UseSystemAccentColor":  1,
+                                            "EffectMode":  0,
+                                            "Color":  4292114432,
+                                            "Color2":  4294967295,
+                                            "ControlledByForegroundApp":  0
+                                        },
+                         "Children":  [
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#7\u0026DEVICE003\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#7\u0026DEVICE003\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\Providers",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#7\u0026DEVICE004\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#7\u0026DEVICE004\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\Providers",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#8\u0026DEVICE005\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+                                              "Properties":  {
+                                                                 "AmbientLightingEnabled":  0,
+                                                                 "EffectType":  0,
+                                                                 "Brightness":  100,
+                                                                 "Speed":  7,
+                                                                 "UseSystemAccentColor":  1,
+                                                                 "EffectMode":  0,
+                                                                 "Color":  4292114432,
+                                                                 "Color2":  4294967295,
+                                                                 "ToastInvoked":  1,
+                                                                 "ControlledByForegroundApp":  0
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#8\u0026DEVICE005\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\Providers",
+                                              "Properties":  {
+                                                                 "1":  "WindowsLighting"
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#9\u0026DEVICE006\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#9\u0026DEVICE006\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\Providers",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#9\u0026DEVICE007\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}",
+                                              "Properties":  {
+                                                                 "AmbientLightingEnabled":  0
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Devices\\HID#HID_DEVICE_SYSTEM_VHF#9\u0026DEVICE007\u00260\u00260000#{4d1e55b2-f16f-11cf-88cb-001111000030}\\Providers",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_CURRENT_USER\\Software\\Microsoft\\Lighting\\Providers",
+                                              "Properties":  {
+                                                                 "1":  "WindowsLighting"
+                                                             }
+                                          }
+                                      ]
+                     },
+                     {
+                         "Path":  "HKLM:\\SOFTWARE\\Microsoft\\Lighting",
+                         "Properties":  {
+
+                                        },
+                         "Children":  [
+                                          {
+                                              "Path":  "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Lighting\\Backlight",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Lighting\\Inbox",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Lighting\\Inbox\\Unattend",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Lighting\\Providers",
+                                              "Properties":  {
+
+                                                             }
+                                          },
+                                          {
+                                              "Path":  "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Lighting\\Providers\\Unattend",
+                                              "Properties":  {
+
+                                                             }
+                                          }
+                                      ]
+                     }
+                 ],
+    "Devices":  [
+                    {
+                        "Class":  "USB",
+                        "FriendlyName":  "USB Composite Device",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_094D\\2607APD3T3R8"
+                    },
+                    {
+                        "Class":  "HIDClass",
+                        "FriendlyName":  "HID-compliant consumer control device",
+                        "Status":  "OK",
+                        "InstanceId":  "HID\\VID_046D\u0026PID_C53A\u0026MI_01\u0026COL02\\7\u0026DEVICE008\u00260\u00260001"
+                    },
+                    {
+                        "Class":  "HIDClass",
+                        "FriendlyName":  "HID-compliant vendor-defined device",
+                        "Status":  "OK",
+                        "InstanceId":  "HID\\VID_046D\u0026PID_C53A\u0026MI_02\u0026COL02\\7\u0026DEVICE001\u00260\u00260001"
+                    },
+                    {
+                        "Class":  "HIDClass",
+                        "FriendlyName":  "HID-compliant vendor-defined device",
+                        "Status":  "OK",
+                        "InstanceId":  "HID\\VID_046D\u0026PID_C53A\u0026MI_02\u0026COL01\\7\u0026DEVICE001\u00260\u00260000"
+                    },
+                    {
+                        "Class":  "MEDIA",
+                        "FriendlyName":  "Brio 101",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_094D\u0026MI_02\\7\u0026DEVICE009\u00260\u00260002"
+                    },
+                    {
+                        "Class":  "HIDClass",
+                        "FriendlyName":  "HID-compliant system controller",
+                        "Status":  "OK",
+                        "InstanceId":  "HID\\VID_046D\u0026PID_C53A\u0026MI_01\u0026COL03\\7\u0026DEVICE008\u00260\u00260002"
+                    },
+                    {
+                        "Class":  null,
+                        "FriendlyName":  "G502 X PLUS",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026LAMPARRAY\\6\u0026DEVICE010\u00260\u00261_SLOT00"
+                    },
+                    {
+                        "Class":  null,
+                        "FriendlyName":  "LIGHTSPEED Receiver",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026LAMPARRAY\\6\u0026DEVICE010\u00260\u00261_SLOT01"
+                    },
+                    {
+                        "Class":  null,
+                        "FriendlyName":  "LIGHTSPEED Receiver",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026LAMPARRAY\\6\u0026DEVICE010\u00260\u00261_SLOT02"
+                    },
+                    {
+                        "Class":  null,
+                        "FriendlyName":  "LIGHTSPEED Receiver",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026LAMPARRAY\\6\u0026DEVICE010\u00260\u00261_SLOT03"
+                    },
+                    {
+                        "Class":  null,
+                        "FriendlyName":  "LIGHTSPEED Receiver",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026LAMPARRAY\\6\u0026DEVICE010\u00260\u00261_SLOT04"
+                    },
+                    {
+                        "Class":  null,
+                        "FriendlyName":  "LIGHTSPEED Receiver",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026LAMPARRAY\\6\u0026DEVICE010\u00260\u00261_SLOT05"
+                    },
+                    {
+                        "Class":  null,
+                        "FriendlyName":  "POWERPLAY",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026LAMPARRAY\\6\u0026DEVICE010\u00260\u00261_SLOT06"
+                    },
+                    {
+                        "Class":  "HIDClass",
+                        "FriendlyName":  "USB Input Device",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026MI_00\\6\u0026DEVICE010\u00260\u00260000"
+                    },
+                    {
+                        "Class":  "HIDClass",
+                        "FriendlyName":  "USB Input Device",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026MI_01\\6\u0026DEVICE010\u00260\u00260001"
+                    },
+                    {
+                        "Class":  "Camera",
+                        "FriendlyName":  "Brio 101",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_094D\u0026MI_00\\7\u0026DEVICE009\u00260\u00260000"
+                    },
+                    {
+                        "Class":  "USB",
+                        "FriendlyName":  "POWERPLAY / G502 X PLUS",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\\5\u0026DEVICE011\u00260\u00261"
+                    },
+                    {
+                        "Class":  "Keyboard",
+                        "FriendlyName":  "HID Keyboard Device",
+                        "Status":  "OK",
+                        "InstanceId":  "HID\\VID_046D\u0026PID_C53A\u0026MI_00\\7\u0026DEVICE012\u00260\u00260000"
+                    },
+                    {
+                        "Class":  "Mouse",
+                        "FriendlyName":  "HID-compliant mouse",
+                        "Status":  "OK",
+                        "InstanceId":  "HID\\VID_046D\u0026PID_C53A\u0026MI_01\u0026COL01\\7\u0026DEVICE008\u00260\u00260000"
+                    },
+                    {
+                        "Class":  "HIDClass",
+                        "FriendlyName":  "USB Input Device",
+                        "Status":  "OK",
+                        "InstanceId":  "USB\\VID_046D\u0026PID_C53A\u0026MI_02\\6\u0026DEVICE010\u00260\u00260002"
+                    }
+                ],
+    "Processes":  [
+                      {
+                          "ProcessId":  8268,
+                          "Name":  "logi_lamparray_service.AMD64.exe",
+                          "ExecutablePath":  "C:\\Windows\\System32\\DriverStore\\FileRepository\\logi_lamparray_usb.inf_amd64_0efdf0d8d6ee547b\\logi_lamparray_service.AMD64.exe",
+                          "CommandLine":  "C:\\Windows\\System32\\DriverStore\\FileRepository\\logi_lamparray_usb.inf_amd64_0efdf0d8d6ee547b\\logi_lamparray_service.AMD64.exe"
+                      },
+                      {
+                          "ProcessId":  9864,
+                          "Name":  "lghub_updater.exe",
+                          "ExecutablePath":  "C:\\Program Files\\LGHUB\\lghub_updater.exe",
+                          "CommandLine":  "\"C:\\Program Files\\LGHUB\\lghub_updater.exe\" --run-as-service"
+                      },
+                      {
+                          "ProcessId":  20028,
+                          "Name":  "OpenRGB.exe",
+                          "ExecutablePath":  "C:\\Program Files\\OpenRGB\\OpenRGB.exe",
+                          "CommandLine":  "\"C:\\Program Files\\OpenRGB\\OpenRGB.exe\" --startminimized --profile Main"
+                      }
+                  ],
+    "Versions":  [
+                     {
+                         "Name":  "logi_lamparray_service.AMD64.exe",
+                         "Path":  "C:\\Windows\\System32\\DriverStore\\FileRepository\\logi_lamparray_usb.inf_amd64_0efdf0d8d6ee547b\\logi_lamparray_service.AMD64.exe",
+                         "Version":  "1.1.912790+7cdefdb",
+                         "LastWriteTime":  "\/Date(1788329210597)\/"
+                     },
+                     {
+                         "Name":  "lghub_updater.exe",
+                         "Path":  "C:\\Program Files\\LGHUB\\lghub_updater.exe",
+                         "Version":  "2026.5.939708",
+                         "LastWriteTime":  "\/Date(1786825045058)\/"
+                     },
+                     {
+                         "Name":  "OpenRGB.exe",
+                         "Path":  "C:\\Program Files\\OpenRGB\\OpenRGB.exe",
+                         "Version":  "0.0.0.0",
+                         "LastWriteTime":  "\/Date(1788663663369)\/"
+                     }
+                 ]
+}

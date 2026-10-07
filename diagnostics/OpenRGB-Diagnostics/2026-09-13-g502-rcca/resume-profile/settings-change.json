@@ -1,0 +1,14 @@
+{
+  "Path": "UserInterface.autoload_profiles.resume_profile",
+  "Before": {
+    "enabled": false,
+    "name": ""
+  },
+  "After": {
+    "enabled": true,
+    "name": "Main"
+  },
+  "BeforeSHA256": "6e669338eaa803fd63f8b8a2b1fbf6215bd74ea5cd14bb4a937adc15696432ac",
+  "AfterSHA256": "d4ad7a5493c4648ffe7f4158f1317edcbb5ccd884a136a7b1d1124c553318686",
+  "OnlyResumeProfileChanged": true
+}

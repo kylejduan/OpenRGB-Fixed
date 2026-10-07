@@ -1,0 +1,37 @@
+{
+  "recorded_utc": "2026-09-13T07:48:48.781774+00:00",
+  "scope": "G502 X PLUS via Powerplay, lighting RCCA in progress",
+  "observations": [
+    {
+      "test": "release control then GUI Direct red",
+      "physical": "User: No, the physical lighting ignores it."
+    },
+    {
+      "test": "reclaim software control only, then same GUI red",
+      "physical": "User: No, it still ignores red."
+    },
+    {
+      "test": "original static-red packet sent directly, marker=0, acknowledged with control=3 power=1",
+      "physical": "User: it was no light, now it is light blue"
+    },
+    {
+      "test": "first marker=2 attempt",
+      "outcome": "Guard aborted before color write: control had become 0/events 6; power remained 1."
+    },
+    {
+      "test": "reclaim control + original marker=0 red, 00:47:13",
+      "physical": "Pending user observation."
+    }
+  ],
+  "facts": [
+    "Production source unchanged in this RCCA phase.",
+    "Installed executable and Main profile unchanged.",
+    "OpenRGB PID 22324 and both Logitech services remain running.",
+    "00:49 read-only trace: 8071 index9 v2; 8081 index10 v2; 8100 index11; onboard mode1; control3 events5; power1."
+  ],
+  "hypotheses": [
+    "Static-color marker omission may affect the displayed color. Untested marker2.",
+    "Onboard versus host mode may gate lighting. No profile-mode write performed.",
+    "Source only claims control at detection; subsequent commands do not recover a lost claim. Physical recovery requires further investigation."
+  ]
+}

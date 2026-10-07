@@ -1,0 +1,6 @@
+# Retain binary snapshots locally; never publish them with diagnostics.
+*.exe
+*.dll
+*.bin
+*.orp
+*.ors

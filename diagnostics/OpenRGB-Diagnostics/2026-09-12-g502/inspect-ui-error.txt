@@ -1,0 +1,9 @@
+Method invocation failed because [System.Windows.Automation.SelectionPattern] does not contain a method named 
+'GetCurrentSelection'.
+At C:\OpenRGB-Diagnostics\2026-09-12-g502\inspect-ui.ps1:30 char:114
++ ... selection=@($pattern.GetCurrentSelection() | ForEach-Object {$_.Curre ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : MethodNotFound
+ 
+

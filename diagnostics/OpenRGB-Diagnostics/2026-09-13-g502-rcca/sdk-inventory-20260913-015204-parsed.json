@@ -1,0 +1,153 @@
+{
+  "Time": "2026-09-13T01:52:04.8359361-07:00",
+  "ServerPid": 37080,
+  "Controllers": [
+    {
+      "Index": 0,
+      "Name": "Kingston Fury DDR5 DRAM",
+      "Mode": "Direct",
+      "Zones": [
+        {
+          "Name": "Fury Slot 1",
+          "LEDs": 12
+        },
+        {
+          "Name": "Fury Slot 2",
+          "LEDs": 12
+        }
+      ],
+      "LEDs": 24,
+      "Colors": [
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF"
+      ]
+    },
+    {
+      "Index": 1,
+      "Name": "Candy companion chip",
+      "Mode": "Direct",
+      "Zones": [
+        {
+          "Name": "Logo Zone",
+          "LEDs": 1
+        }
+      ],
+      "LEDs": 1,
+      "Colors": [
+        "FF00FF"
+      ]
+    },
+    {
+      "Index": 2,
+      "Name": "G502 X PLUS",
+      "Mode": "Direct",
+      "Zones": [
+        {
+          "Name": "Primary Zone",
+          "LEDs": 1
+        }
+      ],
+      "LEDs": 1,
+      "Colors": [
+        "00FF00"
+      ]
+    },
+    {
+      "Index": 3,
+      "Name": "ASUS ROG MAXIMUS Z790 FORMULA",
+      "Mode": "Direct",
+      "Zones": [
+        {
+          "Name": "Aura Mainboard",
+          "LEDs": 5
+        },
+        {
+          "Name": "Aura Addressable 1",
+          "LEDs": 8
+        },
+        {
+          "Name": "Aura Addressable 2",
+          "LEDs": 8
+        },
+        {
+          "Name": "Aura Addressable 3",
+          "LEDs": 8
+        }
+      ],
+      "LEDs": 29,
+      "Colors": [
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF",
+        "FF00FF"
+      ]
+    },
+    {
+      "Index": 4,
+      "Name": "NVIDIA GeForce RTX 4090 FE",
+      "Mode": "Direct",
+      "Zones": [
+        {
+          "Name": "0 - RGBW",
+          "LEDs": 1
+        },
+        {
+          "Name": "1 - SINGLE COLOR",
+          "LEDs": 1
+        }
+      ],
+      "LEDs": 2,
+      "Colors": [
+        "FF00FF",
+        "FF00FF"
+      ]
+    }
+  ]
+}

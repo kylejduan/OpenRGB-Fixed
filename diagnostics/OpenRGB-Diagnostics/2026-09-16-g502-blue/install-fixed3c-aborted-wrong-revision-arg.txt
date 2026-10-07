@@ -1,0 +1,8 @@
+Wrong source revision 832f53c161ffb081c677885317a5a63ff177f62c
+At C:\OpenRGB-Diagnostics\2026-09-16-g502-blue\install-fixed3.ps1:15 char:46
++ ... $Revision) {throw "Wrong source revision $($manifest.SourceRevision)" ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Wrong source re...7a5a63ff177f62c:String) [], RuntimeException
+    + FullyQualifiedErrorId : Wrong source revision 832f53c161ffb081c677885317a5a63ff177f62c
+ 
+

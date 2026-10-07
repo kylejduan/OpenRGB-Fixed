@@ -1,0 +1,31 @@
+{
+    "Time":  "2026-09-12T23:15:49.4108060-07:00",
+    "TaskState":  "Running",
+    "TaskLastResult":  267009,
+    "LastRun":  "\/Date(1789148374000)\/",
+    "TaskRunLevel":  "Highest",
+    "Processes":  [
+                      {
+                          "ProcessId":  9864,
+                          "Name":  "lghub_updater.exe",
+                          "CreationDate":  "\/Date(1789148360256)\/",
+                          "ExecutablePath":  "C:\\Program Files\\LGHUB\\lghub_updater.exe"
+                      },
+                      {
+                          "ProcessId":  20028,
+                          "Name":  "OpenRGB.exe",
+                          "CreationDate":  "\/Date(1789148373986)\/",
+                          "ExecutablePath":  "C:\\Program Files\\OpenRGB\\OpenRGB.exe"
+                      },
+                      {
+                          "ProcessId":  10704,
+                          "Name":  "logi_lamparray_service.AMD64.exe",
+                          "CreationDate":  "\/Date(1789280073931)\/",
+                          "ExecutablePath":  "C:\\Windows\\System32\\DriverStore\\FileRepository\\logi_lamparray_usb.inf_amd64_0efdf0d8d6ee547b\\logi_lamparray_service.AMD64.exe"
+                      }
+                  ],
+    "Events":  [
+
+               ],
+    "OpenRGBHash":  "04A7EB2B1FAB4CEF296CB60C99348A1AC7DF4E4A5803E73CF1A76418457D6845"
+}

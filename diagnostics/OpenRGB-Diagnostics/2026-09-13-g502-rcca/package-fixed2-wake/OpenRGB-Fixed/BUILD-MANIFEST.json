@@ -1,0 +1,216 @@
+{
+  "Project": "OpenRGB Fixed",
+  "SourceRevision": "8fc2a339fd4011c310fc9b35bd9d8956c6a1a792",
+  "SourceUrl": "https://github.com/kylejduan/OpenRGB-Fixed/tree/8fc2a339fd4011c310fc9b35bd9d8956c6a1a792",
+  "QtVersion": "5.15.2",
+  "Files": [
+    {
+      "Path": "CONTRIBUTING.md",
+      "SHA256": "d186eb7f6023cbf511e35d4a6ffd754e5b4e523a9a45fd3091dfd278949897bd"
+    },
+    {
+      "Path": "hidapi.dll",
+      "SHA256": "ebeb835e2b4530ed68843f19d6a2604c51772e3c26e7f542fde194075f82d9b4"
+    },
+    {
+      "Path": "libEGL.dll",
+      "SHA256": "32092de077fd57b6ef355705ec46c6d21f6d72fbe3d3a5dd628f2a29185a96fa"
+    },
+    {
+      "Path": "libGLESv2.dll",
+      "SHA256": "50fad5605b3d57627848b3b84a744dfb6a045609b8236b04124f2234676758d8"
+    },
+    {
+      "Path": "libusb-1.0.dll",
+      "SHA256": "a8c91f0ff68fb7802a9f4416728f0eeb4d99af4ceaa4ef7dfe9374e76e375018"
+    },
+    {
+      "Path": "LICENSE",
+      "SHA256": "02953cd889069052ae9dd04babd3862508b06ed52531e4f383a2fde03341f594"
+    },
+    {
+      "Path": "LpcIO.bin",
+      "SHA256": "4247d588b9da9c598a65c6f5b8255a90bedee510ee1c354f9a909a2f959cd4df"
+    },
+    {
+      "Path": "OpenRGB.exe",
+      "SHA256": "2b6a6d77bb46cdad0372d46446e7a0d8157e309b90d40f6f604ab6f3cd3cb2ea"
+    },
+    {
+      "Path": "PawnIOLib.dll",
+      "SHA256": "c6e7c2f54643ef9cb51b9a3ec7b0efc9e204803c206f33014e39f281546ea9b4"
+    },
+    {
+      "Path": "Qt5Core.dll",
+      "SHA256": "8d2ff4ce9096ddccc4f4cd62c2e41fc854cfd1b0d6e8d296645a7f5fd4ae565a"
+    },
+    {
+      "Path": "Qt5Gui.dll",
+      "SHA256": "5e7d2d41b8b92a880e83b8cc0ca173f5da61218604186196787ee1600956be1e"
+    },
+    {
+      "Path": "Qt5Svg.dll",
+      "SHA256": "7348cfc6444438b8845fb3f59381227325d40ca2187d463e82fc7b8e93e38db5"
+    },
+    {
+      "Path": "Qt5Widgets.dll",
+      "SHA256": "3788c669d4b645e5a576de9fc77fca776bf516d43c89143dc2ca28291ba14358"
+    },
+    {
+      "Path": "README.md",
+      "SHA256": "394aea334042765270394f576b6e0dc70cae224c8c8fda0181be7232f3ed8c57"
+    },
+    {
+      "Path": "README.upstream.md",
+      "SHA256": "93ce9392d2535333882cfb84eb8a0e3fdc67f8a55d494f5cbdef9915e024c4b1"
+    },
+    {
+      "Path": "SmbusI801.bin",
+      "SHA256": "c561fd4a2669ec4e52676fdc6905f54edf70c7308efc93b4126ad644ac00a319"
+    },
+    {
+      "Path": "SmbusIntelSkylakeIMC.bin",
+      "SHA256": "36dc1d4f860e56b0f8eb84afe26a6c55aa03346cd51a455a1aa6c601532c7303"
+    },
+    {
+      "Path": "SmbusNCT6793.bin",
+      "SHA256": "4767b71f8ab870d6414ceb15adfdcddac4e539928481ed590463e481253ecd1b"
+    },
+    {
+      "Path": "SmbusPIIX4.bin",
+      "SHA256": "0a5a8166ffde0ca12db6f897f5dce295e885a9629954f544bf315b2cce6f00ba"
+    },
+    {
+      "Path": "THIRD_PARTY_NOTICES.md",
+      "SHA256": "2e204cf9f936c8b68772d3a3b0afb5849c3911e132c7a93ce02d77d75819ad33"
+    },
+    {
+      "Path": "Documentation/Building-Fixed.md",
+      "SHA256": "68d32ed7175df20ab1df913328bfae9a66d1b79a0c058081ca8b43efbe03cbdf"
+    },
+    {
+      "Path": "Documentation/Common-Modes.md",
+      "SHA256": "92fbabbccf517c8aa7901852c1be69127dc34decb80e6f3c51b0f19008f4fbab"
+    },
+    {
+      "Path": "Documentation/Compiling.md",
+      "SHA256": "5022ecd46625500ae56763a5f18ca40ecf024e8c8e5a211cec84ea9c4b7458e4"
+    },
+    {
+      "Path": "Documentation/Fixes.md",
+      "SHA256": "7583b729169facd9c9373a98da458619cf77f227016c3f88fededa4d19089c65"
+    },
+    {
+      "Path": "Documentation/KernelParameters.md",
+      "SHA256": "8ac2eb2d360cac94089252f4ca06f9a6125efcdfc2a88f951893d2d208b65075"
+    },
+    {
+      "Path": "Documentation/Logitech-Lighting-RCCA.md",
+      "SHA256": "d4b1357a38e97a9a903215be07fe7c0f8945bd5c414bfa96925ddb13121fdd9e"
+    },
+    {
+      "Path": "Documentation/OpenRGBSDK.md",
+      "SHA256": "87ed75646427daa51eca9e9f94a79a67bd53470677f66c9092b70d136ec8f793"
+    },
+    {
+      "Path": "Documentation/RGBControllerAPI.md",
+      "SHA256": "5a1146eb2f54e813ceb26fa374b9dc438d4903517657d9c4de849090e54ba6b4"
+    },
+    {
+      "Path": "Documentation/SMBusAccess.md",
+      "SHA256": "efda3f199670cd82c35b42003ae871f0bf4ca63999d270bb21955b149f6dd100"
+    },
+    {
+      "Path": "Documentation/Troubleshooting-Fixed.md",
+      "SHA256": "c46356800412f8da7356eb4d070c3f5d3f2badec23e6157c460f55765ae89334"
+    },
+    {
+      "Path": "Documentation/UdevRules.md",
+      "SHA256": "5e5b6bf148a1506f3f77038547e7480f90f5ea17c6cf3c239e4bb13add1b97c5"
+    },
+    {
+      "Path": "Documentation/USBAccess.md",
+      "SHA256": "d6f8ad2d23adfa20cd9a9ef44883317b12d26c8f6eb139056cb22446b10950ca"
+    },
+    {
+      "Path": "Documentation/Images/OpenRGB_Screenshot.png",
+      "SHA256": "69c8d9c44006b6f447f33cf2bb2471201dde38606d1d01feb481e35c5fa011f2"
+    },
+    {
+      "Path": "Documentation/Images/OpenRGB.png",
+      "SHA256": "5450694183be4a63ca7d766c72b90b1d6e3456db542779c9d08aefe27a3a713b"
+    },
+    {
+      "Path": "iconengines/qsvgicon.dll",
+      "SHA256": "42dde60befcf1d9f96b8366a9988626b97d7d0d829ebea32f756d6ecd9ea99a8"
+    },
+    {
+      "Path": "imageformats/qgif.dll",
+      "SHA256": "36174dd4c5f37c5f065c7a26e0ac65c4c3a41fdc0416882af856a23a5d03bb9d"
+    },
+    {
+      "Path": "imageformats/qicns.dll",
+      "SHA256": "f4a229a082d16f80016f366156a2b951550f1e9df6d4177323bbedd92a429909"
+    },
+    {
+      "Path": "imageformats/qico.dll",
+      "SHA256": "1982a635db9652304131c9c6ff9a693e70241600d2ef22b354962aa37997de0b"
+    },
+    {
+      "Path": "imageformats/qjpeg.dll",
+      "SHA256": "fb4e980cb5fafa8a4cd4239329aed93f7c32ed939c94b61fb2df657f3c6ad158"
+    },
+    {
+      "Path": "imageformats/qsvg.dll",
+      "SHA256": "b3498f0a10ac4cb42cf7213db4944a34594ff36c78c50a0f249c9085d1b1ff39"
+    },
+    {
+      "Path": "imageformats/qtga.dll",
+      "SHA256": "5b641dec81aec1cf7ac0cce9fc067bb642fbd32da138a36e3bdac3bb5b36c37a"
+    },
+    {
+      "Path": "imageformats/qtiff.dll",
+      "SHA256": "825174429ced6b3dab18115dbc6c9da07bf5248c86ec1bd5c0dcaeca93b4c22d"
+    },
+    {
+      "Path": "imageformats/qwbmp.dll",
+      "SHA256": "0f05969fb926a62a338782b32446ea3e28e4bfbffc0dbd25ed303fab3404abac"
+    },
+    {
+      "Path": "imageformats/qwebp.dll",
+      "SHA256": "6e37acd0d357871f92b7fde7206c904c734caa02f94544df646957df8c4987af"
+    },
+    {
+      "Path": "licenses/HIDAPI-BSD.txt",
+      "SHA256": "b1a506483de4fc32a73568370aa248bf6c5f820b5e2891ca3f29b8844ea6bf33"
+    },
+    {
+      "Path": "licenses/HIDAPI-original.txt",
+      "SHA256": "2a594f88505cd994559bba97b6ca6f81601536f36d980af51e312c8ba2d282e1"
+    },
+    {
+      "Path": "licenses/libusb-LGPL-2.1.txt",
+      "SHA256": "319daefe38ebeead3df178e5937898a52d67c0c795f54f1c0bb10ac3b9cffb63"
+    },
+    {
+      "Path": "licenses/Qt-GPL-2.0.txt",
+      "SHA256": "189b1af95d661151e054cea10c91b3d754e4de4d3fecfb074c1fb29476f7167b"
+    },
+    {
+      "Path": "licenses/Qt-GPL-3.0.txt",
+      "SHA256": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b"
+    },
+    {
+      "Path": "licenses/Qt-LGPL-3.0.txt",
+      "SHA256": "ea7d049c7705dc13afc202dd18e1827f3484f8212fd3fa7b82fc4a0c363432c9"
+    },
+    {
+      "Path": "platforms/qwindows.dll",
+      "SHA256": "3333ba244c97264e3bd19db5953efa80a6e47aaced9d337ac3287ec718162b85"
+    },
+    {
+      "Path": "styles/qwindowsvistastyle.dll",
+      "SHA256": "d9b21182952682fe7ba63af1df24e23ace592c35b3f31eceef9f0eabeb5881b9"
+    }
+  ]
+}

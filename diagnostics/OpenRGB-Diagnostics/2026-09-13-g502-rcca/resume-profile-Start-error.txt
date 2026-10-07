@@ -1,0 +1,9 @@
+ConvertFrom-Json : Cannot convert the JSON string because a dictionary that was converted from the string contains the 
+duplicated keys 'Gigabyte GeForce RTX 5090 GAMING OC' and 'Gigabyte GeForce RTX 5090 Gaming OC'.
+At C:\OpenRGB-Diagnostics\2026-09-13-g502-rcca\configure-resume-profile.ps1:23 char:46
++   $settings=Get-Content $settingsFile -Raw | ConvertFrom-Json
++                                              ~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [ConvertFrom-Json], InvalidOperationException
+    + FullyQualifiedErrorId : DuplicateKeysInJsonString,Microsoft.PowerShell.Commands.ConvertFromJsonCommand
+ 
+

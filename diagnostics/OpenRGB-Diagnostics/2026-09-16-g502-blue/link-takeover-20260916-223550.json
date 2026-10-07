@@ -1,0 +1,76 @@
+{
+    "Time":  "2026-09-16T22:35:50.8509658-07:00",
+    "ControlBefore":  [
+                          0,
+                          3,
+                          5
+                      ],
+    "Released":  [
+                     1,
+                     0,
+                     6
+                 ],
+    "ReclaimedAfterSeconds":  2.14,
+    "Reports":  [
+                    "0.01 10-01-41-11-22-99-40",
+                    "0.02 10-07-41-0C-A9-5F-40",
+                    "0.03 10-FF-80-02-00-00-00"
+                ],
+    "Samples":  [
+                    {
+                        "Seconds":  0.01,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  0.03,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  0.03,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  0.3,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  0.56,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  0.83,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  1.09,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  1.36,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  1.62,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  1.88,
+                        "Control":  0,
+                        "Events":  6
+                    },
+                    {
+                        "Seconds":  2.14,
+                        "Control":  3,
+                        "Events":  5
+                    }
+                ]
+}

@@ -1,0 +1,10 @@
+ConvertTo-Json : The type 'System.Collections.Hashtable' is not supported for serialization or deserialization of a 
+dictionary. Keys must be strings.
+At C:\OpenRGB-Diagnostics\2026-09-13-g502-rcca\read-lighting-state.ps1:18 char:176
++ ... =@($onboard);Trace=@($probe.Trace)} | ConvertTo-Json -Depth 5 | Set-C ...
++                                           ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Collections.Hashtable:Hashtable) [ConvertTo-Json], InvalidOper 
+   ationException
+    + FullyQualifiedErrorId : NonStringKeyInDictionary,Microsoft.PowerShell.Commands.ConvertToJsonCommand
+ 
+

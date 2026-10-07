@@ -1,0 +1,8 @@
+CLI exit -1
+At C:\OpenRGB-Diagnostics\2026-09-13-g502-rcca\sdk-command.ps1:34 char:32
++   if($process.ExitCode -ne 0) {throw "CLI exit $($process.ExitCode)"}
++                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (CLI exit -1:String) [], RuntimeException
+    + FullyQualifiedErrorId : CLI exit -1
+ 
+

@@ -1,0 +1,17 @@
+{
+    "Time":  "2026-09-13T01:53:30.0275324-07:00",
+    "ServerPid":  37080,
+    "Device":  "G502 X PLUS",
+    "DeviceIndex":  2,
+    "Color":  "FF0000",
+    "PacketId":  1050,
+    "ModeChanged":  false,
+    "Controllers":  [
+                        "Kingston Fury DDR5 DRAM",
+                        "Candy companion chip",
+                        "G502 X PLUS",
+                        "ASUS ROG MAXIMUS Z790 FORMULA",
+                        "NVIDIA GeForce RTX 4090 FE"
+                    ],
+    "Payload":  "0A-00-00-00-01-00-FF-00-00-00"
+}

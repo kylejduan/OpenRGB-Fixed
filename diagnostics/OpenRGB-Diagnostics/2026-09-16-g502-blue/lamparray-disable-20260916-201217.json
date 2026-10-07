@@ -1,0 +1,17 @@
+{
+    "Time":  "2026-09-16T20:12:20.3128252-07:00",
+    "Before":  {
+                   "Name":  "logi_lamparray_service",
+                   "State":  "Running",
+                   "StartMode":  "Auto",
+                   "ProcessId":  8824,
+                   "PathName":  "C:\\Windows\\System32\\DriverStore\\FileRepository\\logi_lamparray_usb.inf_amd64_0efdf0d8d6ee547b\\logi_lamparray_service.AMD64.exe"
+               },
+    "After":  {
+                  "Name":  "logi_lamparray_service",
+                  "State":  "Stopped",
+                  "StartMode":  "Manual",
+                  "ProcessId":  0
+              },
+    "Note":  "Restore with: Set-Service logi_lamparray_service -StartupType Automatic; Start-Service logi_lamparray_service"
+}

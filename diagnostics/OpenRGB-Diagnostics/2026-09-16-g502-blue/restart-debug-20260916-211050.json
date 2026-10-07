@@ -1,0 +1,11 @@
+{
+    "Time":  "2026-09-16T21:11:04.9511516-07:00",
+    "OldExit":  {
+                    "Pid":  46496,
+                    "ExitCode":  0,
+                    "Time":  "2026-09-16T21:10:51.6450016-07:00"
+                },
+    "NewPid":  46412,
+    "Log":  "OpenRGB_20260916_211051.log",
+    "DetectionCompleted":  true
+}

@@ -1,0 +1,31 @@
+{
+  "recorded_utc": "2026-09-13T08:14:01.139050+00:00",
+  "source_revision": "9b0cd985b24902e342c7d12a4201113d39001afb",
+  "physical_sequence": [
+    {
+      "script": "controlled-red-20260913-004712-marker-0.json",
+      "result": "User: No light (old red still ignored)."
+    },
+    {
+      "script": "controlled-red-20260913-005646-marker-2.json",
+      "result": "User: Solid red, asked to move mouse to wake."
+    },
+    {
+      "script": "controlled-blue-20260913-005829-marker-0.json",
+      "result": "User: Yes, solid blue."
+    },
+    {
+      "script": "handoff-red-20260913-010219-marker-0.json",
+      "result": "User: No, another color or no light. Mouse awake."
+    },
+    {
+      "script": "controlled-red-20260913-010510-marker-2.json",
+      "result": "User: Yes, solid red. Mouse awake."
+    }
+  ],
+  "limits": [
+    "Explicit control handoff reproduced failure with original static parameter and recovery with no-ramp static parameter.",
+    "No OS reboot/sleep performed; no attribution of historical loss to a particular service.",
+    "Corrected full executable not yet installed, Windows/Linux CI running."
+  ]
+}

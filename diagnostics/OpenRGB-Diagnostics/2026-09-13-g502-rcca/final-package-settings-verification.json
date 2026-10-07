@@ -1,0 +1,14 @@
+{
+  "SourceRevision": "8fc2a339fd4011c310fc9b35bd9d8956c6a1a792",
+  "ManifestFilesVerified": 52,
+  "NetworkSettingKeys": [],
+  "SettingsTopLevelKeys": [
+    "AutoStart",
+    "Detectors",
+    "Drivers",
+    "Gigabyte RGB Fusion 2 SMBus",
+    "LogManager",
+    "Theme",
+    "UserInterface"
+  ]
+}

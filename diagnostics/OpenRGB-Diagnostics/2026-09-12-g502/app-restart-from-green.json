@@ -1,0 +1,13 @@
+{
+    "Time":  "2026-09-13T00:09:40.1309350-07:00",
+    "OldPid":  47300,
+    "CleanExitCode":  0,
+    "NewPid":  22324,
+    "Responding":  true,
+    "TaskState":  "Running",
+    "RunLevel":  "Highest",
+    "Arguments":  "--startminimized --profile Main",
+    "ServiceState":  "Running",
+    "ServiceStartMode":  "Auto",
+    "OSRestarted":  false
+}

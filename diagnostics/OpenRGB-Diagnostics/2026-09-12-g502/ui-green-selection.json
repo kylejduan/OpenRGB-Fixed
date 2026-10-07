@@ -1,0 +1,1197 @@
+[
+    {
+        "Name":  "OpenRGB",
+        "Type":  "ControlType.Window",
+        "Class":  "OpenRGBDialog",
+        "Id":  "OpenRGBDialog",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3330,2461,1965,1327",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "WindowPatternIdentifiers.Pattern",
+                         "TransformPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Group",
+        "Class":  "QWidget",
+        "Id":  "OpenRGBDialog.centralWidget",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3330,2461,1965,1327",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Group",
+        "Class":  "QTabWidget",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3309,2482,1938,1258",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Custom",
+        "Class":  "QStackedWidget",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3304,2538,1932,1218",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Group",
+        "Class":  "QWidget",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3304,2538,1932,1218",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Group",
+        "Class":  "QTabWidget",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3285,2559,1905,1191",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Custom",
+        "Class":  "QStackedWidget",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2758,2563,1551,1185",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Custom",
+        "Class":  "OpenRGBDevicePage",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2758,2563,1551,1185",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Custom",
+        "Class":  "QFrame",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1018,2583,378,1158",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Custom",
+        "Class":  "QFrame",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-664,2659,348,163",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "R:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.RedLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-664,2659,34,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Spinner",
+        "Class":  "QSpinBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.RedSpinBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "0",
+        "Selection":  null,
+        "Rectangle":  "-621,2659,135,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "RangeValuePatternIdentifiers.Pattern",
+                         "TextPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "H:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.HueLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-477,2659,18,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Spinner",
+        "Class":  "QSpinBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.HueSpinBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "0",
+        "Selection":  null,
+        "Rectangle":  "-450,2659,133,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "RangeValuePatternIdentifiers.Pattern",
+                         "TextPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "G:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.GreenLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-664,2703,34,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Spinner",
+        "Class":  "QSpinBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.GreenSpinBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "0",
+        "Selection":  null,
+        "Rectangle":  "-621,2703,135,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "RangeValuePatternIdentifiers.Pattern",
+                         "TextPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "S:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.SatLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-477,2703,18,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Spinner",
+        "Class":  "QSpinBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.SatSpinBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "0",
+        "Selection":  null,
+        "Rectangle":  "-450,2703,133,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "RangeValuePatternIdentifiers.Pattern",
+                         "TextPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "B:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.BlueLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-664,2746,34,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Spinner",
+        "Class":  "QSpinBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.BlueSpinBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "0",
+        "Selection":  null,
+        "Rectangle":  "-621,2746,135,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "RangeValuePatternIdentifiers.Pattern",
+                         "TextPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "V:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.ValLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-477,2746,18,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Spinner",
+        "Class":  "QSpinBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.ValSpinBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "0",
+        "Selection":  null,
+        "Rectangle":  "-450,2746,133,34",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "RangeValuePatternIdentifiers.Pattern",
+                         "TextPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Hex:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.HexLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-664,2790,34,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Edit",
+        "Class":  "QLineEdit",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorEntryFrame.HexLineEdit",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "000000",
+        "Selection":  null,
+        "Rectangle":  "-621,2790,304,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "TextPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Group",
+        "Class":  "ColorWheel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.ColorWheelBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-996,2605,348,859",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Group",
+        "Class":  "Swatches",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.SwatchBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-664,2605,348,45",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Saving Not Supported",
+        "Type":  "ControlType.Button",
+        "Class":  "QPushButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ColorFrame.DeviceSaveButton",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-664,2832,348,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Custom",
+        "Class":  "QFrame",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2737,2583,1137,1158",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Speed:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.SpeedLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-1810,2493,82,22",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.ComboBox",
+        "Class":  "QComboBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.LEDBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2578,2943,673,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.List",
+        "Class":  "QComboBoxListView",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  [
+
+                      ],
+        "Rectangle":  "Empty",
+        "Patterns":  [
+                         "SelectionPatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.ComboBox",
+        "Class":  "QComboBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ZoneBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2578,2743,673,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.List",
+        "Class":  "QComboBoxListView",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  [
+
+                      ],
+        "Rectangle":  "Empty",
+        "Patterns":  [
+                         "SelectionPatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Random",
+        "Type":  "ControlType.RadioButton",
+        "Class":  "QRadioButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.RandomCheck",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1036,2364,96,28",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "SelectionItemPatternIdentifiers.Pattern",
+                         "TogglePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Mode:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ModeLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-1810,2229,82,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Dir:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.DirectionLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-1810,2616,82,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Slider",
+        "Class":  "QTooltipedSlider",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.SpeedSlider",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "0",
+        "Selection":  null,
+        "Rectangle":  "-1719,2493,1015,22",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "RangeValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Colors:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ColorLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-1810,2362,82,30",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Per-LED",
+        "Type":  "ControlType.RadioButton",
+        "Class":  "QRadioButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.PerLEDCheck",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1719,2364,94,28",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "SelectionItemPatternIdentifiers.Pattern",
+                         "TogglePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Zone:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ZoneLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-2715,2743,82,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.ComboBox",
+        "Class":  "QComboBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ModeBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "Off",
+        "Selection":  null,
+        "Rectangle":  "-1719,2229,1015,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.List",
+        "Class":  "QComboBoxListView",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  [
+                          "Breathing"
+                      ],
+        "Rectangle":  "Empty",
+        "Patterns":  [
+                         "SelectionPatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Off",
+        "Type":  "ControlType.ListItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1717,2230,1182,31",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "SelectionItemPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Direct",
+        "Type":  "ControlType.ListItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1717,2262,1182,31",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "SelectionItemPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Static",
+        "Type":  "ControlType.ListItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1717,2293,1182,31",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "SelectionItemPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Breathing",
+        "Type":  "ControlType.ListItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1717,2325,1182,31",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "SelectionItemPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Spectrum Cycle",
+        "Type":  "ControlType.ListItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1717,2356,1182,31",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "SelectionItemPatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Apply All Devices",
+        "Type":  "ControlType.Button",
+        "Class":  "QPushButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.SetAllButton",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1554,3144,333,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "LED:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.LEDLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-2715,2943,82,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Edit",
+        "Type":  "ControlType.Button",
+        "Class":  "QPushButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.EditZoneButton",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1554,2743,333,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Mode-Specific",
+        "Type":  "ControlType.RadioButton",
+        "Class":  "QRadioButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ModeSpecificCheck",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1377,2364,136,28",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "SelectionItemPatternIdentifiers.Pattern",
+                         "TogglePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Apply Colors To Selection",
+        "Type":  "ControlType.Button",
+        "Class":  "QPushButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.ApplyColorsButton",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2578,3144,673,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Select All",
+        "Type":  "ControlType.Button",
+        "Class":  "QPushButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.SelectAllLEDsButton",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1554,2943,333,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Slider",
+        "Class":  "QTooltipedSlider",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.BrightnessSlider",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "0",
+        "Selection":  null,
+        "Rectangle":  "-1719,2749,1015,22",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "RangeValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.ComboBox",
+        "Class":  "QComboBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.DirectionBox",
+        "Enabled":  false,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1719,2616,1015,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.List",
+        "Class":  "QComboBoxListView",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  [
+
+                      ],
+        "Rectangle":  "Empty",
+        "Patterns":  [
+                         "SelectionPatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Brightness:",
+        "Type":  "ControlType.Text",
+        "Class":  "QLabel",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_stackedwidget.OpenRGBDevicePage.ControlsFrame.BrightnessLabel",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  null,
+        "Selection":  null,
+        "Rectangle":  "-1810,2749,82,22",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Tab",
+        "Class":  "QTabBar",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_stackedwidget.TabDevices.DevicesTabBar.qt_tabwidget_tabbar",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3285,2559,351,396",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3285,2559,351,78",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3285,2637,351,78",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3285,2715,351,78",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3285,2793,351,84",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3285,2877,351,78",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Devices",
+        "Type":  "ControlType.Tab",
+        "Class":  "QTabBar",
+        "Id":  "OpenRGBDialog.centralWidget.MainTabBar.qt_tabwidget_tabbar",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3309,2482,538,37",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Devices",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3309,2482,91,37",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Information",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3217,2482,121,37",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "SDK Server",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-3096,2482,118,37",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "SDK Client",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2977,2482,112,37",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Settings",
+        "Type":  "ControlType.TabItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2865,2482,94,37",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.Custom",
+        "Class":  "QFrame",
+        "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2206,2922,1938,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Toggle LED View",
+        "Type":  "ControlType.Button",
+        "Class":  "QPushButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonToggleDeviceView",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-2206,2922,315,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Rescan Devices",
+        "Type":  "ControlType.Button",
+        "Class":  "QPushButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonRescan",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1882,2922,316,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Save Profile",
+        "Type":  "ControlType.Button",
+        "Class":  "QToolButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonSaveProfile",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1557,2922,315,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Delete Profile",
+        "Type":  "ControlType.Button",
+        "Class":  "QPushButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonDeleteProfile",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-1233,2922,315,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Load Profile",
+        "Type":  "ControlType.Button",
+        "Class":  "QPushButton",
+        "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ButtonLoadProfile",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "-909,2922,316,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.ComboBox",
+        "Class":  "QComboBox",
+        "Id":  "OpenRGBDialog.centralWidget.MainButtonsFrame.ProfileBox",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "Main",
+        "Selection":  null,
+        "Rectangle":  "-583,2922,315,33",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "",
+        "Type":  "ControlType.List",
+        "Class":  "QComboBoxListView",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  [
+
+                      ],
+        "Rectangle":  "Empty",
+        "Patterns":  [
+                         "SelectionPatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern"
+                     ]
+    },
+    {
+        "Name":  "Main",
+        "Type":  "ControlType.ListItem",
+        "Class":  "",
+        "Id":  "",
+        "Enabled":  true,
+        "Offscreen":  false,
+        "Value":  "",
+        "Selection":  null,
+        "Rectangle":  "0,0,1129,31",
+        "Patterns":  [
+                         "InvokePatternIdentifiers.Pattern",
+                         "ValuePatternIdentifiers.Pattern",
+                         "SelectionItemPatternIdentifiers.Pattern"
+                     ]
+    }
+]

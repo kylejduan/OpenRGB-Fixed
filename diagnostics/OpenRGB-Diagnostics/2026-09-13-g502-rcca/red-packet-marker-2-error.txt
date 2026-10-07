@@ -1,0 +1,8 @@
+Expected software control and full RGB power
+At C:\OpenRGB-Diagnostics\2026-09-13-g502-rcca\send-red-packet.ps1:11 char:45
++ ... ower[1] -ne 1) {throw 'Expected software control and full RGB power'}
++                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Expected softwa... full RGB power:String) [], RuntimeException
+    + FullyQualifiedErrorId : Expected software control and full RGB power
+ 
+

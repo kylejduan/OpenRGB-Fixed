@@ -1,0 +1,395 @@
+--- a/Controllers/LogitechController/LogitechProtocolCommon.h
++++ b/Controllers/LogitechController/LogitechProtocolCommon.h
+@@ -12,6 +12,7 @@
+ #pragma once
+ 
+ #include <map>
++#include <memory>
+ #include <vector>
+ #include <hidapi.h>
+ #include "LogManager.h"
+@@ -256,7 +257,8 @@
+         LOGITECH_DEVICE_MODE            mode;
+ };
+ 
+-typedef std::map<uint8_t, hid_device*>  usages;
++// Receiver slots share HID handles; the last owner closes each handle.
++typedef std::map<uint8_t, std::shared_ptr<hid_device>> usages;
+ typedef std::map<uint16_t, uint8_t>     features;
+ typedef std::map<uint8_t, uint16_t>     rvrse_features;
+ typedef std::map<uint16_t, uint8_t>     wireless_map;
+--- a/Controllers/LogitechController/LogitechProtocolCommon.cpp
++++ b/Controllers/LogitechController/LogitechProtocolCommon.cpp
+@@ -50,7 +50,7 @@
+     }
+     else
+     {
+-        dev_use1 = find_usage->second;
++        dev_use1 = find_usage->second.get();
+         /*-----------------------------------------------------------------*\
+         | Create a buffer for reads                                         |
+         \*-----------------------------------------------------------------*/
+@@ -151,13 +151,7 @@
+     initialiseDevice();
+ }
+ 
+-logitech_device::~logitech_device()
+-{
+-    for(usages::iterator dev = device_usages.begin(); dev != device_usages.end(); dev++)
+-    {
+-        hid_close(dev->second);
+-    }
+-}
++logitech_device::~logitech_device() = default;
+ 
+ void logitech_device::initialiseDevice()
+ {
+@@ -298,7 +292,7 @@
+ 
+         while( result > 0 )
+         {
+-            result = hid_read_timeout(dev->second, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
++            result = hid_read_timeout(dev->second.get(), response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+             if (result > 0)
+             {
+                 flushed++;
+@@ -329,7 +323,7 @@
+     }
+     else
+     {
+-        return(find_usage->second);
++        return(find_usage->second.get());
+     }
+ }
+ 
+@@ -811,6 +805,11 @@
+             result = hid_write(dev_use2, set_mode.buffer, set_mode.size());
+             result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+         }
++
++        LOG_DEBUG("[%s] LED command: zone=%i mode=%i RGB=%02X%02X%02X request=%02X/%02X/%02X reply=%02X/%02X/%02X bytes=%i",
++                  device_name.c_str(), zone, mode, red, green, blue,
++                  set_mode.device_index, set_mode.feature_index, set_mode.feature_command,
++                  response.device_index, response.feature_index, response.feature_command, result);
+     }
+ 
+      return result;
+--- a/Controllers/LogitechController/LogitechControllerDetect.cpp
++++ b/Controllers/LogitechController/LogitechControllerDetect.cpp
+@@ -1032,7 +1032,7 @@
+ 
+ void CreateLogitechLightspeedDevice(char *path, usages device_usages, uint8_t device_index, uint16_t pid, bool wireless, std::shared_ptr<std::mutex> mutex_ptr)
+ {
+-    LogitechLightspeedController* controller                = new LogitechLightspeedController(device_usages.find(2)->second, path);
++    LogitechLightspeedController* controller                = new LogitechLightspeedController(device_usages.find(2)->second.get(), path);
+     bool lightspeedDeviceIsValid                            = false;
+     int retryCount                                          = 0;
+ 
+@@ -1041,10 +1041,15 @@
+         std::this_thread::sleep_for(50ms);
+         controller->lightspeed                              = new logitech_device(path, device_usages, device_index, wireless, mutex_ptr);
+         lightspeedDeviceIsValid                             = controller->lightspeed->is_valid();
++        if(!lightspeedDeviceIsValid)
++        {
++            delete controller->lightspeed;
++            controller->lightspeed = nullptr;
++        }
+         retryCount++;
+     }
+ 
+-    if (retryCount < LOGITECH_LIGHTSPEED_DETECT_MAX_RETRY)
++    if (lightspeedDeviceIsValid)
+     {
+         RGBController_LogitechLightspeed* rgb_controller    = new RGBController_LogitechLightspeed(controller);
+         rgb_controller->pid                                 = pid;
+@@ -1072,7 +1077,7 @@
+     if(dev)
+     {
+         LOG_DEBUG("Adding Usage %i for device @ path %s", info->usage, info->path);
+-        device_usages.emplace((uint8_t)info->usage, dev);
++        device_usages.emplace((uint8_t)info->usage, std::shared_ptr<hid_device>(dev, hid_close));
+     }
+     else
+     {
+@@ -1119,7 +1124,7 @@
+             if(dev)
+             {
+                 LOG_DEBUG("Success! Adding Usage %i for device @ path %s", temp_info->usage, temp_info->path);
+-                temp_usages.emplace((uint8_t)temp_info->usage, dev);
++                temp_usages.emplace((uint8_t)temp_info->usage, std::shared_ptr<hid_device>(dev, hid_close));
+             }
+             else
+             {
+@@ -1193,7 +1198,7 @@
+     if(dev)
+     {
+         LOG_DEBUG("Adding Usage %i for device @ path %s", info->usage, info->path);
+-        device_usages.emplace((uint8_t)info->usage, dev);
++        device_usages.emplace((uint8_t)info->usage, std::shared_ptr<hid_device>(dev, hid_close));
+     }
+     else
+     {
+--- a/RGBController/RGBController.h
++++ b/RGBController/RGBController.h
+@@ -394,6 +394,7 @@
+     void                    SaveMode();
+ 
+     void                    DeviceCallThreadFunction();
++    void                    StopDeviceThread();
+ 
+     void                    ClearSegments(int zone);
+     void                    AddSegment(int zone, segment new_segment);
+--- a/RGBController/RGBController.cpp
++++ b/RGBController/RGBController.cpp
+@@ -65,8 +65,7 @@
+ 
+ RGBController::~RGBController()
+ {
+-    DeviceThreadRunning = false;
+-    DeviceCallThread->join();
++    StopDeviceThread();
+     delete DeviceCallThread;
+ 
+     leds.clear();
+@@ -2145,6 +2144,15 @@
+         {
+            std::this_thread::sleep_for(1ms);
+         }
++    }
++}
++
++void RGBController::StopDeviceThread()
++{
++    DeviceThreadRunning = false;
++    if(DeviceCallThread->joinable())
++    {
++        DeviceCallThread->join();
+     }
+ }
+ 
+--- a/ResourceManager.cpp
++++ b/ResourceManager.cpp
+@@ -870,6 +870,12 @@
+ 
+ void ResourceManager::Cleanup()
+ {
++    // Startup profile application also uses controllers after detection ends.
++    std::unique_lock<std::mutex> background_lock(BackgroundThreadStateMutex, std::defer_lock);
++    if(std::this_thread::get_id() != DetectDevicesThread->get_id())
++    {
++        background_lock.lock();
++    }
+     ResourceManager::get()->WaitForDeviceDetection();
+ 
+     std::vector<RGBController *> rgb_controllers_hw_copy = rgb_controllers_hw;
+@@ -893,8 +899,14 @@
+     rgb_controllers_hw.clear();
+     detection_prev_size = 0;
+ 
++    // Derived destructors release device drivers before the base destructor runs.
+     for(RGBController* rgb_controller : rgb_controllers_hw_copy)
+     {
++        rgb_controller->StopDeviceThread();
++    }
++
++    for(RGBController* rgb_controller : rgb_controllers_hw_copy)
++    {
+         delete rgb_controller;
+     }
+ 
+@@ -907,6 +919,10 @@
+         delete bus;
+     }
+ 
++    if(background_lock.owns_lock())
++    {
++        background_lock.unlock();
++    }
+     RunInBackgroundThread(std::bind(&ResourceManager::HidExitCoroutine, this));
+ }
+ 
+--- a/OpenRGB.pro
++++ b/OpenRGB.pro
+@@ -26,12 +26,12 @@
+ #-----------------------------------------------------------------------------------------------#
+ MAJOR       = 0
+ MINOR       = 9
+-SUFFIX      = 1.0rc3.1
+-
+-SHORTHASH   = $$system("git rev-parse --short=7 HEAD")
++SUFFIX      = 1.0rc3.1-powerplay-rcca2
++
++SHORTHASH   = 5e81e26
+ LASTTAG     = "release_"$$MAJOR"."$$MINOR
+ COMMAND     = "git rev-list --count "$$LASTTAG"..HEAD"
+-COMMITS     = $$system($$COMMAND)
++COMMITS     = 0
+ 
+ VERSION_NUM = $$MAJOR"."$$MINOR"."$$COMMITS
+ VERSION_STR = $$MAJOR"."$$MINOR
+@@ -73,14 +73,14 @@
+ linux:BUILDDATE         = $$system(date -R -d "@${SOURCE_DATE_EPOCH:-$(date +%s)}")
+ freebsd:BUILDDATE       = $$system(date -j -R -r "${SOURCE_DATE_EPOCH:-$(date +%s)}")
+ macx:BUILDDATE          = $$system(date -j -R -r "${SOURCE_DATE_EPOCH:-$(date +%s)}")
+-GIT_COMMIT_ID           = $$system(git log -n 1 --pretty=format:"%H")
+-GIT_COMMIT_DATE         = $$system(git log -n 1 --pretty=format:"%ci")
++GIT_COMMIT_ID = 5e81e26+powerplay-rcca2
++GIT_COMMIT_DATE = "local RCCA build 2026-09-06"
+ 
+ unix {
+-    GIT_BRANCH          = $$system(sh scripts/git-get-branch.sh)
++    GIT_BRANCH = local-powerplay-rcca
+ }
+ else {
+-    GIT_BRANCH          = $$system(powershell -ExecutionPolicy Bypass -File scripts/git-get-branch.ps1)
++    GIT_BRANCH = local-powerplay-rcca
+ }
+ 
+ message("GIT_BRANCH: "$$GIT_BRANCH)
+--- /dev/null
++++ b/tests/logitech_receiver_lifetime.cpp
+@@ -0,0 +1,74 @@
++// Exercises the real protocol object's ownership; only the external HID and log APIs are faked.
++#include "LogitechProtocolCommon.h"
++#include <array>
++#include <cassert>
++#include <cstdio>
++#include <cstring>
++#include <memory>
++#include <type_traits>
++
++struct hid_device_ { unsigned closes = 0; };
++extern "C" void hid_close(hid_device* device) { ++device->closes; }
++extern "C" int hid_write(hid_device* device, const unsigned char*, size_t size)
++{
++    assert(device->closes == 0);
++    return static_cast<int>(size);
++}
++extern "C" int hid_read(hid_device* device, unsigned char* bytes, size_t size)
++{
++    assert(device->closes == 0);
++    std::memset(bytes, 0, size);
++    if(size > 5) bytes[5] = 0x09; // Actual protocol's disconnected response.
++    return static_cast<int>(size);
++}
++extern "C" int hid_read_timeout(hid_device* device, unsigned char*, size_t, int)
++{
++    assert(device->closes == 0);
++    return 0;
++}
++LogManager::LogManager() {}
++LogManager::~LogManager() {}
++LogManager* LogManager::get() { static LogManager logger; return &logger; }
++void LogManager::append(const char*, int, unsigned int, const char*, ...) {}
++unsigned int LogManager::getLoglevel() { return 0; }
++
++template<class Handle> Handle adopt(hid_device* device)
++{
++    if constexpr(std::is_pointer_v<Handle>) return device;
++    else return Handle(device, hid_close);
++}
++
++int main()
++{
++    char path[] = "test-powerplay";
++    for(bool reverse : {false, true})
++    {
++        std::array<hid_device_, 3> handles;
++        usages bundle;
++        for(unsigned i = 0; i < handles.size(); ++i)
++            bundle.emplace(i + 1, adopt<usages::mapped_type>(&handles[i]));
++        auto mutex = std::make_shared<std::mutex>();
++        auto mat = std::make_unique<logitech_device>(path, bundle, 7, true, mutex);
++        auto mouse = std::make_unique<logitech_device>(path, bundle, 1, true, mutex);
++        bundle.clear();
++        if(reverse) mouse.reset(); else mat.reset();
++        for(const auto& handle : handles)
++            assert(handle.closes == 0 && "Destroying one controller closed a sibling's live HID handle");
++        auto& survivor = reverse ? mat : mouse;
++        survivor->connected();
++        survivor.reset();
++        for(const auto& handle : handles) assert(handle.closes == 1);
++    }
++    hid_device_ single;
++    usages bundle;
++    bundle.emplace(1, adopt<usages::mapped_type>(&single));
++    for(unsigned attempt = 0; attempt < 5; ++attempt)
++    {
++        logitech_device failed(path, bundle, 1, true);
++        assert(!failed.is_valid());
++    }
++    assert(single.closes == 0);
++    bundle.clear();
++    assert(single.closes == 1);
++    std::puts("PASS: shared controllers, both destruction orders, and failed attempts close each handle exactly once");
++}
+--- /dev/null
++++ b/tests/device_worker_lifetime.cpp
+@@ -0,0 +1,67 @@
++// Uses the real RGBController worker with a blocked device transaction.
++#include "RGBController.h"
++#include <cassert>
++#include <condition_variable>
++#include <cstdio>
++#include <future>
++#include <mutex>
++
++struct Transaction
++{
++    std::mutex mutex;
++    std::condition_variable changed;
++    bool entered = false, released = false, finished = false;
++};
++
++struct Device : RGBController
++{
++    Transaction& transaction;
++    explicit Device(Transaction& state) : transaction(state) {}
++    ~Device() override { assert(transaction.finished && "Driver destroyed while its worker was still using it"); }
++    void SetupZones() override {}
++    void ResizeZone(int, int) override {}
++    void UpdateZoneLEDs(int) override {}
++    void UpdateSingleLED(int) override {}
++    void DeviceUpdateMode() override {}
++    void DeviceUpdateLEDs() override
++    {
++        std::unique_lock<std::mutex> lock(transaction.mutex);
++        transaction.entered = true;
++        transaction.changed.notify_all();
++        transaction.changed.wait(lock, [&] { return transaction.released; });
++        transaction.finished = true;
++    }
++};
++
++template<class Controller>
++auto stop(Controller* device, int) -> decltype(device->StopDeviceThread(), void()) { device->StopDeviceThread(); }
++template<class Controller>
++void stop(Controller*, ...) {} // Original cleanup has no stop before derived destruction.
++
++int main()
++{
++    using namespace std::chrono_literals;
++    Transaction transaction;
++    Device* device = new Device(transaction);
++    std::unique_lock<std::mutex> lock(transaction.mutex);
++    const auto deadline = std::chrono::steady_clock::now() + 5s;
++    while(!transaction.entered && std::chrono::steady_clock::now() < deadline)
++    {
++        device->UpdateLEDs();
++        transaction.changed.wait_for(lock, 1ms);
++    }
++    assert(transaction.entered);
++    lock.unlock();
++    std::promise<void> stopping;
++    auto stopped = std::async(std::launch::async, [&] { stopping.set_value(); stop(device, 0); });
++    stopping.get_future().wait();
++    assert(stopped.wait_for(50ms) == std::future_status::timeout && "Cleanup did not wait for the active device transaction");
++    lock.lock();
++    transaction.released = true;
++    transaction.changed.notify_all();
++    lock.unlock();
++    stopped.get();
++    stop(device, 0); // Idempotent when called again by cleanup or the base destructor.
++    delete device;
++    std::puts("PASS: worker finishes before driver destruction; repeated stop is safe");
++}
