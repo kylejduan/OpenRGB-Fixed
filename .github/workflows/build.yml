@@ -1,9 +1,6 @@
 name: Build and tests
 
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -70,3 +67,4 @@ jobs:
           name: OpenRGB-Fixed-Windows-x64
           path: build/dist/*
           if-no-files-found: error
+          retention-days: 1

@@ -19,8 +19,12 @@ The [Microsoft Visual C++ x64 runtime](https://learn.microsoft.com/en-us/cpp/win
 is required. RAM/SMBus access also requires PawnIO and an administrator launch.
 
 Linux and other platforms can [build from source](Documentation/Building-Fixed.md).
-CI builds the Windows application and Ubuntu application, and runs the protocol and lifetime
-regression tests. Hardware compatibility still depends on upstream device support.
+The manual [Build and tests workflow](https://github.com/kylejduan/OpenRGB-Fixed/actions/workflows/build.yml)
+builds the Windows and Ubuntu applications and runs the protocol and lifetime
+regression tests. Start it with **Run workflow** before a release or after code
+changes; pushes and pull requests do not start it automatically. Workflow build
+artifacts expire after one day. Hardware compatibility still depends on
+upstream device support.
 
 ## What is fixed
 
