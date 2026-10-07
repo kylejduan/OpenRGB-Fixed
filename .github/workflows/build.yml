@@ -1,6 +1,9 @@
 name: Build and tests
 
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -44,7 +47,7 @@ jobs:
         with:
           version: '5.15.2'
           arch: win64_msvc2019_64
-          cache: true
+          cache: ${{ github.event_name == 'workflow_dispatch' }}
       - name: Regression tests
         shell: pwsh
         run: |
@@ -63,6 +66,7 @@ jobs:
           $p = Start-Process ./release/OpenRGB.exe -ArgumentList '--version' -Wait -PassThru -NoNewWindow
           if ($p.ExitCode -ne 0) { throw 'Version command failed' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: github.event_name == 'workflow_dispatch'
         with:
           name: OpenRGB-Fixed-Windows-x64
           path: build/dist/*
