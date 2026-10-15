@@ -73,6 +73,19 @@ int main()
     assert(!tracker.Empty() && "Detecting it confirms only the entry that saw it; the other stays tracked");
     tracker.Clear();
 
+    // An identity belongs to one entry across rounds: if "a" first sees the
+    // returned receiver and "b" sees it later, confirming it clears only "b".
+    std::atomic<bool> a_sees{true};
+    tracker.Watch("a", [&] { return a_sees.load() ? std::string("x") : std::string(); });
+    tracker.Watch("b", [] { return std::string("x"); });
+    tracker.Check();
+    a_sees = false;
+    tracker.Check();
+    tracker.Forget("x");
+    assert(!tracker.Empty() && "The receiver still missing stays tracked");
+    tracker.Forget("a");
+    assert(tracker.Empty());
+
     // A receiver back at its own path is preferred over one that moved.
     tracker.Watch("a", [] { return std::string("b"); });
     tracker.Watch("b", [] { return std::string("b"); });

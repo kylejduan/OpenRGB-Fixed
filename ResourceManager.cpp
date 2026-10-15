@@ -2248,6 +2248,20 @@ void ResourceManager::CheckHardwareReturnCoroutine()
     {
         LOG_INFO("[ResourceManager] Missing hardware returned: %s", key.c_str());
     }
+
+    /*-----------------------------------------------------*\
+    | Check the gate again right before freeing controllers:|
+    | enumeration takes time. The entries stay tracked, so  |
+    | a held rescan is retried.                             |
+    \*-----------------------------------------------------*/
+    {
+        std::lock_guard<std::mutex> lock(automatic_rescan_gate_mutex);
+        if(automatic_rescan_gate && !automatic_rescan_gate())
+        {
+            LOG_INFO("[ResourceManager] Rescan held while a dialog is open");
+            return;
+        }
+    }
     LOG_INFO("[ResourceManager] Rescanning devices after hardware returned");
 
     restore_profile_after_detection = true;

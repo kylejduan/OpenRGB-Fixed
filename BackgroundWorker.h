@@ -167,7 +167,21 @@ public:
             if(sighting == sighted.end())
             {
                 tracked->second.sightings = 0;
+                tracked->second.last_seen.clear();
                 continue;
+            }
+
+            /*-------------------------------------------------*\
+            | An identity belongs to one entry across rounds,   |
+            | so confirming it never clears another's watch     |
+            \*-------------------------------------------------*/
+            for(std::pair<const std::string, Entry>& other : entries)
+            {
+                if(other.first != entry.first && other.second.last_seen == sighting->second)
+                {
+                    other.second.last_seen.clear();
+                    other.second.sightings = 0;
+                }
             }
             tracked->second.last_seen = sighting->second;
             const int needed = tracked->second.reports == 0 ? 2 : (tracked->second.reports == 1 ? 12 : 60);
