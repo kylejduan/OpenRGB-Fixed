@@ -2146,7 +2146,7 @@ bool ResourceManager::RunWhenBackgroundIdle(const std::function<bool()>& stop_re
     return(RunWhenIdle(BackgroundThreadStateMutex, stop_requested, fn));
 }
 
-void ResourceManager::WatchForHardwareReturn(const std::string& key, std::function<bool()> present)
+void ResourceManager::WatchForHardwareReturn(const std::string& key, std::function<std::string()> find)
 {
     std::lock_guard<std::mutex> lock(hardware_return_mutex);
 
@@ -2155,7 +2155,7 @@ void ResourceManager::WatchForHardwareReturn(const std::string& key, std::functi
         return;
     }
 
-    hardware_returns.Watch(key, std::move(present));
+    hardware_returns.Watch(key, std::move(find));
 
     if(hardware_return_thread == nullptr)
     {

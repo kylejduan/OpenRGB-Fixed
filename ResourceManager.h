@@ -209,12 +209,13 @@ public:
 
     /*-----------------------------------------------------*\
     | Hardware that disappeared, for example an unplugged   |
-    | or re-enumerated receiver. present() runs on the      |
-    | background thread every 5 s; once the hardware is     |
+    | or re-enumerated receiver. find() runs on the         |
+    | background thread every 5 s and returns the identity  |
+    | of matching hardware, or an empty string. Once it is  |
     | back, devices are rescanned and the last loaded       |
     | profile is re-applied. Entries survive rescans.       |
     \*-----------------------------------------------------*/
-    void WatchForHardwareReturn(const std::string& key, std::function<bool()> present);
+    void WatchForHardwareReturn(const std::string& key, std::function<std::string()> find);
     void ForgetHardwareReturn(const std::string& key);
     // Call before the final Cleanup() so no rescan starts during exit.
     void StopHardwareReturnMonitor();

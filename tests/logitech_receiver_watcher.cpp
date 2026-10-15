@@ -139,6 +139,7 @@ int main(int argc, char** argv)
     if(test == "create_retry_link_down"){ succeed_on = 1000; timing.create_retry = 30ms; }
     if(test == "receiver_lost" || test == "receiver_recovers") { timing.poll = 20ms; }
     if(test == "contention")  { timing.poll = 5ms; timing.quiet = 10ms; timing.poll_max = 80ms; mouse.script = {0}; }
+    if(test == "repaint_keeps_poll") { timing.poll = 150ms; timing.repaint = 20ms; mouse.script = {3}; }
     if(test == "contention_repaint") { timing.poll = 5ms; timing.quiet = 10ms; timing.poll_max = 80ms; timing.repaint = 5ms; mouse.script = {0}; }
     if(test == "shared_reads" || test == "shared_link_down") { timing.create_retry = 30ms; }
     if(test == "shared_link_down") { succeed_on = 1000; }
@@ -338,6 +339,13 @@ int main(int argc, char** argv)
         std::this_thread::sleep_for(800ms);
         const int reapplies = mouse.reapply_count();
         assert(reapplies >= 5 && reapplies <= 16 && "Periodic repaints must not bypass the contention backoff");
+    }
+    else if(test == "repaint_keeps_poll")
+    {
+        // Refreshes more frequent than the ownership poll must not postpone
+        // it, or another application's takeover would never be detected.
+        std::this_thread::sleep_for(700ms);
+        assert(mouse.read_count() >= 3 && "Ownership is still checked between frequent refreshes");
     }
     else if(test == "shared_link_down")
     {

@@ -13,6 +13,7 @@
 #include <functional>
 #include <map>
 #include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <utility>
@@ -66,17 +67,21 @@ bool RunWhenIdle
 
 /*---------------------------------------------------------*\
 | Hardware that disappeared, such as an unplugged receiver, |
-| checked for its return. Entries survive rescans. An entry |
-| returns after two consecutive sightings, so the OS can    |
-| finish enumerating every interface first.                 |
+| checked for its return. Entries survive rescans. Each     |
+| check reports the identity of the hardware it found, or   |
+| an empty string. One identity is given to one entry per   |
+| round, preferring the entry it belongs to, so a single    |
+| returning device cannot resolve two missing ones. An      |
+| entry returns after two consecutive sightings, so the OS  |
+| can finish enumerating every interface first.             |
 \*---------------------------------------------------------*/
 class HardwareReturnTracker
 {
 public:
-    void Watch(const std::string& key, std::function<bool()> present)
+    void Watch(const std::string& key, std::function<std::string()> find)
     {
         std::lock_guard<std::mutex> lock(mutex);
-        entries[key] = Entry{std::move(present), 0};
+        entries[key] = Entry{std::move(find), 0};
     }
 
     void Forget(const std::string& key)
@@ -103,38 +108,54 @@ public:
     \*-----------------------------------------------------*/
     std::vector<std::string> Check()
     {
-        std::vector<std::pair<std::string, std::function<bool()>>> pending;
+        std::vector<std::pair<std::string, std::function<std::string()>>> pending;
         {
             std::lock_guard<std::mutex> lock(mutex);
             for(const std::pair<const std::string, Entry>& entry : entries)
             {
-                pending.emplace_back(entry.first, entry.second.present);
+                pending.emplace_back(entry.first, entry.second.find);
             }
         }
 
-        std::vector<std::pair<std::string, bool>> seen;
-        for(const std::pair<std::string, std::function<bool()>>& entry : pending)
+        std::vector<std::pair<std::string, std::string>> found;
+        for(const std::pair<std::string, std::function<std::string()>>& entry : pending)
         {
-            seen.emplace_back(entry.first, entry.second());
+            found.emplace_back(entry.first, entry.second());
+        }
+
+        std::set<std::string> claimed;
+        std::set<std::string> sighted;
+        for(int pass = 0; pass < 2; pass++)
+        {
+            for(const std::pair<std::string, std::string>& entry : found)
+            {
+                const bool own = entry.second == entry.first;
+                if(entry.second.empty() || own != (pass == 0) || claimed.count(entry.second))
+                {
+                    continue;
+                }
+                claimed.insert(entry.second);
+                sighted.insert(entry.first);
+            }
         }
 
         std::vector<std::string> returned;
         std::lock_guard<std::mutex> lock(mutex);
-        for(const std::pair<std::string, bool>& sighting : seen)
+        for(const std::pair<std::string, std::string>& entry : found)
         {
-            std::map<std::string, Entry>::iterator entry = entries.find(sighting.first);
-            if(entry == entries.end())
+            std::map<std::string, Entry>::iterator tracked = entries.find(entry.first);
+            if(tracked == entries.end())
             {
                 continue;
             }
-            if(!sighting.second)
+            if(sighted.count(entry.first) == 0)
             {
-                entry->second.sightings = 0;
+                tracked->second.sightings = 0;
             }
-            else if(++entry->second.sightings >= 2)
+            else if(++tracked->second.sightings >= 2)
             {
-                returned.push_back(sighting.first);
-                entries.erase(entry);
+                returned.push_back(entry.first);
+                entries.erase(tracked);
             }
         }
         return(returned);
@@ -143,8 +164,8 @@ public:
 private:
     struct Entry
     {
-        std::function<bool()>   present;
-        int                     sightings;
+        std::function<std::string()>    find;
+        int                             sightings;
     };
 
     std::mutex                      mutex;

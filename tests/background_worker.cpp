@@ -38,8 +38,8 @@ int main()
     HardwareReturnTracker tracker;
     std::atomic<bool> back{false};
     int checks = 0;
-    tracker.Watch("receiver", [&] { ++checks; return back.load(); });
-    tracker.Watch("other", [] { return false; });
+    tracker.Watch("receiver", [&] { ++checks; return back.load() ? std::string("receiver") : std::string(); });
+    tracker.Watch("other", [] { return std::string(); });
     assert(tracker.Check().empty() && checks == 1);
     back = true;
     assert(tracker.Check().empty() && "One sighting is not enough");
@@ -47,12 +47,28 @@ int main()
     assert(tracker.Check().empty() && "A miss resets the count");
     back = true;
     assert(tracker.Check().empty());
-    const std::vector<std::string> returned = tracker.Check();
+    std::vector<std::string> returned = tracker.Check();
     assert(returned.size() == 1 && returned[0] == "receiver");
     assert(!tracker.Empty() && "Only the returned entry is removed");
     tracker.Forget("other");
     assert(tracker.Empty());
-    tracker.Watch("receiver", [] { return true; });
+
+    // Two same-model receivers are missing; one comes back on another port.
+    // Both checks find it, but it may resolve only one of them.
+    tracker.Watch("a", [] { return std::string("moved"); });
+    tracker.Watch("b", [] { return std::string("moved"); });
+    tracker.Check();
+    returned = tracker.Check();
+    assert(returned.size() == 1 && "One returning receiver resolves one missing receiver");
+    assert(!tracker.Empty() && "The other stays tracked across the rescan");
+    tracker.Clear();
+
+    // A receiver back at its own path is preferred over one that moved.
+    tracker.Watch("a", [] { return std::string("b"); });
+    tracker.Watch("b", [] { return std::string("b"); });
+    tracker.Check();
+    returned = tracker.Check();
+    assert(returned.size() == 1 && returned[0] == "b");
     tracker.Clear();
     assert(tracker.Empty() && tracker.Check().empty());
     std::printf("PASS: background worker idle wait and hardware return tracking\n");
