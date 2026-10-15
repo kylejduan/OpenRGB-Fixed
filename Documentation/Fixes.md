@@ -128,7 +128,10 @@ Each legacy Lightspeed receiver now gets one watcher thread:
   five. Missing receivers survive rescans, so two receivers unplugged together
   are both recovered, and exit stops the check before cleanup. Automatic
   rescans wait while a GUI modal dialog is open, because a rescan frees every
-  controller and such a dialog may still hold one.
+  controller and such a dialog may still hold one. The gate is checked again
+  just before the rescan; a dialog opened in the microseconds between that
+  check and cleanup is not covered, the same exposure every manual or SDK
+  rescan has upstream.
 - If a second handle to the short-report interface cannot be opened, the
   watcher reads the shared command handle without blocking, under the receiver
   lock. A device query can then consume a link report, so link state is not
