@@ -34,7 +34,7 @@ int main()
     held.unlock();
     assert(deferred.get() && runs == 2);
 
-    // A missing receiver returns only after two consecutive sightings.
+    // A missing receiver is reported after two consecutive sightings.
     HardwareReturnTracker tracker;
     std::atomic<bool> back{false};
     int checks = 0;
@@ -49,7 +49,16 @@ int main()
     assert(tracker.Check().empty());
     std::vector<std::string> returned = tracker.Check();
     assert(returned.size() == 1 && returned[0] == "receiver");
-    assert(!tracker.Empty() && "Only the returned entry is removed");
+
+    // The entry stays until detection confirms recovery: a failed rescan is
+    // retried, with backoff.
+    int rounds = 0;
+    do { returned = tracker.Check(); ++rounds; } while(returned.empty() && rounds < 100);
+    assert(returned.size() == 1 && rounds == 12 && "A second report needs 12 sightings");
+    rounds = 0;
+    do { returned = tracker.Check(); ++rounds; } while(returned.empty() && rounds < 100);
+    assert(returned.size() == 1 && rounds == 60 && "Later reports need 60 sightings");
+    tracker.Forget("receiver");
     tracker.Forget("other");
     assert(tracker.Empty());
 
@@ -60,7 +69,8 @@ int main()
     tracker.Check();
     returned = tracker.Check();
     assert(returned.size() == 1 && "One returning receiver resolves one missing receiver");
-    assert(!tracker.Empty() && "The other stays tracked across the rescan");
+    tracker.Forget("moved");
+    assert(!tracker.Empty() && "Detecting it confirms only the entry that saw it; the other stays tracked");
     tracker.Clear();
 
     // A receiver back at its own path is preferred over one that moved.

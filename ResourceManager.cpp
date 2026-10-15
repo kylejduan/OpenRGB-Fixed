@@ -2186,6 +2186,12 @@ void ResourceManager::StopHardwareReturnMonitor()
     }
 }
 
+void ResourceManager::SetAutomaticRescanGate(std::function<bool()> gate)
+{
+    std::lock_guard<std::mutex> lock(automatic_rescan_gate_mutex);
+    automatic_rescan_gate = std::move(gate);
+}
+
 void ResourceManager::HardwareReturnMonitorFunction()
 {
     std::unique_lock<std::mutex> lock(hardware_return_mutex);
@@ -2219,6 +2225,18 @@ void ResourceManager::HardwareReturnMonitorFunction()
 
 void ResourceManager::CheckHardwareReturnCoroutine()
 {
+    {
+        /*-------------------------------------------------*\
+        | Held while calling, so the gate's owner cannot be |
+        | destroyed during the call                         |
+        \*-------------------------------------------------*/
+        std::lock_guard<std::mutex> lock(automatic_rescan_gate_mutex);
+        if(automatic_rescan_gate && !automatic_rescan_gate())
+        {
+            return;
+        }
+    }
+
     const std::vector<std::string> returned = hardware_returns.Check();
 
     if(returned.empty() || hardware_return_stop)

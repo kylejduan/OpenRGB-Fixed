@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <string>
 #include <QMainWindow>
 #include <QTimer>
@@ -98,6 +99,13 @@ private:
     bool                            plugins_loaded      = false;
 
     /*-----------------------------------------------------*\
+    | A modal dialog may hold controller pointers, so       |
+    | automatic rescans wait while one is open              |
+    \*-----------------------------------------------------*/
+    std::atomic<bool>               modal_dialog_open{false};
+    QTimer*                         modal_dialog_timer  = nullptr;
+
+    /*-----------------------------------------------------*\
     | System tray icon and menu                             |
     \*-----------------------------------------------------*/
     QSystemTrayIcon *               trayIcon;
@@ -123,6 +131,7 @@ private:
     void UpdateDevicesList();
     void UpdateProfileList();
     void closeEvent(QCloseEvent *event) override;
+    bool event(QEvent *event) override;
     bool SelectConfigProfile(const std::string name);
 
     void SetDetectionViewState(bool detection_showing);
