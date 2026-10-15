@@ -220,6 +220,13 @@ public:
     // Call before the final Cleanup() so no rescan starts during exit.
     void StopHardwareReturnMonitor();
 
+    /*-----------------------------------------------------*\
+    | gate() returns false while automatic rescans must     |
+    | wait, for example while a GUI modal dialog is open.   |
+    | It is called on the background thread.                |
+    \*-----------------------------------------------------*/
+    void SetAutomaticRescanGate(std::function<bool()> gate);
+
 private:
     void RestoreProfileAfterRescan();
     void HardwareReturnMonitorFunction();
@@ -351,6 +358,8 @@ private:
     std::condition_variable                     hardware_return_wake;
     std::thread*                                hardware_return_thread = nullptr;
     std::atomic<bool>                           hardware_return_stop{false};
+    std::mutex                                  automatic_rescan_gate_mutex;
+    std::function<bool()>                       automatic_rescan_gate;
     std::vector<std::unique_ptr<BackgroundWorker>> background_workers;
 
     /*-----------------------------------------------------*\

@@ -122,9 +122,13 @@ Each legacy Lightspeed receiver now gets one watcher thread:
   interface path, or, if it moved ports, a receiver of the same model that no
   running watcher owns. A found receiver resolves only one missing receiver,
   preferring the one whose path it has. After two consecutive sightings it
-  rescans and re-applies the last loaded profile. Missing receivers survive
-  rescans, so two receivers unplugged together are both recovered, and exit
-  stops the check before cleanup.
+  rescans and re-applies the last loaded profile. The receiver stays tracked
+  until detection actually rebuilds it; if the scan fails, for example because
+  the receiver reset again, it is retried after about one minute and then every
+  five. Missing receivers survive rescans, so two receivers unplugged together
+  are both recovered, and exit stops the check before cleanup. Automatic
+  rescans wait while a GUI modal dialog is open, because a rescan frees every
+  controller and such a dialog may still hold one.
 - If a second handle to the short-report interface cannot be opened, the
   watcher reads the shared command handle without blocking, under the receiver
   lock. A device query can then consume a link report, so link state is not
@@ -170,7 +174,7 @@ even when enumeration finds nothing, so late announcements still register device
 | `background_worker` | Idle wait runs work under a free mutex and abandons the wait on stop while the mutex stays held |
 | `logitech_enumeration_*` | Both paired devices found when announcements precede or follow the acknowledgement by 800 ms, with a sleeping mouse, with a stale report queued before a register reply, and when notifications must be enabled |
 | `logitech_watcher_*` | Late creation after link up, when linked at detection, or for a slot enumeration missed, with retries that continue while linked and stop when the link drops; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; contention backoff with a bounded log, which periodic refreshes can neither bypass nor postpone; no-reply backoff; receiver removal stops device traffic and is reported once; transient read failures recover and clear it; shared-handle reads never block or hold the lock while idle, and pending slots keep retrying after a link-down report; unsupported devices ignored; malformed reports ignored; prompt stop |
-| `background_worker` (return tracking) | A missing receiver counts as returned only after two consecutive sightings; a miss resets the count; one found receiver resolves one missing receiver, preferring its own path; entries are removed individually |
+| `background_worker` (return tracking) | A missing receiver is reported after two consecutive sightings; a miss resets the count; it stays tracked until recovery is confirmed, with 12 and then 60 sightings before each retry; one found receiver resolves one missing receiver, preferring its own path, and confirming it clears only that entry |
 | `logitech_connection_*` | The connection query matches this slot's reply or error, ignores other slots' reports, gives up within its deadline on a silent receiver, and a streaming receiver cannot stall the read-queue flush |
 
 Deliberately breaking link-down gating, the quiet window, backoff, unsupported

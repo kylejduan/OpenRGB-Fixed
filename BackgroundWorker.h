@@ -71,9 +71,14 @@ bool RunWhenIdle
 | check reports the identity of the hardware it found, or   |
 | an empty string. One identity is given to one entry per   |
 | round, preferring the entry it belongs to, so a single    |
-| returning device cannot resolve two missing ones. An      |
-| entry returns after two consecutive sightings, so the OS  |
-| can finish enumerating every interface first.             |
+| returning device cannot resolve two missing ones.         |
+|                                                           |
+| An entry is reported after two consecutive sightings, so  |
+| the OS can finish enumerating every interface first, and  |
+| stays until Forget() confirms recovery with its own key   |
+| or the identity it was last seen as. Further reports need |
+| 12, then 60 sightings, so a scan that keeps failing is    |
+| retried with backoff instead of in a tight loop.          |
 \*---------------------------------------------------------*/
 class HardwareReturnTracker
 {
@@ -81,13 +86,23 @@ public:
     void Watch(const std::string& key, std::function<std::string()> find)
     {
         std::lock_guard<std::mutex> lock(mutex);
-        entries[key] = Entry{std::move(find), 0};
+        entries[key] = Entry{std::move(find)};
     }
 
-    void Forget(const std::string& key)
+    void Forget(const std::string& identity)
     {
         std::lock_guard<std::mutex> lock(mutex);
-        entries.erase(key);
+        for(std::map<std::string, Entry>::iterator entry = entries.begin(); entry != entries.end();)
+        {
+            if(entry->first == identity || entry->second.last_seen == identity)
+            {
+                entry = entries.erase(entry);
+            }
+            else
+            {
+                ++entry;
+            }
+        }
     }
 
     void Clear()
@@ -104,7 +119,7 @@ public:
 
     /*-----------------------------------------------------*\
     | Runs each check without holding the lock and returns |
-    | the keys seen twice in a row, which are removed       |
+    | the keys whose hardware is back                       |
     \*-----------------------------------------------------*/
     std::vector<std::string> Check()
     {
@@ -124,7 +139,7 @@ public:
         }
 
         std::set<std::string> claimed;
-        std::set<std::string> sighted;
+        std::map<std::string, std::string> sighted;
         for(int pass = 0; pass < 2; pass++)
         {
             for(const std::pair<std::string, std::string>& entry : found)
@@ -135,7 +150,7 @@ public:
                     continue;
                 }
                 claimed.insert(entry.second);
-                sighted.insert(entry.first);
+                sighted[entry.first] = entry.second;
             }
         }
 
@@ -148,14 +163,19 @@ public:
             {
                 continue;
             }
-            if(sighted.count(entry.first) == 0)
+            std::map<std::string, std::string>::const_iterator sighting = sighted.find(entry.first);
+            if(sighting == sighted.end())
             {
                 tracked->second.sightings = 0;
+                continue;
             }
-            else if(++tracked->second.sightings >= 2)
+            tracked->second.last_seen = sighting->second;
+            const int needed = tracked->second.reports == 0 ? 2 : (tracked->second.reports == 1 ? 12 : 60);
+            if(++tracked->second.sightings >= needed)
             {
                 returned.push_back(entry.first);
-                entries.erase(tracked);
+                tracked->second.sightings = 0;
+                tracked->second.reports++;
             }
         }
         return(returned);
@@ -165,7 +185,9 @@ private:
     struct Entry
     {
         std::function<std::string()>    find;
-        int                             sightings;
+        int                             sightings   = 0;
+        int                             reports     = 0;
+        std::string                     last_seen;
     };
 
     std::mutex                      mutex;

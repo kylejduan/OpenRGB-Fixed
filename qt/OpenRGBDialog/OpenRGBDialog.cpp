@@ -25,6 +25,7 @@
 
 #include "ui_OpenRGBDialog.h"
 
+#include <QApplication>
 #include <QLabel>
 #include <QTabBar>
 #include <QMessageBox>
@@ -316,6 +317,16 @@ OpenRGBDialog::OpenRGBDialog(QWidget *parent) : QMainWindow(parent), ui(new Ui::
     ResourceManager::get()->RegisterDetectionEndCallback(DetectionEndedCallback, this);
 
     /*-----------------------------------------------------*\
+    | Hold automatic rescans, such as after a receiver      |
+    | returns, while a modal dialog may hold a controller.  |
+    | The poll also covers dialogs opened from the tray.    |
+    \*-----------------------------------------------------*/
+    modal_dialog_timer = new QTimer(this);
+    connect(modal_dialog_timer, &QTimer::timeout, this, [this]() { modal_dialog_open = QApplication::activeModalWidget() != nullptr; });
+    modal_dialog_timer->start(500);
+    ResourceManager::get()->SetAutomaticRescanGate([this]() { return !modal_dialog_open.load(); });
+
+    /*-----------------------------------------------------*\
     | Register dialog show callback with log manager        |
     \*-----------------------------------------------------*/
     LogManager::get()->RegisterDialogShowCallback(DialogShowCallback, this);
@@ -551,7 +562,22 @@ OpenRGBDialog::OpenRGBDialog(QWidget *parent) : QMainWindow(parent), ui(new Ui::
 
 OpenRGBDialog::~OpenRGBDialog()
 {
+    ResourceManager::get()->SetAutomaticRescanGate(nullptr);
     delete ui;
+}
+
+bool OpenRGBDialog::event(QEvent *event)
+{
+    if(event->type() == QEvent::WindowBlocked)
+    {
+        modal_dialog_open = true;
+    }
+    else if(event->type() == QEvent::WindowUnblocked)
+    {
+        modal_dialog_open = QApplication::activeModalWidget() != nullptr;
+    }
+
+    return(QMainWindow::event(event));
 }
 
 
