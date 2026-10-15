@@ -627,6 +627,7 @@ static int common_main(int argc, char* argv[])
     /*-----------------------------------------------------*\
     | Perform ResourceManager cleanup before exiting        |
     \*-----------------------------------------------------*/
+    ResourceManager::get()->StopHardwareReturnMonitor();
     ResourceManager::get()->Cleanup();
 
     LOG_TRACE("OpenRGB finishing with exit code %d", exitval);

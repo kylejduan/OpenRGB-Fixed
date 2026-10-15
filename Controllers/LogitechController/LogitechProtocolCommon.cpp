@@ -431,8 +431,10 @@ void logitech_device::flushReadQueue()
         int flushed     = 0;
         int result      = 1;
 
-        // Bounded: a receiver streaming notifications must not stall setup.
-        while( result > 0 && flushed < LOGITECH_FLUSH_LIMIT )
+        // Bounded in count and time: a receiver streaming notifications
+        // must not stall setup, rescan, or exit.
+        const std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(LOGITECH_QUERY_DEADLINE_MS);
+        while( result > 0 && flushed < LOGITECH_FLUSH_LIMIT && std::chrono::steady_clock::now() < deadline )
         {
             result = hid_read_timeout(dev->second.get(), response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
             if (result > 0)

@@ -19,7 +19,6 @@ constexpr unsigned char DJ_CONNECTION_NOTIFICATION  = 0x41;
 constexpr unsigned char DJ_LINK_NOT_ESTABLISHED     = 0x40;
 constexpr int           CONNECTION_REPORT_SIZE      = 7;
 constexpr unsigned char RECEIVER_INDEX              = 0xFF;
-constexpr int           RECEIVER_PRESENT_CHECKS     = 2;
 
 std::chrono::milliseconds ContentionQuiet(const LightspeedWatcherTiming& timing, int episodes)
 {
@@ -117,6 +116,11 @@ void LogitechLightspeedReceiverWatcher::Stop()
     {
         worker.join();
     }
+    if(!stopped_reported && receiver.stopped)
+    {
+        stopped_reported = true;
+        receiver.stopped();
+    }
 }
 
 bool LogitechLightspeedReceiverWatcher::StopRequested() const
@@ -140,9 +144,12 @@ void LogitechLightspeedReceiverWatcher::Run()
             }
             if(failed_reads >= timing.read_failures && !receiver_lost)
             {
-                receiver_lost       = true;
-                next_receiver_check = clock::now() + timing.receiver_check;
+                receiver_lost = true;
                 LOG_WARNING("[Lightspeed watcher] Receiver stopped responding; waiting for it to return");
+                if(receiver.lost)
+                {
+                    receiver.lost();
+                }
             }
             std::this_thread::sleep_for(timing.read_timeout);
         }
@@ -151,6 +158,10 @@ void LogitechLightspeedReceiverWatcher::Run()
             if(receiver_lost)
             {
                 LOG_INFO("[Lightspeed watcher] Receiver notifications resumed");
+                if(receiver.recovered)
+                {
+                    receiver.recovered();
+                }
             }
             failed_reads  = 0;
             receiver_lost = false;
@@ -163,11 +174,10 @@ void LogitechLightspeedReceiverWatcher::Run()
         /*-------------------------------------------------*\
         | A removed receiver invalidates every handle the   |
         | slots use, so queries and repaints would only     |
-        | fail. Wait for it and rescan instead.             |
+        | fail. The lost hook arranges the rescan.          |
         \*-------------------------------------------------*/
         if(receiver_lost)
         {
-            WatchReceiver(clock::now());
             continue;
         }
 
@@ -204,41 +214,6 @@ int LogitechLightspeedReceiverWatcher::ReadNotification(unsigned char* report, i
         std::this_thread::sleep_for(timing.read_timeout);
     }
     return(result);
-}
-
-bool LogitechLightspeedReceiverWatcher::WatchReceiver(clock::time_point now)
-{
-    if(rescan_requested || now < next_receiver_check)
-    {
-        return(false);
-    }
-    next_receiver_check = now + timing.receiver_check;
-
-    if(!receiver.present || !receiver.rescan)
-    {
-        return(false);
-    }
-    if(!receiver.present())
-    {
-        present_checks = 0;
-        return(false);
-    }
-
-    /*-----------------------------------------------------*\
-    | Let the OS finish enumerating every interface first   |
-    \*-----------------------------------------------------*/
-    if(++present_checks < RECEIVER_PRESENT_CHECKS)
-    {
-        return(false);
-    }
-
-    LOG_INFO("[Lightspeed watcher] Receiver is back; rescanning devices");
-    rescan_requested = receiver.rescan();
-    if(!rescan_requested)
-    {
-        LOG_WARNING("[Lightspeed watcher] Rescan could not be scheduled; will retry");
-    }
-    return(rescan_requested);
 }
 
 void LogitechLightspeedReceiverWatcher::OnReport(const unsigned char* report, int size, clock::time_point now)
@@ -282,6 +257,14 @@ void LogitechLightspeedReceiverWatcher::OnReport(const unsigned char* report, in
     slot.linked = up;
     if(!up)
     {
+        /*-------------------------------------------------*\
+        | On the shared handle the matching link-up report  |
+        | may be consumed by a query; keep retrying slowly  |
+        \*-------------------------------------------------*/
+        if(!slot.registered && !LinkTrusted())
+        {
+            Schedule(slot, now + timing.create_retry);
+        }
         return;
     }
     slot.interval       = timing.poll;
@@ -354,10 +337,25 @@ void LogitechLightspeedReceiverWatcher::Service(uint8_t index, Slot& slot, clock
     }
 
     /*-------------------------------------------------------------*\
-    | Refresh host-painted colours. Device-side animations are left |
-    | alone: re-applying one restarts it visibly.                   |
+    | Check ownership first: a refresh reclaims control, which      |
+    | would otherwise hide another application's takeover from the  |
+    | contention backoff                                            |
     \*-------------------------------------------------------------*/
-    if(timing.repaint > std::chrono::milliseconds(0) && now >= slot.next_repaint)
+    if(due_now || now >= slot.next_poll)
+    {
+        CheckOwnership(index, slot);
+        return;
+    }
+
+    /*-------------------------------------------------------------*\
+    | Refresh host-painted colours. Device-side animations are left |
+    | alone: re-applying one restarts it visibly. While another     |
+    | application keeps taking control, only the backed-off         |
+    | ownership recovery repaints.                                  |
+    \*-------------------------------------------------------------*/
+    const bool contended = slot.lost_episodes > 0 && now - slot.last_loss < timing.contention_reset;
+
+    if(timing.repaint > std::chrono::milliseconds(0) && now >= slot.next_repaint && now >= slot.quiet_until && !contended)
     {
         slot.next_repaint = now + timing.repaint;
 
@@ -380,13 +378,7 @@ void LogitechLightspeedReceiverWatcher::Service(uint8_t index, Slot& slot, clock
             }
 
             Repaint(index, slot, "refreshing colours");
-            return;
         }
-    }
-
-    if(due_now || now >= slot.next_poll)
-    {
-        CheckOwnership(index, slot);
     }
 }
 
@@ -395,7 +387,7 @@ void LogitechLightspeedReceiverWatcher::Repaint(uint8_t index, Slot& slot, const
     LOG_DEBUG("[Lightspeed watcher] %s on slot %u: %s", slot.hooks.name.c_str(), index, reason);
     slot.hooks.reapply();
     const clock::time_point after = clock::now();
-    slot.quiet_until  = after + timing.quiet;
+    slot.quiet_until  = std::max(slot.quiet_until, after + timing.quiet); // Keep any contention backoff.
     slot.next_poll    = after + timing.poll;
     slot.next_repaint = after + timing.repaint;
 }
@@ -470,7 +462,8 @@ void LogitechLightspeedReceiverWatcher::CheckOwnership(uint8_t index, Slot& slot
         LOG_WARNING("[Lightspeed watcher] %s keeps losing lighting control; another application may be controlling it. Backing off.", slot.hooks.name.c_str());
     }
     slot.hooks.reapply();
-    slot.quiet_until = clock::now() + ContentionQuiet(timing, episodes);
+    slot.quiet_until  = clock::now() + ContentionQuiet(timing, episodes);
+    slot.next_repaint = slot.quiet_until + timing.repaint; // The re-apply was a repaint.
     Schedule(slot, slot.quiet_until);
 }
 

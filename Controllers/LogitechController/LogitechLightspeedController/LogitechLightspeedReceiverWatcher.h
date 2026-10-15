@@ -35,8 +35,9 @@ struct LightspeedSlotHooks
 
 struct LightspeedReceiverHooks
 {
-    std::function<bool()>                   present;        // The receiver is enumerated by the OS.
-    std::function<bool()>                   rescan;         // Schedules a rescan; true once scheduled.
+    std::function<void()>                   lost;           // Reads keep failing: the receiver is gone.
+    std::function<void()>                   recovered;      // Reads succeed again after a loss.
+    std::function<void()>                   stopped;        // The watcher thread has exited.
 };
 
 struct LightspeedWatcherTiming
@@ -71,8 +72,6 @@ struct LightspeedWatcherTiming
     std::chrono::milliseconds               contention_reset{600000};
     // Consecutive failed reads before the receiver is treated as removed.
     int                                     read_failures{3};
-    // How often to look for a removed receiver to return.
-    std::chrono::milliseconds               receiver_check{5000};
 };
 
 class LogitechLightspeedReceiverWatcher : public BackgroundWorker
@@ -122,7 +121,6 @@ private:
 
     void Run();
     int  ReadNotification(unsigned char* report, int size);
-    bool WatchReceiver(clock::time_point now);
     bool LinkTrusted() const;
     void OnReport(const unsigned char* report, int size, clock::time_point now);
     void Service(uint8_t index, Slot& slot, clock::time_point now);
@@ -137,9 +135,7 @@ private:
     LightspeedReceiverHooks         receiver;
     int                             failed_reads    = 0;
     bool                            receiver_lost   = false;
-    bool                            rescan_requested = false;
-    int                             present_checks  = 0;
-    clock::time_point               next_receiver_check{};
+    bool                            stopped_reported = false;
     std::map<uint8_t, Slot>         slots;
     std::atomic<bool>               stop_requested{false};
     std::thread                     worker;

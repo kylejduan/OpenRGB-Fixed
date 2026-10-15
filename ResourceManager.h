@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <atomic>
+#include <condition_variable>
 #include <memory>
 #include <vector>
 #include <functional>
@@ -206,17 +208,21 @@ public:
     bool RunWhenBackgroundIdle(const std::function<bool()>& stop_requested, const std::function<void()>& fn);
 
     /*-----------------------------------------------------*\
-    | Schedules a rescan on the background thread for a     |
-    | worker whose hardware was replaced, for example a     |
-    | receiver that was unplugged or re-enumerated. The     |
-    | last loaded profile is re-applied after detection.    |
-    | The rescan stops the calling worker, so it must not   |
-    | run on the worker's own thread.                       |
+    | Hardware that disappeared, for example an unplugged   |
+    | or re-enumerated receiver. present() runs on the      |
+    | background thread every 5 s; once the hardware is     |
+    | back, devices are rescanned and the last loaded       |
+    | profile is re-applied. Entries survive rescans.       |
     \*-----------------------------------------------------*/
-    bool RescanFromWorker(const std::function<bool()>& stop_requested);
+    void WatchForHardwareReturn(const std::string& key, std::function<bool()> present);
+    void ForgetHardwareReturn(const std::string& key);
+    // Call before the final Cleanup() so no rescan starts during exit.
+    void StopHardwareReturnMonitor();
 
 private:
     void RestoreProfileAfterRescan();
+    void HardwareReturnMonitorFunction();
+    void CheckHardwareReturnCoroutine();
     void UpdateDetectorSettings();
     void SetupConfigurationDirectory();
     bool AttemptLocalConnection();
@@ -339,6 +345,11 @@ private:
     std::mutex                                  BackgroundThreadStateMutex;
     std::mutex                                  BackgroundWorkersMutex;
     std::atomic<bool>                           restore_profile_after_detection{false};
+    HardwareReturnTracker                       hardware_returns;
+    std::mutex                                  hardware_return_mutex;
+    std::condition_variable                     hardware_return_wake;
+    std::thread*                                hardware_return_thread = nullptr;
+    std::atomic<bool>                           hardware_return_stop{false};
     std::vector<std::unique_ptr<BackgroundWorker>> background_workers;
 
     /*-----------------------------------------------------*\

@@ -11,8 +11,12 @@
 
 #include <chrono>
 #include <functional>
+#include <map>
 #include <mutex>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 class BackgroundWorker
 {
@@ -59,3 +63,90 @@ bool RunWhenIdle
     fn();
     return(true);
 }
+
+/*---------------------------------------------------------*\
+| Hardware that disappeared, such as an unplugged receiver, |
+| checked for its return. Entries survive rescans. An entry |
+| returns after two consecutive sightings, so the OS can    |
+| finish enumerating every interface first.                 |
+\*---------------------------------------------------------*/
+class HardwareReturnTracker
+{
+public:
+    void Watch(const std::string& key, std::function<bool()> present)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        entries[key] = Entry{std::move(present), 0};
+    }
+
+    void Forget(const std::string& key)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        entries.erase(key);
+    }
+
+    void Clear()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        entries.clear();
+    }
+
+    bool Empty()
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        return(entries.empty());
+    }
+
+    /*-----------------------------------------------------*\
+    | Runs each check without holding the lock and returns |
+    | the keys seen twice in a row, which are removed       |
+    \*-----------------------------------------------------*/
+    std::vector<std::string> Check()
+    {
+        std::vector<std::pair<std::string, std::function<bool()>>> pending;
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            for(const std::pair<const std::string, Entry>& entry : entries)
+            {
+                pending.emplace_back(entry.first, entry.second.present);
+            }
+        }
+
+        std::vector<std::pair<std::string, bool>> seen;
+        for(const std::pair<std::string, std::function<bool()>>& entry : pending)
+        {
+            seen.emplace_back(entry.first, entry.second());
+        }
+
+        std::vector<std::string> returned;
+        std::lock_guard<std::mutex> lock(mutex);
+        for(const std::pair<std::string, bool>& sighting : seen)
+        {
+            std::map<std::string, Entry>::iterator entry = entries.find(sighting.first);
+            if(entry == entries.end())
+            {
+                continue;
+            }
+            if(!sighting.second)
+            {
+                entry->second.sightings = 0;
+            }
+            else if(++entry->second.sightings >= 2)
+            {
+                returned.push_back(sighting.first);
+                entries.erase(entry);
+            }
+        }
+        return(returned);
+    }
+
+private:
+    struct Entry
+    {
+        std::function<bool()>   present;
+        int                     sightings;
+    };
+
+    std::mutex                      mutex;
+    std::map<std::string, Entry>    entries;
+};
