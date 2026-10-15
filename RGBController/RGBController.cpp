@@ -61,6 +61,12 @@ RGBController::RGBController()
     flags       = 0;
     DeviceThreadRunning = true;
     /*-----------------------------------------------------*\
+    | Clear requests before the thread exists: clearing     |
+    | them on the thread lost any made before it started    |
+    \*-----------------------------------------------------*/
+    CallFlag_UpdateLEDs = false;
+    CallFlag_UpdateMode = false;
+    /*-----------------------------------------------------*\
     | Call non-virtually: the derived constructor is still  |
     | writing the vtable pointer while this thread starts   |
     \*-----------------------------------------------------*/
@@ -2113,9 +2119,6 @@ void RGBController::DeviceUpdateMode()
 
 void RGBController::DeviceCallThreadFunction()
 {
-    CallFlag_UpdateLEDs = false;
-    CallFlag_UpdateMode = false;
-
     while(DeviceThreadRunning.load() == true)
     {
         if(CallFlag_UpdateMode.load() == true)

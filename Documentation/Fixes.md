@@ -130,8 +130,11 @@ Each legacy Lightspeed receiver now gets one watcher thread:
   receiver counts as recovered only once a rescan has opened both of its
   interfaces and started its watcher. With the GUI running, the rescan is
   posted to the GUI thread and runs exactly as the Rescan button does, after
-  any open modal dialog has closed, because a rescan frees every controller and
-  such a dialog may hold one. Without a GUI it runs on the detection thread.
+  any open modal dialog has closed and any running detection has finished,
+  because a rescan frees every controller and such a dialog may hold one. Exit
+  stops return checks before the GUI is destroyed. Without a GUI it runs on the
+  detection thread. A receiver whose long-report interface is not yet available
+  is not used, so it stays tracked until a later check finds it complete.
   Recovery covers receivers that were already watched; it is not general
   hotplug discovery, and upstream detection groups identical receivers, so one
   receiver per model is supported.

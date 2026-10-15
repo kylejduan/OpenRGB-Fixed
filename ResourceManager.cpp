@@ -2241,10 +2241,16 @@ void ResourceManager::CheckHardwareReturnCoroutine()
 
     /*-----------------------------------------------------*\
     | Held while calling, so the handler's owner cannot be  |
-    | destroyed during the call                             |
+    | destroyed during the call. The owner stops return     |
+    | checks before clearing it, so a cleared handler       |
+    | during exit never falls back to a background rescan.  |
     \*-----------------------------------------------------*/
     {
         std::lock_guard<std::mutex> lock(automatic_rescan_mutex);
+        if(hardware_return_stop)
+        {
+            return;
+        }
         if(automatic_rescan_handler)
         {
             automatic_rescan_handler();

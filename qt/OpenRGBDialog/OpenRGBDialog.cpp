@@ -561,6 +561,11 @@ OpenRGBDialog::OpenRGBDialog(QWidget *parent) : QMainWindow(parent), ui(new Ui::
 
 OpenRGBDialog::~OpenRGBDialog()
 {
+    /*-----------------------------------------------------*\
+    | Stop return checks first: without a handler they      |
+    | would rescan in the background during exit            |
+    \*-----------------------------------------------------*/
+    ResourceManager::get()->StopHardwareReturnMonitor();
     ResourceManager::get()->SetAutomaticRescanHandler(nullptr);
     delete ui;
 }
@@ -1739,9 +1744,10 @@ void OpenRGBDialog::onAutomaticRescanRequested()
 {
     /*-----------------------------------------------------*\
     | A modal dialog may hold a controller that a rescan    |
-    | would free; retry once it has closed                  |
+    | would free, and a rescan must not start inside one    |
+    | already running; retry once both have finished        |
     \*-----------------------------------------------------*/
-    if(QApplication::activeModalWidget() != nullptr)
+    if(QApplication::activeModalWidget() != nullptr || ResourceManager::get()->GetDetectionPercent() != 100)
     {
         if(!automatic_rescan_retry)
         {

@@ -83,7 +83,8 @@ int main()
     };
     assert(!rgb.ActiveModeUsesHostColors() && "Off is not host-painted");
 
-    // Alternate the expected answer so every mode change is observable.
+    // Apply each mode synchronously, as the device thread does, so the
+    // result does not depend on worker scheduling.
     const std::pair<const char*, bool> cases[] =
     {
         {"Direct", true}, {"Breathing", false}, {"Static", true},
@@ -92,12 +93,7 @@ int main()
     for(const std::pair<const char*, bool>& expected : cases)
     {
         rgb.active_mode = index(expected.first);
-        rgb.UpdateMode();
-        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
-        while(rgb.ActiveModeUsesHostColors() != expected.second && std::chrono::steady_clock::now() < deadline)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(2));
-        }
+        rgb.DeviceUpdateMode();
         assert(rgb.ActiveModeUsesHostColors() == expected.second && "Periodic refresh classification");
     }
     std::puts("PASS: only static host-painted Lightspeed modes are refreshed");

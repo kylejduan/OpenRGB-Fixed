@@ -1410,6 +1410,17 @@ void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& 
     usages      device_usages   = BundleLogitechUsages(info, &short_report_path);
 
     /*-----------------------------------------------------------------*\
+    | A receiver still enumerating may lack its long-report interface.  |
+    |   Do not claim it: if it was missing, it stays tracked and the    |
+    |   next return check rescans once it is complete.                  |
+    \*-----------------------------------------------------------------*/
+    if(device_usages.count(2) == 0)
+    {
+        LOG_WARNING("[Lightspeed watcher] Receiver %04X long-report interface unavailable; not using it", dev_pid);
+        return;
+    }
+
+    /*-----------------------------------------------------------------*\
     | The watcher reads link notifications from its own handle to the   |
     |   bundled short-report collection. Device queries flush and read  |
     |   the shared handle and would otherwise consume those reports.    |
@@ -1453,11 +1464,11 @@ void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& 
     const bool watching = StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list, link_up, watcher_notifications, short_report_path);
 
     /*-------------------------------------------------*\
-    | A missing receiver is recovered once a rescan has |
-    |   opened both of its interfaces and watches it    |
-    |   again. Otherwise keep it tracked for a retry.   |
+    | A missing receiver is recovered once a rescan     |
+    |   watches it again. Otherwise keep it tracked     |
+    |   for a retry.                                    |
     \*-------------------------------------------------*/
-    if(watching && !short_report_path.empty() && device_usages.count(2))
+    if(watching && !short_report_path.empty())
     {
         ResourceManager::get()->ForgetHardwareReturn(short_report_path);
     }
