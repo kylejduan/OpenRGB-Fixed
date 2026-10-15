@@ -245,9 +245,9 @@ void RGBController_LogitechLightspeed::DeviceUpdateMode()
     | mouse in direct mode.  This code will only be called when |
     | we change modes as to not spam the device.                |
     \*---------------------------------------------------------*/
-    host_colors = ModeUsesHostColors(active_mode);
     controller->lightspeed->setDirectMode(modes[active_mode].name == "Direct");
     DeviceUpdateLEDs();
+    host_colors = ModeUsesHostColors(active_mode); // Published after the mode is fully applied.
 }
 
 int RGBController_LogitechLightspeed::ReadLightingControl(int deadline_ms)

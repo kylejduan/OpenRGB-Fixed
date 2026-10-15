@@ -91,6 +91,23 @@ extern "C" int hid_write(hid_device* dev, const unsigned char* bytes, size_t siz
         }
         else if(fn == 0x20) reply[4] = 3;
     }
+    else if(dev->page == 0x8070 && (fn == 0x00 || fn == 0x10 || fn == 0x20))
+    {
+        // Powerplay mat (0x8070): one LED at location 1 with off and solid.
+        if(fn == 0x00) reply[4] = 1;
+        else if(fn == 0x10)
+        {
+            reply[4] = request[4];
+            reply[6] = 1;
+            reply[7] = 2;
+        }
+        else
+        {
+            reply[4] = request[4];
+            reply[5] = request[5];
+            reply[7] = request[5] == 1 ? 1 : 0;
+        }
+    }
     else if(fn == 0)
     {
         if(request[4] == 255) // G502 device-info fixture: one cluster.
@@ -505,6 +522,22 @@ int main(int argc, char** argv)
         assert(late.RGB_feature_index == 9 && "Slow replies must not shift feature lookups");
         assert(late.getLED_count() == 1 && "Slow replies must not shift LED enumeration");
         assert(late.getLED_info(0).fx.size() == 2);
+    }
+    else if(test == "init_8070" || test == "init_8070_slow" || test == "init_8070_unrelated")
+    {
+        // The Powerplay mat uses 0x8070 and is set up again on every rescan.
+        // Each query must be paired with its own reply.
+        hid_device_ mat;
+        mat.page = 0x8070;
+        mat.slow_replies = test == "init_8070_slow";
+        mat.unrelated_first = test == "init_8070_unrelated";
+        usages bundle;
+        bundle.emplace(2, std::shared_ptr<hid_device>(&mat, hid_close));
+        logitech_device pad(f.path, bundle, 7, false, f.receiver_mutex);
+        assert(pad.RGB_feature_index == 9 && pad.getLED_count() == 1 && "The mat's LED must be enumerated");
+        const logitech_led led = pad.getLED_info(0);
+        assert(led.location == 1 && led.fx.size() == 2);
+        assert(led.fx[0].mode == LOGITECH_DEVICE_LED_OFF && led.fx[1].mode == LOGITECH_DEVICE_LED_ON && "Effects must come from their own replies");
     }
     else if(test == "power_read")
     {

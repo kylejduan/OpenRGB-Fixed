@@ -317,14 +317,13 @@ OpenRGBDialog::OpenRGBDialog(QWidget *parent) : QMainWindow(parent), ui(new Ui::
     ResourceManager::get()->RegisterDetectionEndCallback(DetectionEndedCallback, this);
 
     /*-----------------------------------------------------*\
-    | Hold automatic rescans, such as after a receiver      |
-    | returns, while a modal dialog may hold a controller.  |
-    | The poll also covers dialogs opened from the tray.    |
+    | Automatic rescans, such as after a receiver returns,  |
+    | run on this thread exactly like the Rescan button     |
     \*-----------------------------------------------------*/
-    modal_dialog_timer = new QTimer(this);
-    connect(modal_dialog_timer, &QTimer::timeout, this, [this]() { modal_dialog_open = QApplication::activeModalWidget() != nullptr; });
-    modal_dialog_timer->start(500);
-    ResourceManager::get()->SetAutomaticRescanGate([this]() { return !modal_dialog_open.load(); });
+    ResourceManager::get()->SetAutomaticRescanHandler([this]()
+    {
+        QMetaObject::invokeMethod(this, "onAutomaticRescanRequested", Qt::QueuedConnection);
+    });
 
     /*-----------------------------------------------------*\
     | Register dialog show callback with log manager        |
@@ -562,22 +561,8 @@ OpenRGBDialog::OpenRGBDialog(QWidget *parent) : QMainWindow(parent), ui(new Ui::
 
 OpenRGBDialog::~OpenRGBDialog()
 {
-    ResourceManager::get()->SetAutomaticRescanGate(nullptr);
+    ResourceManager::get()->SetAutomaticRescanHandler(nullptr);
     delete ui;
-}
-
-bool OpenRGBDialog::event(QEvent *event)
-{
-    if(event->type() == QEvent::WindowBlocked)
-    {
-        modal_dialog_open = true;
-    }
-    else if(event->type() == QEvent::WindowUnblocked)
-    {
-        modal_dialog_open = QApplication::activeModalWidget() != nullptr;
-    }
-
-    return(QMainWindow::event(event));
 }
 
 
@@ -1748,6 +1733,30 @@ void OpenRGBDialog::SaveProfileAs()
             }
         }
     }
+}
+
+void OpenRGBDialog::onAutomaticRescanRequested()
+{
+    /*-----------------------------------------------------*\
+    | A modal dialog may hold a controller that a rescan    |
+    | would free; retry once it has closed                  |
+    \*-----------------------------------------------------*/
+    if(QApplication::activeModalWidget() != nullptr)
+    {
+        if(!automatic_rescan_retry)
+        {
+            automatic_rescan_retry = true;
+            QTimer::singleShot(1000, this, [this]()
+            {
+                automatic_rescan_retry = false;
+                onAutomaticRescanRequested();
+            });
+        }
+        return;
+    }
+
+    LOG_INFO("[OpenRGBDialog] Rescanning devices after missing hardware returned");
+    ResourceManager::get()->RescanDevices();
 }
 
 void OpenRGBDialog::on_ButtonRescan_clicked()

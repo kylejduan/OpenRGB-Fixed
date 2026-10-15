@@ -672,22 +672,25 @@ void logitech_device::getRGBconfig()
         \*-----------------------------------------------------------------*/
         blankFAPmessage response;
         response.init();
-        int result;
 
         longFAPrequest get_count;
         get_count.init(device_index, RGB_feature_index, LOGITECH_CMD_RGB_EFFECTS_GET_COUNT);
 
         if(feature_page == LOGITECH_HIDPP_PAGE_RGB_EFFECTS1)
         {
-            result = hid_write(dev_use2, get_count.buffer, get_count.size());
-            int unrelated = 0;
-            do
+            /*-------------------------------------------------------------*\
+            | Each query is paired with its own reply within a deadline,    |
+            | as for 0x8071. The Powerplay mat uses this page, and is set   |
+            | up again by every rescan, including automatic ones.           |
+            \*-------------------------------------------------------------*/
+            if(sendLightingRequest(dev_use2, get_count, response, false, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
             {
-                result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
-                LOG_DEBUG("[%s] FP8070 - LED Count - %02X :   %04X %04X %04X %04X   %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(),
-                    response.data[0], (response.data[1] << 8 | response.data[2]), (response.data[3] << 8 | response.data[4]), (response.data[5] << 8 | response.data[6]),
-                    (response.data[7] << 8 | response.data[8]), response.data[9], response.data[10], response.data[11], response.data[12], response.data[13], response.data[14], response.data[15]);
-            } while ((result == 20) && (get_count.feature_index != response.feature_index) && (get_count.feature_command != response.feature_command) && (++unrelated < LOGITECH_FLUSH_LIMIT));
+                LOG_DEBUG("[%s] FP8070 - No LED count reply", device_name.c_str());
+                return;
+            }
+            LOG_DEBUG("[%s] FP8070 - LED Count - %02X :   %04X %04X %04X %04X   %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(),
+                response.data[0], (response.data[1] << 8 | response.data[2]), (response.data[3] << 8 | response.data[4]), (response.data[5] << 8 | response.data[6]),
+                (response.data[7] << 8 | response.data[8]), response.data[9], response.data[10], response.data[11], response.data[12], response.data[13], response.data[14], response.data[15]);
 
             led_response = response.data[0];
 
@@ -695,19 +698,17 @@ void logitech_device::getRGBconfig()
             for(size_t i = 0; i < led_response; i++)
             {
                 get_count.data[0] = (uint8_t)i;
-                result = hid_write(dev_use2, get_count.buffer, get_count.size());
-                result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+                if(sendLightingRequest(dev_use2, get_count, response, false, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
+                {
+                    LOG_DEBUG("[%s] FP8070 - No LED %02i reply", device_name.c_str(), i);
+                    leds.clear();
+                    return;
+                }
                 LOG_DEBUG("[%s] FP8070 - LED %02i - %02X %02X %02X %02X %02X %02X %02X %02X   %02X %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(), get_count.data[0],
                     response.data[0], response.data[1],  response.data[2],  response.data[3],  response.data[4],  response.data[5],  response.data[6],  response.data[7],
                     response.data[8], response.data[9], response.data[10], response.data[11], response.data[12], response.data[13], response.data[14], response.data[15]);
-                if( result == 20 &&
-                    get_count.feature_index == response.feature_index &&
-                    get_count.feature_command == response.feature_command &&
-                    response.data[0] != 0x10 &&
-                    response.data[1] != 0x02
-                  )
+                if(response.data[0] != 0x10 && response.data[1] != 0x02)
                 {
-                    //If the response is the correct length (i.e. no USB error) and is for the RGB_feature_index and LOGITECH_CMD_RGB_EFFECTS_GET_INFO and no error occured with the led_counter then bump the counter
                     logitech_led new_led;
 
                     new_led.location    = response.data[1] << 8 | response.data[2];
@@ -723,8 +724,12 @@ void logitech_device::getRGBconfig()
 
                         get_effect.data[0] = get_count.data[0];
                         get_effect.data[1] = i;
-                        result = hid_write(dev_use2, get_effect.buffer, get_effect.size());
-                        result = hid_read_timeout(dev_use2, fx_response.buffer, fx_response.size(), LOGITECH_PROTOCOL_TIMEOUT);
+                        if(sendLightingRequest(dev_use2, get_effect, fx_response, false, LOGITECH_QUERY_DEADLINE_MS, false) < 0)
+                        {
+                            LOG_DEBUG("[%s] FP8070 - No LED %02i effect %02X reply", device_name.c_str(), get_count.data[0], i);
+                            leds.clear();
+                            return;
+                        }
                         LOG_DEBUG("[%s] FP8070 - LED %02i Effect %02X - %02X %02X %02X %02X %02X %02X %02X %02X   %02X %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(), get_count.data[0], i,
                             fx_response.data[0], fx_response.data[1],  fx_response.data[2],  fx_response.data[3],  fx_response.data[4],  fx_response.data[5],  fx_response.data[6],  fx_response.data[7],
                             fx_response.data[8], fx_response.data[9], fx_response.data[10], fx_response.data[11], fx_response.data[12], fx_response.data[13], fx_response.data[14], fx_response.data[15]);

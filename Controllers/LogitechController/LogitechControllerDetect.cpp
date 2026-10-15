@@ -1039,7 +1039,19 @@ REGISTER_HID_DETECTOR_IPU("Logitech X56 Rhino Hotas Throttle",              Dete
 
 static RGBController_LogitechLightspeed* BuildLogitechLightspeedDevice(char *path, usages device_usages, uint8_t device_index, uint16_t pid, bool wireless, std::shared_ptr<std::mutex> mutex_ptr, int attempts)
 {
-    LogitechLightspeedController* controller                = new LogitechLightspeedController(device_usages.find(2)->second.get(), path);
+    /*-----------------------------------------------------------------*\
+    | A receiver that is still enumerating may expose its short-report  |
+    | interface before the long-report one                              |
+    \*-----------------------------------------------------------------*/
+    const usages::const_iterator long_reports = device_usages.find(2);
+
+    if(long_reports == device_usages.end())
+    {
+        LOG_INFO("Lightspeed device %u: receiver long-report interface unavailable", device_index);
+        return(nullptr);
+    }
+
+    LogitechLightspeedController* controller                = new LogitechLightspeedController(long_reports->second.get(), path);
     bool lightspeedDeviceIsValid                            = false;
     int retryCount                                          = 0;
 
@@ -1060,6 +1072,20 @@ static RGBController_LogitechLightspeed* BuildLogitechLightspeedDevice(char *pat
     {
         RGBController_LogitechLightspeed* rgb_controller    = new RGBController_LogitechLightspeed(controller);
         rgb_controller->pid                                 = pid;
+
+        /*-------------------------------------------------------------*\
+        | The controller queries the connection again; if the device    |
+        | stopped answering in between it is built without modes. Never |
+        | register that placeholder: a later attempt will succeed.      |
+        \*-------------------------------------------------------------*/
+        if(rgb_controller->modes.size() <= 1 || rgb_controller->zones.empty())
+        {
+            LOG_INFO("Lightspeed device %u disconnected during setup", device_index);
+            rgb_controller->StopDeviceThread();
+            delete rgb_controller;
+            return(nullptr);
+        }
+
         LOG_DEBUG("Added controller in %i retries", retryCount);
         return(rgb_controller);
     }
@@ -1129,7 +1155,8 @@ usages BundleLogitechUsages(hid_device_info* info, std::string* short_report_pat
     \*-----------------------------------------------------------------*/
     usages temp_usages;
 
-    hid_device_info* temp_info  = hid_enumerate(info->vendor_id, info->product_id);
+    hid_device_info* enumeration = hid_enumerate(info->vendor_id, info->product_id);
+    hid_device_info* temp_info   = enumeration;
     while(temp_info)
     {
         /*-----------------------------------------------------------------*\
@@ -1162,6 +1189,7 @@ usages BundleLogitechUsages(hid_device_info* info, std::string* short_report_pat
         temp_info = temp_info->next;
     }
 
+    hid_free_enumeration(enumeration);
     return temp_usages;
 }
 
@@ -1230,7 +1258,7 @@ static std::string FindLogitechReceiver(uint16_t dev_pid, const std::string& sho
     return(found);
 }
 
-static void StartLogitechLightspeedWatcher(const char* path, const usages& device_usages, uint16_t dev_pid, std::shared_ptr<std::mutex> logitech_mutex, const LightspeedSlotList& slot_list, const std::map<uint8_t, bool>& link_up, std::shared_ptr<hid_device> notifications, const std::string& short_report_path)
+static bool StartLogitechLightspeedWatcher(const char* path, const usages& device_usages, uint16_t dev_pid, std::shared_ptr<std::mutex> logitech_mutex, const LightspeedSlotList& slot_list, const std::map<uint8_t, bool>& link_up, std::shared_ptr<hid_device> notifications, const std::string& short_report_path)
 {
     bool shared_handle = false;
 
@@ -1239,7 +1267,7 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
     if(settings.contains("reconnect_watcher") && settings["reconnect_watcher"].is_boolean() && !settings["reconnect_watcher"].get<bool>())
     {
         LOG_INFO("[Lightspeed watcher] Disabled by LogitechLightspeed.reconnect_watcher");
-        return;
+        return(false);
     }
 
     if(!notifications)
@@ -1249,7 +1277,7 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
         if(shared == device_usages.end())
         {
             LOG_INFO("[Lightspeed watcher] Receiver has no short-report interface; not watching");
-            return;
+            return(false);
         }
         LOG_INFO("[Lightspeed watcher] Using the shared short-report handle");
         notifications = shared->second;
@@ -1366,6 +1394,7 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
 
     watcher->Start();
     ResourceManager::get()->RegisterBackgroundWorker(std::move(watcher));
+    return(true);
 }
 
 void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& /*name*/)
@@ -1421,15 +1450,17 @@ void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& 
     {
         LOG_INFO("[Lightspeed watcher] No devices enumerated on receiver %04X; waiting for connections", dev_pid);
     }
+    const bool watching = StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list, link_up, watcher_notifications, short_report_path);
+
     /*-------------------------------------------------*\
-    | A receiver found by any rescan is no longer       |
-    |   missing                                         |
+    | A missing receiver is recovered once a rescan has |
+    |   opened both of its interfaces and watches it    |
+    |   again. Otherwise keep it tracked for a retry.   |
     \*-------------------------------------------------*/
-    if(!short_report_path.empty())
+    if(watching && !short_report_path.empty() && device_usages.count(2))
     {
         ResourceManager::get()->ForgetHardwareReturn(short_report_path);
     }
-    StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list, link_up, watcher_notifications, short_report_path);
 }
 
 /*-------------------------------------------------------------------------------------------------------------------------------------------------*\

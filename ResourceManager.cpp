@@ -2186,10 +2186,10 @@ void ResourceManager::StopHardwareReturnMonitor()
     }
 }
 
-void ResourceManager::SetAutomaticRescanGate(std::function<bool()> gate)
+void ResourceManager::SetAutomaticRescanHandler(std::function<void()> handler)
 {
-    std::lock_guard<std::mutex> lock(automatic_rescan_gate_mutex);
-    automatic_rescan_gate = std::move(gate);
+    std::lock_guard<std::mutex> lock(automatic_rescan_mutex);
+    automatic_rescan_handler = std::move(handler);
 }
 
 void ResourceManager::HardwareReturnMonitorFunction()
@@ -2225,18 +2225,6 @@ void ResourceManager::HardwareReturnMonitorFunction()
 
 void ResourceManager::CheckHardwareReturnCoroutine()
 {
-    {
-        /*-------------------------------------------------*\
-        | Held while calling, so the gate's owner cannot be |
-        | destroyed during the call                         |
-        \*-------------------------------------------------*/
-        std::lock_guard<std::mutex> lock(automatic_rescan_gate_mutex);
-        if(automatic_rescan_gate && !automatic_rescan_gate())
-        {
-            return;
-        }
-    }
-
     const std::vector<std::string> returned = hardware_returns.Check();
 
     if(returned.empty() || hardware_return_stop)
@@ -2249,22 +2237,22 @@ void ResourceManager::CheckHardwareReturnCoroutine()
         LOG_INFO("[ResourceManager] Missing hardware returned: %s", key.c_str());
     }
 
+    restore_profile_after_detection = true;
+
     /*-----------------------------------------------------*\
-    | Check the gate again right before freeing controllers:|
-    | enumeration takes time. The entries stay tracked, so  |
-    | a held rescan is retried.                             |
+    | Held while calling, so the handler's owner cannot be  |
+    | destroyed during the call                             |
     \*-----------------------------------------------------*/
     {
-        std::lock_guard<std::mutex> lock(automatic_rescan_gate_mutex);
-        if(automatic_rescan_gate && !automatic_rescan_gate())
+        std::lock_guard<std::mutex> lock(automatic_rescan_mutex);
+        if(automatic_rescan_handler)
         {
-            LOG_INFO("[ResourceManager] Rescan held while a dialog is open");
+            automatic_rescan_handler();
             return;
         }
     }
-    LOG_INFO("[ResourceManager] Rescanning devices after hardware returned");
 
-    restore_profile_after_detection = true;
+    LOG_INFO("[ResourceManager] Rescanning devices after hardware returned");
     DetectDevices();
 }
 

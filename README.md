@@ -48,7 +48,7 @@ compatibility still depends on upstream device support.
   reconnects, when RGB power returns, when it loses software lighting control,
   or if its own firmware repaints its default while OpenRGB still holds control.
   A device that was asleep during detection is registered when it wakes and
-  receives the last loaded profile. A receiver that is unplugged and
+  receives the last loaded profile. A watched receiver that is unplugged and
   reconnected, or re-enumerated after resume, triggers a rescan that restores
   the last loaded profile.
 
@@ -57,7 +57,8 @@ Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.m
 ## Known limits
 
 Reconnect recovery applies to devices behind a legacy Lightspeed or Powerplay
-receiver on Windows and macOS; this fork's CI does not validate macOS builds. It
+receiver on Windows and macOS. CI builds and tests macOS, but macOS recovery has
+not been tested on hardware. One receiver of each model is supported. It
 checks each awake device every 30 seconds and shortly after it reconnects, and
 refreshes static colors every five minutes, so a wrong color can show for up to
 that long. Another application continuously writing
@@ -66,8 +67,10 @@ backs off to one attempt every two minutes instead of fighting it faster. See
 [Troubleshooting](Documentation/Troubleshooting-Fixed.md#lightspeed-reconnect-watcher)
 to change the interval or turn it off.
 
-Full Windows reboot, sleep/hibernation/resume, receiver reconnection, and future
-driver-update behavior need physical testing on your hardware. The application
+Recovery after a receiver is reconnected rescans every device and re-applies
+the last loaded profile, replacing unsaved changes. Full Windows reboot,
+sleep/hibernation/resume, and future driver-update behavior need physical
+testing on your hardware. The application
 does not disable Logitech services or Windows Dynamic Lighting for you.
 
 ## Setup, startup, and updates
