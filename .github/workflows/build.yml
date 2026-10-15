@@ -88,11 +88,19 @@ jobs:
       - name: Build portable application
         shell: pwsh
         run: ./scripts/package-windows.ps1 -Jobs 2
-      - name: Smoke test version
+      - name: Verify and smoke test the packaged application
         shell: pwsh
         run: |
-          $p = Start-Process ./release/OpenRGB.exe -ArgumentList '--version' -Wait -PassThru -NoNewWindow
-          if ($p.ExitCode -ne 0) { throw 'Version command failed' }
+          $dest = Join-Path $env:RUNNER_TEMP 'package-check'
+          Expand-Archive build/dist/OpenRGB-Fixed-Windows-x64.zip $dest
+          $root = Join-Path $dest 'OpenRGB-Fixed'
+          $manifest = Get-Content (Join-Path $root 'BUILD-MANIFEST.json') -Raw | ConvertFrom-Json
+          if ($manifest.SourceRevision -ne $env:GITHUB_SHA) { throw "Manifest revision $($manifest.SourceRevision) is not $env:GITHUB_SHA" }
+          foreach ($file in $manifest.Files) {
+            if ((Get-FileHash (Join-Path $root $file.Path) -Algorithm SHA256).Hash.ToLowerInvariant() -ne $file.SHA256) { throw "Manifest mismatch: $($file.Path)" }
+          }
+          $p = Start-Process (Join-Path $root 'OpenRGB.exe') -ArgumentList '--version' -Wait -PassThru -NoNewWindow
+          if ($p.ExitCode -ne 0) { throw 'Packaged version command failed' }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: github.event_name == 'workflow_dispatch'
         with:

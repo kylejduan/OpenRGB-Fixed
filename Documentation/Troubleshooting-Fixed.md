@@ -46,11 +46,19 @@ background. When one returns to its onboard colors after sleep, wake, reboot, or
 another program's takeover, OpenRGB repaints it a few seconds after it
 reconnects, within about 30 seconds of losing software control, or within five
 minutes if the device repaints itself while OpenRGB still holds control. A
-warning saying the device keeps losing control means another program is actively
-driving it; OpenRGB then backs off to one attempt every two minutes and logs
-less often. If the receiver is unplugged and plugged back in, or re-enumerated
-after resume, OpenRGB rescans its devices and re-applies the last loaded
-profile within about ten seconds of the receiver returning.
+warning saying the device keeps losing control usually means another program is
+driving it, though it does not prove which; OpenRGB then backs off to one
+attempt every two minutes and logs less often.
+
+If a receiver OpenRGB was already watching is unplugged and plugged back in, or
+re-enumerated after resume, OpenRGB rescans all devices once the receiver has
+been back for about ten seconds, exactly as the Rescan button does, and then
+re-applies the last loaded profile. Detection itself takes several more seconds.
+The rescan waits while any OpenRGB dialog is open. Because it reloads the
+profile on every device, unsaved changes made since that profile was loaded are
+replaced. A receiver that was not present when OpenRGB started is not watched;
+use Rescan after connecting it. One receiver of each model is supported: two
+identical receivers are grouped together by upstream detection.
 
 Settings live in `OpenRGB.json` in the OpenRGB configuration folder. Close
 OpenRGB before editing the file:
@@ -70,9 +78,10 @@ to `false` to turn the watcher off entirely. All three are read during device
 detection.
 
 Logitech's LampArray service can take lighting back from OpenRGB. If you do not
-use Windows Dynamic Lighting or G HUB lighting, setting that service to Manual
-removes the contention; the watcher works either way. To restore it, run in an
-administrator PowerShell:
+use Windows Dynamic Lighting or G HUB lighting, stop that service and set it to
+Manual; changing the startup type alone leaves a running service in place, and
+other software can still start it. The watcher works either way. To restore it,
+run in an administrator PowerShell:
 
 ```powershell
 Set-Service logi_lamparray_service -StartupType Automatic

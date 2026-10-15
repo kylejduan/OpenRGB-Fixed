@@ -27,11 +27,18 @@ add_executable(background_worker
 add_executable(logitech_connection_query
     logitech_connection_query.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
+add_executable(logitech_lightspeed_modes
+    logitech_lightspeed_modes.cpp
+    "${OPENRGB_SOURCE}/RGBController/RGBController.cpp"
+    "${OPENRGB_SOURCE}/StringUtils.cpp"
+    "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp"
+    "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechLightspeedController/LogitechLightspeedController.cpp"
+    "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechLightspeedController/RGBController_LogitechLightspeed.cpp")
 add_executable(logitech_lighting_control
     logitech_lighting_control.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
 
-foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control background_worker logitech_receiver_watcher logitech_receiver_enumeration logitech_connection_query)
+foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control background_worker logitech_receiver_watcher logitech_receiver_enumeration logitech_connection_query logitech_lightspeed_modes)
     target_compile_features(${test_target} PRIVATE cxx_std_17)
     target_include_directories(${test_target} PRIVATE
         "${OPENRGB_SOURCE}"
@@ -67,7 +74,7 @@ foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime l
     endif()
 endforeach()
 
-foreach(lighting_case IN ITEMS static mode color power power_control power_changed power_retry slow_ack replies short_ack stale selector queue_boundary queue_busy errors short write timeout legacy shared control_read power_read init_locked init_slow)
+foreach(lighting_case IN ITEMS static mode color power power_control power_changed power_retry slow_ack replies short_ack stale selector queue_boundary queue_busy errors short write timeout legacy shared control_read power_read init_locked init_slow init_8070 init_8070_slow init_8070_unrelated)
     add_test(NAME logitech_lighting_${lighting_case} COMMAND logitech_lighting_control ${lighting_case})
     set_tests_properties(logitech_lighting_${lighting_case} PROPERTIES TIMEOUT 20)
 endforeach()

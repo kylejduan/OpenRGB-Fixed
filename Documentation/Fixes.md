@@ -126,17 +126,29 @@ Each legacy Lightspeed receiver now gets one watcher thread:
   until detection actually rebuilds it; if the scan fails, for example because
   the receiver reset again, it is retried after about one minute and then every
   five. Missing receivers survive rescans, so two receivers unplugged together
-  are both recovered, and exit stops the check before cleanup. Automatic
-  rescans wait while a GUI modal dialog is open, because a rescan frees every
-  controller and such a dialog may still hold one. The gate is checked again
-  just before the rescan; a dialog opened in the microseconds between that
-  check and cleanup is not covered, the same exposure every manual or SDK
-  rescan has upstream.
+  are both recovered, and exit stops the check before cleanup. The
+  receiver counts as recovered only once a rescan has opened both of its
+  interfaces and started its watcher. With the GUI running, the rescan is
+  posted to the GUI thread and runs exactly as the Rescan button does, after
+  any open modal dialog has closed, because a rescan frees every controller and
+  such a dialog may hold one. Without a GUI it runs on the detection thread.
+  Recovery covers receivers that were already watched; it is not general
+  hotplug discovery, and upstream detection groups identical receivers, so one
+  receiver per model is supported.
+- A late device is built only when the receiver's long-report interface is
+  open, and a controller whose second connection check fails is discarded
+  rather than registered as an empty "Idle Lightspeed Device"; the slot is
+  retried instead.
 - If a second handle to the short-report interface cannot be opened, the
   watcher reads the shared command handle without blocking, under the receiver
   lock. A device query can then consume a link report, so link state is not
   trusted: sleeping slots are still polled at the backoff interval and pending
   slots are retried every 5 min, including after a link-down report.
+
+The Powerplay mat uses the older `0x8070` RGB page, and every rescan sets it up
+again, including automatic ones. Its LED and effect queries used the upstream
+pattern of writing a request and accepting the next report within 300 ms. They
+now use the same matched, one-second transactions as `0x8071`.
 
 `ResourceManager::Cleanup()` stops watchers before any controller or handle is
 released. A late device is queried without holding the background lock;
@@ -178,6 +190,8 @@ even when enumeration finds nothing, so late announcements still register device
 | `logitech_enumeration_*` | Both paired devices found when announcements precede or follow the acknowledgement by 800 ms, with a sleeping mouse, with a stale report queued before a register reply, and when notifications must be enabled |
 | `logitech_watcher_*` | Late creation after link up, when linked at detection, or for a slot enumeration missed, with retries that continue while linked and stop when the link drops; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; contention backoff with a bounded log, which periodic refreshes can neither bypass nor postpone; no-reply backoff; receiver removal stops device traffic and is reported once; transient read failures recover and clear it; shared-handle reads never block or hold the lock while idle, and pending slots keep retrying after a link-down report; unsupported devices ignored; malformed reports ignored; prompt stop |
 | `background_worker` (return tracking) | A missing receiver is reported after two consecutive sightings; a miss resets the count; it stays tracked until recovery is confirmed, with 12 and then 60 sightings before each retry; one found receiver resolves one missing receiver, preferring its own path, and confirming it clears only that entry |
+| `logitech_lighting_init_8070*` | Powerplay `0x8070` setup pairs each LED and effect query with its own reply when replies take 450 ms and when unrelated, wrong-function, and other-application reports arrive first; the upstream reads failed both |
+| `logitech_lightspeed_modes` | The real Lightspeed controller, built from a fake mouse, refreshes Direct and Static but never Off, Spectrum Cycle, or Breathing |
 | `logitech_connection_*` | The connection query matches this slot's reply or error, ignores other slots' reports, gives up within its deadline on a silent receiver, and a streaming receiver cannot stall the read-queue flush |
 
 Deliberately breaking link-down gating, the quiet window, backoff, unsupported

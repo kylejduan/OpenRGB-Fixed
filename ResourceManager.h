@@ -221,11 +221,12 @@ public:
     void StopHardwareReturnMonitor();
 
     /*-----------------------------------------------------*\
-    | gate() returns false while automatic rescans must     |
-    | wait, for example while a GUI modal dialog is open.   |
-    | It is called on the background thread.                |
+    | The GUI runs automatic rescans on its own thread, the |
+    | same way as its Rescan action. handler() is called on |
+    | the background thread and must only post a request.   |
+    | Without a handler, the rescan runs in the background. |
     \*-----------------------------------------------------*/
-    void SetAutomaticRescanGate(std::function<bool()> gate);
+    void SetAutomaticRescanHandler(std::function<void()> handler);
 
 private:
     void RestoreProfileAfterRescan();
@@ -358,8 +359,8 @@ private:
     std::condition_variable                     hardware_return_wake;
     std::thread*                                hardware_return_thread = nullptr;
     std::atomic<bool>                           hardware_return_stop{false};
-    std::mutex                                  automatic_rescan_gate_mutex;
-    std::function<bool()>                       automatic_rescan_gate;
+    std::mutex                                  automatic_rescan_mutex;
+    std::function<void()>                       automatic_rescan_handler;
     std::vector<std::unique_ptr<BackgroundWorker>> background_workers;
 
     /*-----------------------------------------------------*\

@@ -11,6 +11,10 @@ try {
     foreach($tool in @('cl.exe', 'qmake.exe', 'windeployqt.exe', 'git.exe')) {
         Get-Command $tool -ErrorAction Stop | Out-Null
     }
+    # The manifest records HEAD, so modified tracked sources would mislabel the build.
+    $dirty = (& git.exe status --porcelain --untracked-files=no | Out-String).Trim()
+    if($LASTEXITCODE -ne 0) { throw 'Cannot determine source state' }
+    if($dirty) { throw "Tracked sources differ from HEAD; package from a clean checkout:`n$dirty" }
     $dist = Join-Path $sourceRoot 'build\dist'
     $toolsDir = Join-Path $sourceRoot 'build\tools'
     $package = Join-Path $sourceRoot 'build\package\OpenRGB-Fixed'
