@@ -134,7 +134,8 @@ int main(int argc, char** argv)
     if(test == "periodic_repaint")      { timing.poll = 600000ms; timing.repaint = 60ms; }
     if(test == "no_periodic_for_effect"){ timing.poll = 600000ms; timing.repaint = 60ms; mouse.static_colors = false; }
     if(test == "no_repaint_in_power_save"){ timing.poll = 600000ms; timing.repaint = 60ms; mouse.power_script = {2}; }
-    if(test == "create_retry"){ succeed_on = 3; }
+    // A late wake may merge overdue attempts; slow retries continue regardless.
+    if(test == "create_retry"){ succeed_on = 3; timing.create_retry = 30ms; }
     if(test == "create_retry_forever")  { succeed_on = 6; timing.create_retry = 30ms; }
     if(test == "create_retry_link_down"){ succeed_on = 1000; timing.create_retry = 30ms; }
     if(test == "receiver_lost" || test == "receiver_recovers") { timing.poll = 20ms; }
