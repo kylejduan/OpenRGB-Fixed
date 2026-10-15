@@ -388,7 +388,8 @@ void LogitechLightspeedReceiverWatcher::Repaint(uint8_t index, Slot& slot, const
     slot.hooks.reapply();
     const clock::time_point after = clock::now();
     slot.quiet_until  = std::max(slot.quiet_until, after + timing.quiet); // Keep any contention backoff.
-    slot.next_poll    = after + timing.poll;
+    // Keep the ownership deadline: frequent refreshes must not postpone it.
+    slot.next_poll    = std::max(slot.next_poll, slot.quiet_until);
     slot.next_repaint = after + timing.repaint;
 }
 
