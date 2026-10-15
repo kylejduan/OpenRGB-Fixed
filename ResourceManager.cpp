@@ -2146,23 +2146,94 @@ bool ResourceManager::RunWhenBackgroundIdle(const std::function<bool()>& stop_re
     return(RunWhenIdle(BackgroundThreadStateMutex, stop_requested, fn));
 }
 
-bool ResourceManager::RescanFromWorker(const std::function<bool()>& stop_requested)
+void ResourceManager::WatchForHardwareReturn(const std::string& key, std::function<bool()> present)
 {
-    bool scheduled = false;
+    std::lock_guard<std::mutex> lock(hardware_return_mutex);
 
-    RunWhenIdle(BackgroundThreadStateMutex, stop_requested, [this, &scheduled]()
+    if(hardware_return_stop)
     {
-        if(ScheduledBackgroundFunction != nullptr)
-        {
-            return;
-        }
-        restore_profile_after_detection = true;
-        ScheduledBackgroundFunction     = std::bind(&ResourceManager::DetectDevices, this);
-        BackgroundFunctionStartTrigger.notify_one();
-        scheduled                       = true;
-    });
+        return;
+    }
 
-    return(scheduled);
+    hardware_returns.Watch(key, std::move(present));
+
+    if(hardware_return_thread == nullptr)
+    {
+        hardware_return_thread = new std::thread(&ResourceManager::HardwareReturnMonitorFunction, this);
+    }
+}
+
+void ResourceManager::ForgetHardwareReturn(const std::string& key)
+{
+    hardware_returns.Forget(key);
+}
+
+void ResourceManager::StopHardwareReturnMonitor()
+{
+    std::thread* monitor = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(hardware_return_mutex);
+        hardware_return_stop = true;
+        hardware_returns.Clear();
+        std::swap(monitor, hardware_return_thread);
+    }
+    hardware_return_wake.notify_all();
+
+    if(monitor)
+    {
+        monitor->join();
+        delete monitor;
+    }
+}
+
+void ResourceManager::HardwareReturnMonitorFunction()
+{
+    std::unique_lock<std::mutex> lock(hardware_return_mutex);
+
+    while(!hardware_return_stop)
+    {
+        hardware_return_wake.wait_for(lock, std::chrono::seconds(5), [this] { return hardware_return_stop.load(); });
+        if(hardware_return_stop || hardware_returns.Empty())
+        {
+            continue;
+        }
+        lock.unlock();
+
+        /*-------------------------------------------------*\
+        | Presence checks enumerate HID devices, which must |
+        | happen on the background thread on macOS. Never   |
+        | wait on it while detection or cleanup runs.       |
+        \*-------------------------------------------------*/
+        RunWhenIdle(BackgroundThreadStateMutex, [this] { return hardware_return_stop.load(); }, [this]()
+        {
+            if(ScheduledBackgroundFunction == nullptr)
+            {
+                ScheduledBackgroundFunction = std::bind(&ResourceManager::CheckHardwareReturnCoroutine, this);
+                BackgroundFunctionStartTrigger.notify_one();
+            }
+        });
+
+        lock.lock();
+    }
+}
+
+void ResourceManager::CheckHardwareReturnCoroutine()
+{
+    const std::vector<std::string> returned = hardware_returns.Check();
+
+    if(returned.empty() || hardware_return_stop)
+    {
+        return;
+    }
+
+    for(const std::string& key : returned)
+    {
+        LOG_INFO("[ResourceManager] Missing hardware returned: %s", key.c_str());
+    }
+    LOG_INFO("[ResourceManager] Rescanning devices after hardware returned");
+
+    restore_profile_after_detection = true;
+    DetectDevices();
 }
 
 void ResourceManager::RestoreProfileAfterRescan()

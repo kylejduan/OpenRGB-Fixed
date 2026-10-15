@@ -109,7 +109,6 @@ static LightspeedWatcherTiming fast()
     t.create_after_link = {10ms, 40ms, 80ms};
     t.create_retry      = 60000ms; // Only the scheduled attempts unless a case shortens it.
     t.read_failures     = 3;
-    t.receiver_check    = 20ms;
     return t;
 }
 
@@ -140,8 +139,10 @@ int main(int argc, char** argv)
     if(test == "create_retry_link_down"){ succeed_on = 1000; timing.create_retry = 30ms; }
     if(test == "receiver_lost" || test == "receiver_recovers") { timing.poll = 20ms; }
     if(test == "contention")  { timing.poll = 5ms; timing.quiet = 10ms; timing.poll_max = 80ms; mouse.script = {0}; }
-    if(test == "shared_reads"){ timing.create_retry = 30ms; }
-    std::atomic<int> present_calls{0}, rescans{0};
+    if(test == "contention_repaint") { timing.poll = 5ms; timing.quiet = 10ms; timing.poll_max = 80ms; timing.repaint = 5ms; mouse.script = {0}; }
+    if(test == "shared_reads" || test == "shared_link_down") { timing.create_retry = 30ms; }
+    if(test == "shared_link_down") { succeed_on = 1000; }
+    std::atomic<int> losses{0}, recoveries{0}, stops{0};
     // Ownership stays ours: only the reconnect itself may trigger the re-apply.
     if(test == "link_reapply"){ mouse.script = {3}; }
 
@@ -152,16 +153,14 @@ int main(int argc, char** argv)
         if(++creates < succeed_on) return std::nullopt;
         return mouse.hooks();
     });
-    if(test == "receiver_lost")
-    {
-        LightspeedReceiverHooks receiver_hooks;
-        receiver_hooks.present = [&] { return ++present_calls > 2; }; // Unplugged, then back.
-        receiver_hooks.rescan  = [&] { ++rescans; return true; };
-        watcher.SetReceiverHooks(receiver_hooks);
-    }
+    LightspeedReceiverHooks receiver_hooks;
+    receiver_hooks.lost      = [&] { ++losses; };
+    receiver_hooks.recovered = [&] { ++recoveries; };
+    receiver_hooks.stopped   = [&] { ++stops; };
+    watcher.SetReceiverHooks(receiver_hooks);
     auto shared_lock = std::make_shared<std::mutex>();
-    if(test == "shared_reads") watcher.SetSharedReadLock(shared_lock);
-    const bool pending = test == "late_create" || test == "create_retry" || test == "asleep" || test == "malformed" || test == "shared_reads";
+    if(test == "shared_reads" || test == "shared_link_down") watcher.SetSharedReadLock(shared_lock);
+    const bool pending = test == "late_create" || test == "create_retry" || test == "asleep" || test == "malformed" || test == "shared_reads" || test == "shared_link_down";
     if(test == "pending_linked" || test == "create_retry_forever" || test == "create_retry_link_down") watcher.AddPending(1, true);
     else if(pending) watcher.AddPending(1, false);
     else if(test != "unknown_slot") watcher.AddRegistered(1, mouse.hooks());
@@ -307,12 +306,10 @@ int main(int argc, char** argv)
     {
         assert(eventually([&] { return mouse.read_count() >= 2; }));
         receiver.fail = true;
-        std::this_thread::sleep_for(60ms);
+        assert(eventually([&] { return losses == 1; }) && "Report the removed receiver");
         const size_t lost = mouse.read_count();
-        assert(eventually([&] { return rescans == 1; }) && "Rescan once the receiver is back");
-        assert(present_calls >= 4 && "Wait for two consecutive presence checks");
         std::this_thread::sleep_for(200ms);
-        assert(rescans == 1 && "Request the rescan only once");
+        assert(losses == 1 && "Report the loss once");
         assert(mouse.read_count() <= lost + 1 && mouse.reapply_count() == 0 && "No device traffic on dead handles");
     }
     else if(test == "receiver_recovers")
@@ -324,6 +321,7 @@ int main(int argc, char** argv)
         const size_t lost = mouse.read_count();
         receiver.fail = false;
         assert(eventually([&] { return mouse.read_count() > lost; }) && "Resume polling when reads succeed again");
+        assert(losses == 1 && recoveries == 1 && "A recovered receiver is no longer missing");
     }
     else if(test == "contention")
     {
@@ -333,6 +331,22 @@ int main(int argc, char** argv)
         const int reapplies = mouse.reapply_count();
         assert(reapplies >= 5 && reapplies <= 16 && "Back off under persistent contention");
         assert(lost_control_logs <= 6 && lost_control_logs < reapplies && "Log the first losses, then powers of two");
+    }
+    else if(test == "contention_repaint")
+    {
+        // The periodic refresh must not bypass the contention backoff.
+        std::this_thread::sleep_for(800ms);
+        const int reapplies = mouse.reapply_count();
+        assert(reapplies >= 5 && reapplies <= 16 && "Periodic repaints must not bypass the contention backoff");
+    }
+    else if(test == "shared_link_down")
+    {
+        // A link-down report on the shared handle must not end retries: the
+        // matching link-up report may be consumed by a query.
+        assert(eventually([&] { return creates >= 1; }));
+        link(receiver, 1, false);
+        const int before = creates;
+        assert(eventually([&] { return creates > before; }) && "Keep retrying after an untrusted link-down");
     }
     else if(test == "shared_reads")
     {
@@ -352,5 +366,7 @@ int main(int argc, char** argv)
     const auto stopping = std::chrono::steady_clock::now();
     watcher.Stop();
     assert(std::chrono::steady_clock::now() - stopping < 600ms && "Stop must not wait for idle polls");
+    watcher.Stop();
+    assert(stops == 1 && "Report the stop once");
     std::printf("PASS: Lightspeed watcher %s\n", test.c_str());
 }

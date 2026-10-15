@@ -8,7 +8,9 @@
 \*---------------------------------------------------------*/
 
 #include <algorithm>
+#include <mutex>
 #include <optional>
+#include <set>
 #include <thread>
 #include <hidapi.h>
 #include "Detector.h"
@@ -1189,18 +1191,37 @@ static LightspeedSlotHooks LightspeedSlotHooksFor(RGBController_LogitechLightspe
     return(hooks);
 }
 
-#ifdef _WIN32
-static bool LogitechReceiverPresent(uint16_t dev_pid)
-{
-    hid_device_info* found   = hid_enumerate(LOGITECH_VID, dev_pid);
-    const bool       present = found != nullptr;
+/*---------------------------------------------------------------------------------------------------------*\
+| Receivers with a running watcher, by short-report interface path. A missing receiver has returned when    |
+|   its own path is enumerated again, or, if it moved to another port, when an unclaimed receiver of the    |
+|   same model appears. Another receiver of the same model that is still attached is never mistaken for it.|
+\*---------------------------------------------------------------------------------------------------------*/
+static std::mutex               live_receivers_mutex;
+static std::set<std::string>    live_receivers;
 
-    hid_free_enumeration(found);
+static bool LogitechReceiverPresent(uint16_t dev_pid, const std::string& short_report_path)
+{
+    hid_device_info* devices = hid_enumerate(LOGITECH_VID, dev_pid);
+    bool             present = false;
+
+    {
+        std::lock_guard<std::mutex> lock(live_receivers_mutex);
+
+        for(hid_device_info* info = devices; info && !present; info = info->next)
+        {
+            if(info->interface_number != 2 || info->usage != 1 || info->path == nullptr)
+            {
+                continue;
+            }
+            present = short_report_path == info->path || live_receivers.count(info->path) == 0;
+        }
+    }
+
+    hid_free_enumeration(devices);
     return(present);
 }
-#endif
 
-static void StartLogitechLightspeedWatcher(const char* path, const usages& device_usages, uint16_t dev_pid, std::shared_ptr<std::mutex> logitech_mutex, const LightspeedSlotList& slot_list, const std::map<uint8_t, bool>& link_up, std::shared_ptr<hid_device> notifications)
+static void StartLogitechLightspeedWatcher(const char* path, const usages& device_usages, uint16_t dev_pid, std::shared_ptr<std::mutex> logitech_mutex, const LightspeedSlotList& slot_list, const std::map<uint8_t, bool>& link_up, std::shared_ptr<hid_device> notifications, const std::string& short_report_path)
 {
     bool shared_handle = false;
 
@@ -1249,17 +1270,31 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
         watcher->SetSharedReadLock(logitech_mutex);
     }
 
-#ifdef _WIN32
     /*-------------------------------------------------------------*\
     | An unplugged or re-enumerated receiver leaves every handle    |
-    | invalid. A rescan rebuilds them and re-applies the profile.   |
-    | Not on macOS, where HIDAPI belongs to the background thread.  |
+    | invalid. ResourceManager checks for its return on the         |
+    | background thread, then rescans and re-applies the profile.   |
     \*-------------------------------------------------------------*/
-    LightspeedReceiverHooks receiver_hooks;
-    receiver_hooks.present = [dev_pid] { return LogitechReceiverPresent(dev_pid); };
-    receiver_hooks.rescan  = [self] { return ResourceManager::get()->RescanFromWorker([self] { return self->StopRequested(); }); };
-    watcher->SetReceiverHooks(std::move(receiver_hooks));
-#endif
+    if(!short_report_path.empty())
+    {
+        {
+            std::lock_guard<std::mutex> lock(live_receivers_mutex);
+            live_receivers.insert(short_report_path);
+        }
+
+        LightspeedReceiverHooks receiver_hooks;
+        receiver_hooks.lost      = [dev_pid, short_report_path]
+        {
+            ResourceManager::get()->WatchForHardwareReturn(short_report_path, [dev_pid, short_report_path] { return LogitechReceiverPresent(dev_pid, short_report_path); });
+        };
+        receiver_hooks.recovered = [short_report_path] { ResourceManager::get()->ForgetHardwareReturn(short_report_path); };
+        receiver_hooks.stopped   = [short_report_path]
+        {
+            std::lock_guard<std::mutex> lock(live_receivers_mutex);
+            live_receivers.erase(short_report_path);
+        };
+        watcher->SetReceiverHooks(std::move(receiver_hooks));
+    }
 
     watcher->SetCreateHook([self, receiver_path, device_usages, dev_pid, logitech_mutex](uint8_t slot) -> std::optional<LightspeedSlotHooks>
     {
@@ -1281,14 +1316,17 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
 
             /*---------------------------------------------------------*\
             | Apply saved state before publishing, so the GUI and SDK   |
-            | never see the controller change under them                |
+            | never see the controller change under them. Wake the      |
+            | device thread only after registration has set its flags.  |
             \*---------------------------------------------------------*/
-            if(profiles && profiles->ApplyLastProfile(created))
+            const bool applied = profiles && profiles->ApplyLastProfile(created);
+
+            ResourceManager::get()->RegisterRGBController(created);
+
+            if(applied)
             {
                 created->UpdateMode();
             }
-
-            ResourceManager::get()->RegisterRGBController(created);
         });
 
         if(!registered)
@@ -1374,7 +1412,15 @@ void DetectLogitechLightspeedReceiver(hid_device_info* info, const std::string& 
     {
         LOG_INFO("[Lightspeed watcher] No devices enumerated on receiver %04X; waiting for connections", dev_pid);
     }
-    StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list, link_up, watcher_notifications);
+    /*-------------------------------------------------*\
+    | A receiver found by any rescan is no longer       |
+    |   missing                                         |
+    \*-------------------------------------------------*/
+    if(!short_report_path.empty())
+    {
+        ResourceManager::get()->ForgetHardwareReturn(short_report_path);
+    }
+    StartLogitechLightspeedWatcher(path, device_usages, dev_pid, logitech_mutex, slot_list, link_up, watcher_notifications, short_report_path);
 }
 
 /*-------------------------------------------------------------------------------------------------------------------------------------------------*\

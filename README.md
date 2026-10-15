@@ -48,7 +48,7 @@ compatibility still depends on upstream device support.
   reconnects, when RGB power returns, when it loses software lighting control,
   or if its own firmware repaints its default while OpenRGB still holds control.
   A device that was asleep during detection is registered when it wakes and
-  receives the last loaded profile. On Windows, a receiver that is unplugged and
+  receives the last loaded profile. A receiver that is unplugged and
   reconnected, or re-enumerated after resume, triggers a rescan that restores
   the last loaded profile.
 

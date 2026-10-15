@@ -94,7 +94,10 @@ Each legacy Lightspeed receiver now gets one watcher thread:
   interval, and repaints. A 5 s quiet window prevents repeated requests. Each
   further loss doubles that window up to 120 s, and the count resets after ten
   minutes without one, so another application driving the device is not fought
-  ever faster. The first three losses are logged, then only every power of two.
+  ever faster. Ownership is checked before any periodic refresh, and refreshes
+  pause while losses continue, because a refresh reclaims control and would
+  otherwise hide the takeover. The first three losses are logged, then only
+  every power of two.
 - A device can also repaint its own default while keeping our software control,
   so ownership checks alone are not enough. Colours are re-applied 1.5 s and
   10 s after a link comes up, when RGB power returns to full, and every five
@@ -113,15 +116,19 @@ Each legacy Lightspeed receiver now gets one watcher thread:
   loaded even if none of its devices are present yet.
 - If reads on the receiver fail three times in a row, the receiver was unplugged
   or re-enumerated, for example by a USB reset on resume, and every handle the
-  slots hold is dead. The watcher stops all device traffic and, on Windows,
-  checks every 5 s whether the receiver is enumerated again. After two
-  consecutive sightings it schedules one rescan on the detection thread, which
-  rebuilds the handles and re-applies the last loaded profile.
+  slots hold is dead. The watcher stops all device traffic and registers the
+  receiver as missing with `ResourceManager`. Every 5 s the detection thread,
+  which owns HID enumeration on macOS, looks for it: its own short-report
+  interface path, or, if it moved ports, a receiver of the same model that no
+  running watcher owns. After two consecutive sightings it rescans and
+  re-applies the last loaded profile. Missing receivers survive rescans, so two
+  receivers unplugged together are both recovered, and exit stops the check
+  before cleanup.
 - If a second handle to the short-report interface cannot be opened, the
   watcher reads the shared command handle without blocking, under the receiver
   lock. A device query can then consume a link report, so link state is not
   trusted: sleeping slots are still polled at the backoff interval and pending
-  slots are retried every 5 min.
+  slots are retried every 5 min, including after a link-down report.
 
 `ResourceManager::Cleanup()` stops watchers before any controller or handle is
 released. A late device is queried without holding the background lock;
@@ -130,7 +137,8 @@ application, and cleanup are idle. If the watcher is stopping, an unregistered
 controller is stopped and discarded, so a rescan or exit waits for at most one
 initialization attempt. That attempt is bounded: the wireless connection query,
 inherited from upstream as a read with no timeout, now waits at most one second
-for this slot's own reply, and read-queue flushes stop after 64 reports. A
+for this slot's own reply, and read-queue flushes stop after 64 reports or one
+second. A
 no-reply backoff never polls faster than the configured interval.
 Device initialization now holds the receiver mutex so a late device cannot
 interleave with its sibling's lighting transaction.
@@ -160,7 +168,8 @@ even when enumeration finds nothing, so late announcements still register device
 | `logitech_lighting_init_slow` | Name, feature and LED queries stay paired with their replies when every reply takes 450 ms |
 | `background_worker` | Idle wait runs work under a free mutex and abandons the wait on stop while the mutex stays held |
 | `logitech_enumeration_*` | Both paired devices found when announcements precede or follow the acknowledgement by 800 ms, with a sleeping mouse, with a stale report queued before a register reply, and when notifications must be enabled |
-| `logitech_watcher_*` | Late creation after link up, when linked at detection, or for a slot enumeration missed, with retries that continue while linked and stop when the link drops; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; contention backoff with a bounded log; no-reply backoff; receiver removal stops device traffic and requests one rescan after two sightings; transient read failures recover; shared-handle reads never block or hold the lock while idle; unsupported devices ignored; malformed reports ignored; prompt stop |
+| `logitech_watcher_*` | Late creation after link up, when linked at detection, or for a slot enumeration missed, with retries that continue while linked and stop when the link drops; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; contention backoff with a bounded log, which periodic refreshes cannot bypass; no-reply backoff; receiver removal stops device traffic and is reported once; transient read failures recover and clear it; shared-handle reads never block or hold the lock while idle, and pending slots keep retrying after a link-down report; unsupported devices ignored; malformed reports ignored; prompt stop |
+| `background_worker` (return tracking) | A missing receiver counts as returned only after two consecutive sightings; a miss resets the count; entries are removed individually |
 | `logitech_connection_*` | The connection query matches this slot's reply or error, ignores other slots' reports, gives up within its deadline on a silent receiver, and a streaming receiver cannot stall the read-queue flush |
 
 Deliberately breaking link-down gating, the quiet window, backoff, unsupported
