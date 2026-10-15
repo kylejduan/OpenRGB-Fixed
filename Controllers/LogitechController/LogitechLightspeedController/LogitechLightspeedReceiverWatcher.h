@@ -16,6 +16,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <thread>
@@ -30,6 +31,12 @@ struct LightspeedSlotHooks
     std::function<int(int deadline_ms)>     read_power;     // 1 full, 2 power save, 3 off, -1 no reply.
     std::function<bool()>                   static_colors;  // False for device-side animations.
     std::function<void()>                   reapply;
+};
+
+struct LightspeedReceiverHooks
+{
+    std::function<bool()>                   present;        // The receiver is enumerated by the OS.
+    std::function<bool()>                   rescan;         // Schedules a rescan; true once scheduled.
 };
 
 struct LightspeedWatcherTiming
@@ -51,6 +58,21 @@ struct LightspeedWatcherTiming
     \*-----------------------------------------------------------------*/
     std::vector<std::chrono::milliseconds>  after_link{std::chrono::milliseconds(1500), std::chrono::milliseconds(10000)};
     std::vector<std::chrono::milliseconds>  create_after_link{std::chrono::milliseconds(500), std::chrono::milliseconds(3000), std::chrono::milliseconds(10000), std::chrono::milliseconds(60000), std::chrono::milliseconds(300000)};
+    /*-----------------------------------------------------------------*\
+    | A linked device that still fails setup after the schedule above   |
+    | is retried at this interval for as long as it stays linked.       |
+    \*-----------------------------------------------------------------*/
+    std::chrono::milliseconds               create_retry{300000};
+    /*-----------------------------------------------------------------*\
+    | Repeated loss of control usually means another application is     |
+    | driving the device. Each further loss doubles the quiet window up |
+    | to poll_max, and the count resets after this long without one.    |
+    \*-----------------------------------------------------------------*/
+    std::chrono::milliseconds               contention_reset{600000};
+    // Consecutive failed reads before the receiver is treated as removed.
+    int                                     read_failures{3};
+    // How often to look for a removed receiver to return.
+    std::chrono::milliseconds               receiver_check{5000};
 };
 
 class LogitechLightspeedReceiverWatcher : public BackgroundWorker
@@ -63,6 +85,13 @@ public:
 
     // Configuration: call before Start().
     void SetCreateHook(CreateHook hook);
+    void SetReceiverHooks(LightspeedReceiverHooks hooks);
+    /*-----------------------------------------------------------------*\
+    | Notifications arrive on the command handle, which device queries  |
+    | also read. Reads are taken under this lock, and link reports may  |
+    | be consumed by a query, so link state is not trusted.             |
+    \*-----------------------------------------------------------------*/
+    void SetSharedReadLock(std::shared_ptr<std::mutex> lock);
     void AddRegistered(uint8_t slot, LightspeedSlotHooks hooks);
     // linked: the receiver reported the slot's link up during enumeration.
     void AddPending(uint8_t slot, bool linked);
@@ -88,9 +117,13 @@ private:
         bool                            power_saving    = false;
         bool                            repaint_on_due  = false;
         int                             lost_episodes   = 0;
+        clock::time_point               last_loss{};
     };
 
     void Run();
+    int  ReadNotification(unsigned char* report, int size);
+    bool WatchReceiver(clock::time_point now);
+    bool LinkTrusted() const;
     void OnReport(const unsigned char* report, int size, clock::time_point now);
     void Service(uint8_t index, Slot& slot, clock::time_point now);
     void CheckOwnership(uint8_t index, Slot& slot);
@@ -98,8 +131,15 @@ private:
     static void Schedule(Slot& slot, clock::time_point when);
 
     std::shared_ptr<hid_device>     notifications;
+    std::shared_ptr<std::mutex>     shared_reads;
     LightspeedWatcherTiming         timing;
     CreateHook                      create;
+    LightspeedReceiverHooks         receiver;
+    int                             failed_reads    = 0;
+    bool                            receiver_lost   = false;
+    bool                            rescan_requested = false;
+    int                             present_checks  = 0;
+    clock::time_point               next_receiver_check{};
     std::map<uint8_t, Slot>         slots;
     std::atomic<bool>               stop_requested{false};
     std::thread                     worker;

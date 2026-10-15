@@ -139,13 +139,15 @@ bool ProfileManager::LoadSizeFromProfile(std::string profile_name)
     return(LoadProfileWithOptions(profile_name, true, false));
 }
 
+std::string ProfileManager::GetLastProfile()
+{
+    std::lock_guard<std::mutex> lock(last_profile_mutex);
+    return(last_profile);
+}
+
 bool ProfileManager::ApplyLastProfile(RGBController* controller)
 {
-    std::string profile_name;
-    {
-        std::lock_guard<std::mutex> lock(last_profile_mutex);
-        profile_name = last_profile;
-    }
+    const std::string profile_name = GetLastProfile();
 
     if(profile_name.empty() || controller == nullptr)
     {
@@ -456,7 +458,12 @@ bool ProfileManager::LoadProfileWithOptions
         delete temp_controllers[controller_idx];
     }
 
-    if(ret_val && load_settings)
+    /*---------------------------------------------------------*\
+    | Remember a readable profile even when none of its devices |
+    | are present yet: devices that were asleep at startup are  |
+    | restored from it when they connect.                       |
+    \*---------------------------------------------------------*/
+    if(!temp_controllers.empty() && load_settings)
     {
         std::lock_guard<std::mutex> lock(last_profile_mutex);
         last_profile = profile_name;

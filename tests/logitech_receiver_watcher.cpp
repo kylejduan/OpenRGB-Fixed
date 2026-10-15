@@ -8,6 +8,7 @@
 #include <cassert>
 #include <condition_variable>
 #include <cstdio>
+#include <cstring>
 #include <deque>
 #include <string>
 #include <thread>
@@ -19,11 +20,15 @@ struct hid_device_
     std::mutex mutex;
     std::condition_variable ready;
     std::deque<std::vector<unsigned char>> reports;
+    std::atomic<bool> fail{false};
+    std::atomic<int> last_timeout{-1};
 };
 
 extern "C" void hid_close(hid_device*) {}
 extern "C" int hid_read_timeout(hid_device* dev, unsigned char* data, size_t size, int timeout_ms)
 {
+    dev->last_timeout = timeout_ms;
+    if(dev->fail) return -1; // The OS invalidates a removed receiver's handle.
     std::unique_lock<std::mutex> lock(dev->mutex);
     if(!dev->ready.wait_for(lock, std::chrono::milliseconds(timeout_ms), [&] { return !dev->reports.empty(); })) return 0;
     std::vector<unsigned char> report = dev->reports.front();
@@ -35,7 +40,11 @@ extern "C" int hid_read_timeout(hid_device* dev, unsigned char* data, size_t siz
 LogManager::LogManager() {}
 LogManager::~LogManager() {}
 LogManager* LogManager::get() { static LogManager logger; return &logger; }
-void LogManager::append(const char*, int, unsigned int, const char*, ...) {}
+static std::atomic<int> lost_control_logs{0};
+void LogManager::append(const char*, int, unsigned int, const char* format, ...)
+{
+    if(std::strstr(format, "lost software lighting control")) ++lost_control_logs;
+}
 unsigned int LogManager::getLoglevel() { return 0; }
 
 static void push(hid_device_& dev, std::vector<unsigned char> report)
@@ -98,6 +107,9 @@ static LightspeedWatcherTiming fast()
     t.after_link        = {10ms, 60ms};
     t.repaint           = 0ms; // Off unless a case asks for it.
     t.create_after_link = {10ms, 40ms, 80ms};
+    t.create_retry      = 60000ms; // Only the scheduled attempts unless a case shortens it.
+    t.read_failures     = 3;
+    t.receiver_check    = 20ms;
     return t;
 }
 
@@ -124,6 +136,12 @@ int main(int argc, char** argv)
     if(test == "no_periodic_for_effect"){ timing.poll = 600000ms; timing.repaint = 60ms; mouse.static_colors = false; }
     if(test == "no_repaint_in_power_save"){ timing.poll = 600000ms; timing.repaint = 60ms; mouse.power_script = {2}; }
     if(test == "create_retry"){ succeed_on = 3; }
+    if(test == "create_retry_forever")  { succeed_on = 6; timing.create_retry = 30ms; }
+    if(test == "create_retry_link_down"){ succeed_on = 1000; timing.create_retry = 30ms; }
+    if(test == "receiver_lost" || test == "receiver_recovers") { timing.poll = 20ms; }
+    if(test == "contention")  { timing.poll = 5ms; timing.quiet = 10ms; timing.poll_max = 80ms; mouse.script = {0}; }
+    if(test == "shared_reads"){ timing.create_retry = 30ms; }
+    std::atomic<int> present_calls{0}, rescans{0};
     // Ownership stays ours: only the reconnect itself may trigger the re-apply.
     if(test == "link_reapply"){ mouse.script = {3}; }
 
@@ -134,8 +152,17 @@ int main(int argc, char** argv)
         if(++creates < succeed_on) return std::nullopt;
         return mouse.hooks();
     });
-    const bool pending = test == "late_create" || test == "create_retry" || test == "asleep" || test == "malformed";
-    if(test == "pending_linked") watcher.AddPending(1, true);
+    if(test == "receiver_lost")
+    {
+        LightspeedReceiverHooks receiver_hooks;
+        receiver_hooks.present = [&] { return ++present_calls > 2; }; // Unplugged, then back.
+        receiver_hooks.rescan  = [&] { ++rescans; return true; };
+        watcher.SetReceiverHooks(receiver_hooks);
+    }
+    auto shared_lock = std::make_shared<std::mutex>();
+    if(test == "shared_reads") watcher.SetSharedReadLock(shared_lock);
+    const bool pending = test == "late_create" || test == "create_retry" || test == "asleep" || test == "malformed" || test == "shared_reads";
+    if(test == "pending_linked" || test == "create_retry_forever" || test == "create_retry_link_down") watcher.AddPending(1, true);
     else if(pending) watcher.AddPending(1, false);
     else if(test != "unknown_slot") watcher.AddRegistered(1, mouse.hooks());
     watcher.Start();
@@ -259,6 +286,62 @@ int main(int argc, char** argv)
         assert(mouse.read_count() == asleep && "No requests while the link is down");
         link(receiver, 1, true);
         assert(eventually([&] { return mouse.read_count() > asleep; }));
+    }
+    else if(test == "create_retry_forever")
+    {
+        // The fixed schedule is exhausted after three attempts; a linked
+        // device that recovers later must still be registered.
+        assert(eventually([&] { return creates == succeed_on; }, 3000ms) && "Keep retrying a linked device");
+        assert(eventually([&] { return mouse.read_count() >= 1; }));
+    }
+    else if(test == "create_retry_link_down")
+    {
+        assert(eventually([&] { return creates >= 5; }, 3000ms));
+        link(receiver, 1, false);
+        std::this_thread::sleep_for(100ms);
+        const int stopped = creates;
+        std::this_thread::sleep_for(200ms);
+        assert(creates == stopped && "No setup retries while the link is down");
+    }
+    else if(test == "receiver_lost")
+    {
+        assert(eventually([&] { return mouse.read_count() >= 2; }));
+        receiver.fail = true;
+        std::this_thread::sleep_for(60ms);
+        const size_t lost = mouse.read_count();
+        assert(eventually([&] { return rescans == 1; }) && "Rescan once the receiver is back");
+        assert(present_calls >= 4 && "Wait for two consecutive presence checks");
+        std::this_thread::sleep_for(200ms);
+        assert(rescans == 1 && "Request the rescan only once");
+        assert(mouse.read_count() <= lost + 1 && mouse.reapply_count() == 0 && "No device traffic on dead handles");
+    }
+    else if(test == "receiver_recovers")
+    {
+        // Without receiver hooks a transient failure simply resumes.
+        assert(eventually([&] { return mouse.read_count() >= 1; }));
+        receiver.fail = true;
+        std::this_thread::sleep_for(100ms);
+        const size_t lost = mouse.read_count();
+        receiver.fail = false;
+        assert(eventually([&] { return mouse.read_count() > lost; }) && "Resume polling when reads succeed again");
+    }
+    else if(test == "contention")
+    {
+        // Another application keeps taking control: re-apply with a growing
+        // quiet window and keep the log bounded.
+        std::this_thread::sleep_for(800ms);
+        const int reapplies = mouse.reapply_count();
+        assert(reapplies >= 5 && reapplies <= 16 && "Back off under persistent contention");
+        assert(lost_control_logs <= 6 && lost_control_logs < reapplies && "Log the first losses, then powers of two");
+    }
+    else if(test == "shared_reads")
+    {
+        // On the shared command handle a query can consume the link report,
+        // so a sleeping pending slot is retried without one.
+        assert(eventually([&] { return creates >= 1; }) && "Retry setup without trusting link reports");
+        assert(receiver.last_timeout == 0 && "Never block on the shared handle");
+        // Reads take the lock briefly; it must not stay held while idle.
+        assert(eventually([&] { if(!shared_lock->try_lock()) return false; shared_lock->unlock(); return true; }) && "Do not hold the receiver lock while idle");
     }
     else if(test == "stop")
     {

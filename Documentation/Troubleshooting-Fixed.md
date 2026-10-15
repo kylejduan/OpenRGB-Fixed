@@ -47,7 +47,10 @@ another program's takeover, OpenRGB repaints it a few seconds after it
 reconnects, within about 30 seconds of losing software control, or within five
 minutes if the device repaints itself while OpenRGB still holds control. A
 warning saying the device keeps losing control means another program is actively
-driving it.
+driving it; OpenRGB then backs off to one attempt every two minutes and logs
+less often. On Windows, if the receiver is unplugged and plugged back in, or
+re-enumerated after resume, OpenRGB rescans its devices and re-applies the last
+loaded profile within about ten seconds of the receiver returning.
 
 Settings live in `OpenRGB.json` in the OpenRGB configuration folder. Close
 OpenRGB before editing the file:

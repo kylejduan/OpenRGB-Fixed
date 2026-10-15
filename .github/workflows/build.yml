@@ -26,6 +26,13 @@ jobs:
           cmake -S tests -B build/regression -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DOPENRGB_FIXED_SANITIZERS=ON
           cmake --build build/regression --parallel 2
           ctest --test-dir build/regression --output-on-failure
+      - name: Regression tests with the thread sanitizer
+        run: |
+          # Hosted runners use more ASLR entropy than the thread sanitizer supports.
+          sudo sysctl -w vm.mmap_rnd_bits=28
+          cmake -S tests -B build/regression-tsan -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=clang++ -DOPENRGB_FIXED_TSAN=ON
+          cmake --build build/regression-tsan --parallel 2
+          ctest --test-dir build/regression-tsan --output-on-failure
       - name: Build application
         run: |
           mkdir -p build/application

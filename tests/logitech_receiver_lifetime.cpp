@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Exercises the real protocol object's ownership; only the external HID and log APIs are faked.
 #include "LogitechProtocolCommon.h"
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstdio>
@@ -8,24 +9,24 @@
 #include <memory>
 #include <type_traits>
 
-struct hid_device_ { unsigned closes = 0; };
+struct hid_device_ { unsigned closes = 0; int pending_slot = -1; };
 extern "C" void hid_close(hid_device* device) { ++device->closes; }
-extern "C" int hid_write(hid_device* device, const unsigned char*, size_t size)
+extern "C" int hid_write(hid_device* device, const unsigned char* bytes, size_t size)
 {
     assert(device->closes == 0);
+    if(size == 7 && bytes[2] == 0x81 && bytes[3] == 0x02) device->pending_slot = bytes[1];
     return static_cast<int>(size);
 }
-extern "C" int hid_read(hid_device* device, unsigned char* bytes, size_t size)
+extern "C" int hid_read_timeout(hid_device* device, unsigned char* bytes, size_t size, int)
 {
     assert(device->closes == 0);
+    if(device->pending_slot < 0) return 0;
+    // Actual protocol's disconnected response to the connection query.
+    const unsigned char reply[7] = {0x10, static_cast<unsigned char>(device->pending_slot), 0x8F, 0x81, 0x02, 0x09, 0x00};
+    device->pending_slot = -1;
     std::memset(bytes, 0, size);
-    if(size > 5) bytes[5] = 0x09; // Actual protocol's disconnected response.
-    return static_cast<int>(size);
-}
-extern "C" int hid_read_timeout(hid_device* device, unsigned char*, size_t, int)
-{
-    assert(device->closes == 0);
-    return 0;
+    std::memcpy(bytes, reply, std::min(size, sizeof(reply)));
+    return static_cast<int>(std::min(size, sizeof(reply)));
 }
 LogManager::LogManager() {}
 LogManager::~LogManager() {}

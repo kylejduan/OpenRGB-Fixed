@@ -155,6 +155,8 @@ RGBController_LogitechLightspeed::RGBController_LogitechLightspeed(LogitechLight
         location                    = controller->GetDeviceLocation();
         serial                      = controller->GetSerialString();
     }
+
+    host_colors                     = ModeUsesHostColors(active_mode);
 }
 
 RGBController_LogitechLightspeed::~RGBController_LogitechLightspeed()
@@ -243,6 +245,7 @@ void RGBController_LogitechLightspeed::DeviceUpdateMode()
     | mouse in direct mode.  This code will only be called when |
     | we change modes as to not spam the device.                |
     \*---------------------------------------------------------*/
+    host_colors = ModeUsesHostColors(active_mode);
     controller->lightspeed->setDirectMode(modes[active_mode].name == "Direct");
     DeviceUpdateLEDs();
 }
@@ -259,16 +262,32 @@ int RGBController_LogitechLightspeed::ReadLightingPower(int deadline_ms)
 
 /*---------------------------------------------------------*\
 | True when the device shows colours this host painted.     |
-| Device-side animations must not be restarted periodically.|
+| Device-side animations, including Breathing, which takes  |
+| per-LED colours, must not be restarted periodically.      |
 \*---------------------------------------------------------*/
-bool RGBController_LogitechLightspeed::ActiveModeUsesHostColors()
+bool RGBController_LogitechLightspeed::ModeUsesHostColors(int mode_idx) const
 {
-    if(active_mode < 0 || (std::size_t)active_mode >= modes.size())
+    if(mode_idx < 0 || (std::size_t)mode_idx >= modes.size())
     {
         return(false);
     }
 
-    const unsigned int color_mode = modes[active_mode].color_mode;
+    const mode&        selected   = modes[mode_idx];
+    const unsigned int color_mode = selected.color_mode;
+
+    if(selected.flags & MODE_FLAG_HAS_SPEED)
+    {
+        return(false);
+    }
 
     return(color_mode == MODE_COLORS_PER_LED || color_mode == MODE_COLORS_MODE_SPECIFIC);
+}
+
+/*---------------------------------------------------------*| Read by the receiver watcher. The cached value is set on  |
+| the device thread whenever a mode is applied, so the      |
+| watcher never reads mode state the GUI may be changing.   |
+\*---------------------------------------------------------*/
+bool RGBController_LogitechLightspeed::ActiveModeUsesHostColors()
+{
+    return(host_colors.load());
 }
