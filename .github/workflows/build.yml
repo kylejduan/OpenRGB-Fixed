@@ -40,6 +40,27 @@ jobs:
           qmake ../../OpenRGB.pro CONFIG-=debug_and_release CONFIG+=release
           make -j2
           ./openrgb --version
+  macos:
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Install build dependencies
+        run: brew install qt@5 hidapi libusb mbedtls@3
+      - name: Regression tests
+        run: |
+          cmake -S tests -B build/regression -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build/regression --parallel 3
+          ctest --test-dir build/regression --output-on-failure
+      - name: Build application
+        run: |
+          mkdir -p build/application
+          cd build/application
+          "$(brew --prefix qt@5)/bin/qmake" ../../OpenRGB.pro CONFIG-=debug_and_release CONFIG+=release
+          make -j3
+          ./OpenRGB.app/Contents/MacOS/OpenRGB --version
   windows:
     runs-on: windows-2022
     timeout-minutes: 40
