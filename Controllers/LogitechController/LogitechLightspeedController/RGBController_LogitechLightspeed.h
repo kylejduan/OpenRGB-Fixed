@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <atomic>
 #include "RGBController.h"
 #include "LogitechLightspeedController.h"
 
@@ -36,5 +37,8 @@ public:
 
     uint16_t    pid;        //This is a workaround fix for G502 mode breathing / spectrum cycle swap
 private:
+    bool        ModeUsesHostColors(int mode_idx) const;
+
     LogitechLightspeedController* controller;
+    std::atomic<bool>             host_colors{false};
 };

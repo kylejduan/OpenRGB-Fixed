@@ -48,7 +48,9 @@ compatibility still depends on upstream device support.
   reconnects, when RGB power returns, when it loses software lighting control,
   or if its own firmware repaints its default while OpenRGB still holds control.
   A device that was asleep during detection is registered when it wakes and
-  receives the last loaded profile.
+  receives the last loaded profile. On Windows, a receiver that is unplugged and
+  reconnected, or re-enumerated after resume, triggers a rescan that restores
+  the last loaded profile.
 
 Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.md).
 
@@ -59,8 +61,8 @@ receiver on Windows and macOS; this fork's CI does not validate macOS builds. It
 checks each awake device every 30 seconds and shortly after it reconnects, and
 refreshes static colors every five minutes, so a wrong color can show for up to
 that long. Another application continuously writing
-to the same device can still interfere; the watcher then logs a warning instead
-of fighting it faster. See
+to the same device can still interfere; the watcher then logs a warning and
+backs off to one attempt every two minutes instead of fighting it faster. See
 [Troubleshooting](Documentation/Troubleshooting-Fixed.md#lightspeed-reconnect-watcher)
 to change the interval or turn it off.
 

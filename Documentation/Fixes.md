@@ -84,33 +84,54 @@ Each legacy Lightspeed receiver now gets one watcher thread:
 - It waits in a 250 ms read on its own handle to the receiver's short-report
   interface for device connection notifications, which identify the slot and
   whether its link is up. Device queries on the shared handle cannot consume them.
-- For each linked `0x8071` device it reads software control 2 s and 10 s after a
-  link comes up and every 30 s otherwise: one 20-byte request with a one-second
-  reply window. It sends nothing while the receiver reports the link down, and
-  backs off to 120 s when a device does not answer. Devices without `0x8071`, such as the Powerplay mat, are not
-  polled.
+- For each linked `0x8071` device it reads software control every 30 s, and
+  while control is held also reads RGB power: two 20-byte requests, each with a
+  one-second reply window. It sends nothing while the receiver reports the link
+  down, and backs off to 120 s when a device does not answer. Devices without
+  `0x8071`, such as the Powerplay mat, are not polled.
 - When control is lost, it requests the controller's normal mode update. The
   existing driver path reclaims control, restores RGB power with its settle
-  interval, and repaints. A 5 s quiet window prevents repeated requests.
+  interval, and repaints. A 5 s quiet window prevents repeated requests. Each
+  further loss doubles that window up to 120 s, and the count resets after ten
+  minutes without one, so another application driving the device is not fought
+  ever faster. The first three losses are logged, then only every power of two.
 - A device can also repaint its own default while keeping our software control,
   so ownership checks alone are not enough. Colours are re-applied 1.5 s and
   10 s after a link comes up, when RGB power returns to full, and every five
   minutes for host-painted colours (`repaint_seconds`, 0 disables). Refreshes
   skip device-side animations, which a re-apply would restart, and devices in
-  RGB power save, which a re-apply would cancel.
+  RGB power save, which a re-apply would cancel. Breathing takes per-LED colours
+  but is a device-side animation, so any mode with a speed is excluded. The
+  controller records that decision on its own thread whenever a mode is
+  applied; the watcher never reads mode state the GUI may be changing.
 - When a slot that failed detection links up, was already linked when detection
   failed, or links up without having been enumerated at all, it retries creation
-  0.5 s, 3 s, 10 s, 60 s and 5 min later, one initialization attempt each.
-  A successful attempt registers the controller, applies the last loaded profile
-  to it, and updates it.
+  0.5 s, 3 s, 10 s, 60 s and 5 min later, then every 5 min while it stays
+  linked, one initialization attempt each. A successful attempt applies the
+  last loaded profile to the controller, updates it, and only then registers it,
+  so the GUI and SDK never see it change. A profile is remembered when it is
+  loaded even if none of its devices are present yet.
+- If reads on the receiver fail three times in a row, the receiver was unplugged
+  or re-enumerated, for example by a USB reset on resume, and every handle the
+  slots hold is dead. The watcher stops all device traffic and, on Windows,
+  checks every 5 s whether the receiver is enumerated again. After two
+  consecutive sightings it schedules one rescan on the detection thread, which
+  rebuilds the handles and re-applies the last loaded profile.
+- If a second handle to the short-report interface cannot be opened, the
+  watcher reads the shared command handle without blocking, under the receiver
+  lock. A device query can then consume a link report, so link state is not
+  trusted: sleeping slots are still polled at the backoff interval and pending
+  slots are retried every 5 min.
 
 `ResourceManager::Cleanup()` stops watchers before any controller or handle is
 released. A late device is queried without holding the background lock;
 registering it and re-applying lighting wait until detection, startup profile
 application, and cleanup are idle. If the watcher is stopping, an unregistered
 controller is stopped and discarded, so a rescan or exit waits for at most one
-initialization attempt. A no-reply backoff never polls faster than the configured
-interval.
+initialization attempt. That attempt is bounded: the wireless connection query,
+inherited from upstream as a read with no timeout, now waits at most one second
+for this slot's own reply, and read-queue flushes stop after 64 reports. A
+no-reply backoff never polls faster than the configured interval.
 Device initialization now holds the receiver mutex so a late device cannot
 interleave with its sibling's lighting transaction.
 
@@ -139,11 +160,15 @@ even when enumeration finds nothing, so late announcements still register device
 | `logitech_lighting_init_slow` | Name, feature and LED queries stay paired with their replies when every reply takes 450 ms |
 | `background_worker` | Idle wait runs work under a free mutex and abandons the wait on stop while the mutex stays held |
 | `logitech_enumeration_*` | Both paired devices found when announcements precede or follow the acknowledgement by 800 ms, with a sleeping mouse, with a stale report queued before a register reply, and when notifications must be enabled |
-| `logitech_watcher_*` | Late creation after link up, when linked at detection, or for a slot enumeration missed, with retries; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; no-reply backoff; unsupported devices ignored; malformed reports ignored; prompt stop |
+| `logitech_watcher_*` | Late creation after link up, when linked at detection, or for a slot enumeration missed, with retries that continue while linked and stop when the link drops; no polls while the link is down; re-apply after link up and on periodic loss; quiet window; contention backoff with a bounded log; no-reply backoff; receiver removal stops device traffic and requests one rescan after two sightings; transient read failures recover; shared-handle reads never block or hold the lock while idle; unsupported devices ignored; malformed reports ignored; prompt stop |
+| `logitech_connection_*` | The connection query matches this slot's reply or error, ignores other slots' reports, gives up within its deadline on a silent receiver, and a streaming receiver cannot stall the read-queue flush |
 
 Deliberately breaking link-down gating, the quiet window, backoff, unsupported
 device handling, post-link checks, link-state parsing, creation retries, the
-linked-slot schedule, or name reply matching made the matching test fail. The suite also passes under ThreadSanitizer. Physical acceptance of the installed build is recorded in the
+linked-slot schedule, or name reply matching made the matching test fail. CI also runs the suite under ThreadSanitizer. Doing
+so exposed an upstream race: the `RGBController` base constructor started the
+device thread through a virtual call while the derived constructor was still
+writing the vtable pointer. The thread is now started with a non-virtual call. Physical acceptance of the installed build is recorded in the
 [lighting RCCA](Logitech-Lighting-RCCA.md#reconnect-and-takeover-follow-up-2026-09-16).
 
 ## Provenance

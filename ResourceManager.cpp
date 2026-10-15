@@ -1720,6 +1720,8 @@ void ResourceManager::DetectDevicesCoroutine()
         detection_percent = (unsigned int)(percent * 100.0f);
     }
 
+    RestoreProfileAfterRescan();
+
     /*-----------------------------------------------------*\
     | Make sure that when the detection is done, progress   |
     | bar is set to 100%                                    |
@@ -2142,6 +2144,52 @@ bool ResourceManager::RunWhenBackgroundIdle(const std::function<bool()>& stop_re
     }
 
     return(RunWhenIdle(BackgroundThreadStateMutex, stop_requested, fn));
+}
+
+bool ResourceManager::RescanFromWorker(const std::function<bool()>& stop_requested)
+{
+    bool scheduled = false;
+
+    RunWhenIdle(BackgroundThreadStateMutex, stop_requested, [this, &scheduled]()
+    {
+        if(ScheduledBackgroundFunction != nullptr)
+        {
+            return;
+        }
+        restore_profile_after_detection = true;
+        ScheduledBackgroundFunction     = std::bind(&ResourceManager::DetectDevices, this);
+        BackgroundFunctionStartTrigger.notify_one();
+        scheduled                       = true;
+    });
+
+    return(scheduled);
+}
+
+void ResourceManager::RestoreProfileAfterRescan()
+{
+    if(!restore_profile_after_detection.exchange(false) || profile_manager == nullptr)
+    {
+        return;
+    }
+
+    const std::string profile_name = profile_manager->GetLastProfile();
+
+    if(profile_name.empty())
+    {
+        return;
+    }
+
+    const bool loaded = profile_manager->LoadProfile(profile_name);
+
+    LOG_INFO("[ResourceManager] Profile %s after hardware rescan: %s", profile_name.c_str(), loaded ? "applied" : "no match");
+
+    if(loaded)
+    {
+        for(RGBController* controller : rgb_controllers_hw)
+        {
+            controller->UpdateMode();
+        }
+    }
 }
 
 bool ResourceManager::IsAnyDimmDetectorEnabled(json &detector_settings)

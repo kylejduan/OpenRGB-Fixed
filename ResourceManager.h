@@ -205,7 +205,18 @@ public:
     \*-----------------------------------------------------*/
     bool RunWhenBackgroundIdle(const std::function<bool()>& stop_requested, const std::function<void()>& fn);
 
+    /*-----------------------------------------------------*\
+    | Schedules a rescan on the background thread for a     |
+    | worker whose hardware was replaced, for example a     |
+    | receiver that was unplugged or re-enumerated. The     |
+    | last loaded profile is re-applied after detection.    |
+    | The rescan stops the calling worker, so it must not   |
+    | run on the worker's own thread.                       |
+    \*-----------------------------------------------------*/
+    bool RescanFromWorker(const std::function<bool()>& stop_requested);
+
 private:
+    void RestoreProfileAfterRescan();
     void UpdateDetectorSettings();
     void SetupConfigurationDirectory();
     bool AttemptLocalConnection();
@@ -327,6 +338,7 @@ private:
     std::function<void()>                       ScheduledBackgroundFunction;
     std::mutex                                  BackgroundThreadStateMutex;
     std::mutex                                  BackgroundWorkersMutex;
+    std::atomic<bool>                           restore_profile_after_detection{false};
     std::vector<std::unique_ptr<BackgroundWorker>> background_workers;
 
     /*-----------------------------------------------------*\

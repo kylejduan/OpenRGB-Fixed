@@ -1189,8 +1189,21 @@ static LightspeedSlotHooks LightspeedSlotHooksFor(RGBController_LogitechLightspe
     return(hooks);
 }
 
+#ifdef _WIN32
+static bool LogitechReceiverPresent(uint16_t dev_pid)
+{
+    hid_device_info* found   = hid_enumerate(LOGITECH_VID, dev_pid);
+    const bool       present = found != nullptr;
+
+    hid_free_enumeration(found);
+    return(present);
+}
+#endif
+
 static void StartLogitechLightspeedWatcher(const char* path, const usages& device_usages, uint16_t dev_pid, std::shared_ptr<std::mutex> logitech_mutex, const LightspeedSlotList& slot_list, const std::map<uint8_t, bool>& link_up, std::shared_ptr<hid_device> notifications)
 {
+    bool shared_handle = false;
+
     json settings = ResourceManager::get()->GetSettingsManager()->GetSettings("LogitechLightspeed");
 
     if(settings.contains("reconnect_watcher") && settings["reconnect_watcher"].is_boolean() && !settings["reconnect_watcher"].get<bool>())
@@ -1210,6 +1223,7 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
         }
         LOG_INFO("[Lightspeed watcher] Using the shared short-report handle");
         notifications = shared->second;
+        shared_handle = true;
     }
 
     LightspeedWatcherTiming timing;
@@ -1230,6 +1244,23 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
     LogitechLightspeedReceiverWatcher*                 self    = watcher.get();
     const std::string                                  receiver_path(path);
 
+    if(shared_handle)
+    {
+        watcher->SetSharedReadLock(logitech_mutex);
+    }
+
+#ifdef _WIN32
+    /*-------------------------------------------------------------*\
+    | An unplugged or re-enumerated receiver leaves every handle    |
+    | invalid. A rescan rebuilds them and re-applies the profile.   |
+    | Not on macOS, where HIDAPI belongs to the background thread.  |
+    \*-------------------------------------------------------------*/
+    LightspeedReceiverHooks receiver_hooks;
+    receiver_hooks.present = [dev_pid] { return LogitechReceiverPresent(dev_pid); };
+    receiver_hooks.rescan  = [self] { return ResourceManager::get()->RescanFromWorker([self] { return self->StopRequested(); }); };
+    watcher->SetReceiverHooks(std::move(receiver_hooks));
+#endif
+
     watcher->SetCreateHook([self, receiver_path, device_usages, dev_pid, logitech_mutex](uint8_t slot) -> std::optional<LightspeedSlotHooks>
     {
         /*-------------------------------------------------------------*\
@@ -1248,12 +1279,16 @@ static void StartLogitechLightspeedWatcher(const char* path, const usages& devic
         {
             ProfileManager* profiles = ResourceManager::get()->GetProfileManager();
 
-            ResourceManager::get()->RegisterRGBController(created);
-
+            /*---------------------------------------------------------*\
+            | Apply saved state before publishing, so the GUI and SDK   |
+            | never see the controller change under them                |
+            \*---------------------------------------------------------*/
             if(profiles && profiles->ApplyLastProfile(created))
             {
                 created->UpdateMode();
             }
+
+            ResourceManager::get()->RegisterRGBController(created);
         });
 
         if(!registered)

@@ -60,7 +60,11 @@ RGBController::RGBController()
 {
     flags       = 0;
     DeviceThreadRunning = true;
-    DeviceCallThread = new std::thread(&RGBController::DeviceCallThreadFunction, this);
+    /*-----------------------------------------------------*\
+    | Call non-virtually: the derived constructor is still  |
+    | writing the vtable pointer while this thread starts   |
+    \*-----------------------------------------------------*/
+    DeviceCallThread = new std::thread([this] { RGBController::DeviceCallThreadFunction(); });
 }
 
 RGBController::~RGBController()

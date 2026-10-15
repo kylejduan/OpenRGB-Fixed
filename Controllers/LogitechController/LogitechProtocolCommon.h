@@ -320,6 +320,7 @@ private:
     int                         sendLightingRequest(hid_device* dev, longFAPrequest& request, blankFAPmessage& response, bool match_selector = false, int deadline_ms = 1000, bool warn_on_timeout = true);
     int                         ensure8071Control(hid_device* dev);
     int                         prepare8071Lighting(hid_device* dev);
+    bool                        readConnected();        // Caller holds the receiver mutex.
     hid_device*                 getDevice(uint8_t usage_index);
     uint16_t                    getFeaturePage(uint8_t feature_index);
     int                         getDeviceFeatureList();

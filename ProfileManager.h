@@ -71,6 +71,7 @@ public:
     | triggers the device update.                           |
     \*-----------------------------------------------------*/
     bool ApplyLastProfile(RGBController* controller);
+    std::string GetLastProfile();
 
     std::vector<std::string> profile_list;
 

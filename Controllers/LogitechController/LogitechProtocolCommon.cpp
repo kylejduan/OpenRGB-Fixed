@@ -21,6 +21,7 @@
 | wake, beyond the upstream 300 ms read timeout.            |
 \*---------------------------------------------------------*/
 static const int LOGITECH_QUERY_DEADLINE_MS = 1000;
+static const int LOGITECH_FLUSH_LIMIT       = 64;
 
 const char* logitech_led_locations[] =
 {
@@ -252,7 +253,7 @@ void logitech_device::initialiseDevice()
     std::unique_lock<std::mutex> guard;
     if(mutex) guard = std::unique_lock<std::mutex>(*mutex);
 
-    bool is_connected = connected();
+    bool is_connected = readConnected();
     flushReadQueue();
 
     if(is_connected)
@@ -323,33 +324,76 @@ bool logitech_device::is_valid()
 
 bool logitech_device::connected()
 {
-    /*-----------------------------------------------------------------*\
-    | If this is a wireless device test that it's connected             |
+    std::unique_lock<std::mutex> guard;
+    if(mutex) guard = std::unique_lock<std::mutex>(*mutex);
+
+    return(readConnected());
+}
+
+bool logitech_device::readConnected()
+{
+    /*-----------------------------------------------------------------*    | If this is a wireless device test that it's connected             |
     |   Wired devices will always be connected.                         |
     \*-----------------------------------------------------------------*/
-    if(wireless)
-    {
-        bool test = false;
-        hid_device* dev_use1 = getDevice(1);
-
-        if(dev_use1)
-        {
-            shortFAPrequest get_connected_devices;
-            get_connected_devices.init(device_index, LOGITECH_GET_REGISTER_REQUEST);
-            get_connected_devices.feature_command = 0x02;    //0x02 Connection State register. Essentially asking for count of paired devices
-
-            hid_write(dev_use1, get_connected_devices.buffer, get_connected_devices.size());
-            //This hid_read will not timeout as we need to be sure the wireless device is connected
-            hid_read(dev_use1, get_connected_devices.buffer, get_connected_devices.size());
-            test = (get_connected_devices.data[1] != 0x09);  //ERR_RESOURCE_ERROR i.e. not currently connected
-            LOG_DEBUG("Wireless device index %i is %s - %02X %02X %02X", get_connected_devices.device_index,
-                      (test ? "connected" : "disconnected"), get_connected_devices.data[0], get_connected_devices.data[1],  get_connected_devices.data[2]);
-        }
-        return(test);
-    }
-    else
+    if(!wireless)
     {
         return(true);
+    }
+
+    hid_device* dev_use1 = getDevice(1);
+
+    if(!dev_use1)
+    {
+        return(false);
+    }
+
+    shortFAPrequest get_connected_devices;
+    get_connected_devices.init(device_index, LOGITECH_GET_REGISTER_REQUEST);
+    get_connected_devices.feature_command = 0x02;    //0x02 Connection State register
+
+    if(hid_write(dev_use1, get_connected_devices.buffer, get_connected_devices.size()) < 0)
+    {
+        return(false);
+    }
+
+    /*-----------------------------------------------------------------*    | Wait for this slot's register reply or its error. The upstream    |
+    |   unbounded read could block a late-device build, and with it     |
+    |   rescan and exit, if the receiver stopped answering.             |
+    \*-----------------------------------------------------------------*/
+    const std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(LOGITECH_QUERY_DEADLINE_MS);
+    blankFAPmessage response;
+
+    while(true)
+    {
+        const long long remaining = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now()).count();
+        if(remaining <= 0)
+        {
+            LOG_DEBUG("Wireless device index %i did not answer the connection query", device_index);
+            return(false);
+        }
+
+        response.init();
+        const int result = hid_read_timeout(dev_use1, response.buffer, response.size(), static_cast<int>(remaining));
+        if(result < 0)
+        {
+            return(false);
+        }
+        if(result < LOGITECH_SHORT_MESSAGE_LEN || response.report_id != LOGITECH_SHORT_MESSAGE || response.device_index != device_index)
+        {
+            continue;
+        }
+
+        const bool reply = response.feature_index == LOGITECH_GET_REGISTER_REQUEST && response.feature_command == 0x02;
+        const bool error = response.feature_index == LOGITECH_HIDPP_SHORT_ERROR && response.feature_command == LOGITECH_GET_REGISTER_REQUEST && response.data[0] == 0x02;
+        if(!reply && !error)
+        {
+            continue;
+        }
+
+        const bool test = (response.data[1] != 0x09);  //ERR_RESOURCE_ERROR i.e. not currently connected
+        LOG_DEBUG("Wireless device index %i is %s - %02X %02X %02X", device_index,
+                  (test ? "connected" : "disconnected"), response.data[0], response.data[1], response.data[2]);
+        return(test);
     }
 }
 
@@ -387,7 +431,8 @@ void logitech_device::flushReadQueue()
         int flushed     = 0;
         int result      = 1;
 
-        while( result > 0 )
+        // Bounded: a receiver streaming notifications must not stall setup.
+        while( result > 0 && flushed < LOGITECH_FLUSH_LIMIT )
         {
             result = hid_read_timeout(dev->second.get(), response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
             if (result > 0)
@@ -633,13 +678,14 @@ void logitech_device::getRGBconfig()
         if(feature_page == LOGITECH_HIDPP_PAGE_RGB_EFFECTS1)
         {
             result = hid_write(dev_use2, get_count.buffer, get_count.size());
+            int unrelated = 0;
             do
             {
                 result = hid_read_timeout(dev_use2, response.buffer, response.size(), LOGITECH_PROTOCOL_TIMEOUT);
                 LOG_DEBUG("[%s] FP8070 - LED Count - %02X :   %04X %04X %04X %04X   %02X %02X %02X %02X %02X %02X %02X", device_name.c_str(),
                     response.data[0], (response.data[1] << 8 | response.data[2]), (response.data[3] << 8 | response.data[4]), (response.data[5] << 8 | response.data[6]),
                     (response.data[7] << 8 | response.data[8]), response.data[9], response.data[10], response.data[11], response.data[12], response.data[13], response.data[14], response.data[15]);
-            } while ((result == 20) && (get_count.feature_index != response.feature_index) && (get_count.feature_command != response.feature_command));
+            } while ((result == 20) && (get_count.feature_index != response.feature_index) && (get_count.feature_command != response.feature_command) && (++unrelated < LOGITECH_FLUSH_LIMIT));
 
             led_response = response.data[0];
 
