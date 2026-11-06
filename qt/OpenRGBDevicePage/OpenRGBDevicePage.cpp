@@ -1498,7 +1498,9 @@ void OpenRGBDevicePage::on_EditZoneButton_clicked()
                     /*-----------------------------------------------------*\
                     | Update interface to update Device View                |
                     \*-----------------------------------------------------*/
-                    UpdateInterface();
+                    // A structural resize must rebuild the hit-test layout
+                    // before the following selection handlers run.
+                    ui->DeviceViewBox->repaint();
 
                     /*-----------------------------------------------------*\
                     | Update LED box                                        |

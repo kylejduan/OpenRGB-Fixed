@@ -147,7 +147,7 @@ foreach(connection_case IN ITEMS connected error unrelated silent flood)
     set_tests_properties(logitech_connection_${connection_case} PROPERTIES TIMEOUT 20)
 endforeach()
 
-foreach(log_case IN ITEMS singleton buffered filtered console stdout critical disabled disabled_console)
+foreach(log_case IN ITEMS singleton buffered filtered console stdout critical disabled disabled_console failed_file failed_file_console)
     add_test(NAME log_manager_${log_case} COMMAND log_manager ${log_case})
     set_tests_properties(log_manager_${log_case} PROPERTIES TIMEOUT 20)
 endforeach()

@@ -35,19 +35,46 @@ int main(int argc,char**argv)
     const std::string file="logger-"+test+".log";
     if(test=="buffered")LOG_DEBUG("early retained sentinel");
     const bool disabled=test=="disabled" || test=="disabled_console";
-    logger->configure(json{{"logfile",file},{"loglevel",test=="buffered"?LL_DEBUG:LL_INFO},{"log_console",(test=="console" || test=="disabled_console")},{"log_file",!disabled}},filesystem::current_path());
+    const bool failed_file=test=="failed_file" || test=="failed_file_console";
+    const bool unavailable=disabled || failed_file;
+    const bool console=test=="console" || test=="disabled_console" || test=="failed_file_console";
+    std::string first_file=file;
+    if(failed_file)
+    {
+        // An existing directory cannot be opened as an output file on any OS.
+        const auto target=filesystem::current_path() / ("unwritable-"+test);
+        filesystem::create_directories(target);
+        first_file=target.u8string();
+    }
+    if(unavailable)LOG_DEBUG("discarded startup sentinel");
+    logger->configure(json{{"logfile",first_file},{"loglevel",test=="buffered"?LL_DEBUG:LL_INFO},{"log_console",console},{"log_file",!disabled}},filesystem::current_path());
     logger->clearMessages();
-    if(disabled)
+    if(unavailable)
     {
         LOG_DEBUG("disabled hidden sentinel");
         LOG_INFO("disabled info sentinel");
-        if(test=="disabled_console")
+        if(console)
         {
             const auto messages=logger->messages();
             assert(messages.size()==2);
             assert(messages[0]->buffer=="disabled hidden sentinel");
             assert(messages[1]->buffer=="disabled info sentinel");
         }
+        std::ostringstream capture;
+        auto* previous=std::cout.rdbuf(capture.rdbuf());
+        logger->setVerbosity(LL_INFO);
+        LOG_INFO("unavailable stdout sentinel");
+        int dialogs=0;
+        logger->RegisterDialogShowCallback(dialog,&dialogs);
+        LOG_DIALOG("unavailable dialog sentinel");
+        LOG_FATAL("unavailable fatal sentinel");
+        LOG_DEBUG("unavailable escalation sentinel");
+        logger->UnregisterDialogShowCallback(dialog,&dialogs);
+        std::cout.rdbuf(previous);
+        assert(dialogs==1);
+        for(const char* expected:{"unavailable stdout sentinel","unavailable dialog sentinel","unavailable fatal sentinel","unavailable escalation sentinel"})
+            assert(capture.str().find(expected)!=std::string::npos);
+        logger->setVerbosity(LL_FATAL);
         logger->configure(json{{"logfile",file},{"loglevel",LL_DEBUG},{"log_file",true}},filesystem::current_path());
         LOG_INFO("enabled sentinel");
     }
@@ -85,10 +112,12 @@ int main(int argc,char**argv)
     logger->flush();
     std::ifstream input(filesystem::path("logs") / file);
     const std::string contents((std::istreambuf_iterator<char>(input)),{});
-    if(disabled)
+    if(unavailable)
     {
         assert(contents.find("disabled hidden sentinel")==std::string::npos);
         assert(contents.find("disabled info sentinel")==std::string::npos);
+        assert(contents.find("discarded startup sentinel")==std::string::npos);
+        assert(contents.find("unavailable ")==std::string::npos);
         assert(contents.find("enabled sentinel")!=std::string::npos);
     }
     if(test=="buffered")assert(contents.find("early retained sentinel")!=std::string::npos);

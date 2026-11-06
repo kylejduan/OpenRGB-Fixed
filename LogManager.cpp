@@ -17,6 +17,11 @@
 
 #include "filesystem.h"
 
+// This singleton's destination state is guarded by entry_mutex. Before the
+// first configuration, retain startup messages; after an unsuccessful file
+// open or explicit disable, there is no destination for a file backlog.
+static bool file_destination_configured = false;
+
 const char* LogManager::log_codes[] = {"FATAL:", "ERROR:", "Warning:", "Info:", "Verbose:", "Debug:", "Trace:", "Dialog:"};
 
 const char* TimestampPattern = "%04d%02d%02d_%02d%02d%02d";
@@ -152,6 +157,8 @@ void LogManager::configure(json config, const filesystem::path& defaultDir)
         }
     }
 
+    file_destination_configured = true;
+
     /*-----------------------------------------------------*\
     | Check loglevel configuration                          |
     \*-----------------------------------------------------*/
@@ -220,7 +227,7 @@ void LogManager::_flush()
         \*-------------------------------------------------*/
         log_stream.flush();
     }
-    else if(!log_file_enabled)
+    else if(file_destination_configured)
     {
         temp_messages.clear();
     }
@@ -298,7 +305,7 @@ void LogManager::_append(const char* filename, int line, unsigned int level, con
     /*-----------------------------------------------------*\
     | Add the message to the logfile queue                  |
     \*-----------------------------------------------------*/
-    if(log_file_enabled || log_stream.is_open())
+    if(!file_destination_configured || log_stream.is_open())
     {
         temp_messages.push_back(mes);
     }
@@ -327,7 +334,7 @@ void LogManager::clearMessages()
 void LogManager::append(const char* filename, int line, unsigned int level, const char* fmt, ...)
 {
     std::lock_guard<std::recursive_mutex> grd(entry_mutex);
-    const bool no_file = !log_file_enabled && !log_stream.is_open();
+    const bool no_file = file_destination_configured && !log_stream.is_open();
     if(level != LL_FATAL && level != LL_DIALOG && !log_console_enabled
     && level > verbosity && (no_file || (log_stream.is_open() && level > loglevel)))
     {

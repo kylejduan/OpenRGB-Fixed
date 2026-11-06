@@ -30,7 +30,7 @@ compatibility still depends on upstream device support.
 ## What is fixed
 
 - **Less per-update work:** hidden log messages skip formatting and allocation;
-  disabling file logging no longer retains a hidden backlog. Corsair V2
+  disabled or unavailable file logging no longer retains a hidden backlog. Corsair V2
   hardware frames reuse their packet storage, and preview repaint requests
   can be combined by Qt. Hardware refresh intervals remain unchanged.
 - **Idle controller workers:** workers wait for queued updates instead of

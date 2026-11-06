@@ -80,8 +80,8 @@ Fixed.9 removes repeated work from three active paths:
   it returns before formatting or allocation. Startup messages still buffer
   until the file destination is configured; GUI history, stdout verbosity,
   fatal escalation and dialog callbacks retain their existing behavior.
-  Explicitly disabling file logging now discards its backlog instead of
-  retaining every message indefinitely for a possible later file. GUI history
+  Disabled or unavailable file logging now discards its backlog instead of
+  retaining every message indefinitely for a possible later file. An explicit later configuration can retry opening the file. GUI history
   is independent and remains available when enabled.
 - Corsair V2 hardware packets reuse their byte storage and pass the private
   helpers' color vectors by reference. Full, zone, single-LED and keepalive
@@ -91,9 +91,11 @@ Fixed.9 removes repeated work from three active paths:
   unchanged; the software-mode driver is not changed.
 - Device preview refreshes call Qt `update()` so repeated queued refreshes
   can share a paint. The final preview still uses the latest device state.
+  A structural zone resize retains its immediate repaint before selection
+  handlers use the updated layout.
 
 The real logger regression covers hidden, buffered, GUI, stdout, fatal,
-dialog and disabled-file cases. The real Corsair packet builder is tested
+dialog, disabled-file and failed-file cases. The real Corsair packet builder is tested
 against both endpoint layouts and empty, growing and shrinking LED arrays.
 An allocation assertion runs on native and address-sanitized builds; the
 thread-sanitized build retains packet correctness checks and uses the
