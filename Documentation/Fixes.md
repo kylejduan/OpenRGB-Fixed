@@ -39,7 +39,9 @@ including requests arriving during an update being dropped in the default
 clear-after mode. Shutdown still waits for an active hardware transaction. Synchronization lives
 behind the existing worker pointer, preserving the controller's field layout.
 Plugins that compile their own copy of `RGBController.cpp` must use matching
-updated code; binary compatibility with such older plugins is not claimed.
+updated code. Fixed.8 uses a fork-specific plugin API value (`0x46495808`) so
+older upstream-API-4 binaries are rejected instead of being treated as compatible.
+Rebuild plugins against this fork. This does not change the network SDK protocol.
 The `device_worker_notifications` tests cover publication, reentrant updates,
 coalescing, ordering and idle shutdown without hardware or Qt. These tests do
 not establish physical LED timing or a whole-application performance gain.

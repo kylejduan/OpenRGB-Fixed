@@ -66,6 +66,10 @@ Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.m
 
 ## Known limits
 
+Fixed.8 uses a fork-specific binary plugin compatibility version. Plugins built
+for upstream OpenRGB API 4 are rejected; rebuild them against this fork's current
+headers and controller implementation. The network SDK protocol is unchanged.
+
 Reconnect recovery applies to devices behind a legacy Lightspeed or Powerplay
 receiver on Windows and macOS. CI builds and tests macOS, but macOS recovery has
 not been tested on hardware. One receiver of each model is supported. It

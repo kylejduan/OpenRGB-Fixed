@@ -26,8 +26,9 @@
 | 2:    OpenRGB 0.7     First released versioned API, callback unregister functions in ResourceManager  |
 | 3:    OpenRGB 0.9     Use filesystem::path for paths, Added segments                                  |
 | 4:    OpenRGB 1.0     Resizable effects-only zones, zone flags                                        |
+| FIX8: OpenRGB Fixed   Fork-specific worker-storage compatibility; rebuild plugins against this fork |
 \*-----------------------------------------------------------------------------------------------------*/
-#define OPENRGB_PLUGIN_API_VERSION  4
+#define OPENRGB_PLUGIN_API_VERSION  0x46495808U
 
 /*-----------------------------------------------------------------------------------------------------*\
 | Plugin Tab Location Values                                                                            |
