@@ -29,6 +29,10 @@ compatibility still depends on upstream device support.
 
 ## What is fixed
 
+- **Less per-update work:** hidden log messages skip formatting and allocation;
+  disabling file logging no longer retains a hidden backlog. Corsair V2
+  hardware frames reuse their packet storage, and preview repaint requests
+  can be combined by Qt. Hardware refresh intervals remain unchanged.
 - **Idle controller workers:** workers wait for queued updates instead of
   polling every millisecond, while retaining the existing update coalescing.
 - **Corsair V2 hardware lifecycle:** interruptible keepalive waits remove the
@@ -68,7 +72,7 @@ Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.m
 
 ## Known limits
 
-Fixed.8 uses a fork-specific binary plugin compatibility version. Plugins built
+This fork uses a fork-specific binary plugin compatibility version. Plugins built
 for upstream OpenRGB API 4 are rejected; rebuild them against this fork's current
 headers and controller implementation. The network SDK protocol is unchanged.
 

@@ -67,6 +67,45 @@ storage with a known pattern makes the old code fail and the correction pass.
 This adds a single buffer initialization during detection, with no periodic
 work. It does not establish the cause of a particular physical startup failure.
 
+## Per-update allocation and repaint work
+
+Fixed.9 removes repeated work from three active paths:
+
+- The logger uses thread-safe local-static initialization without locking a
+  singleton mutex on every call. When a message has no enabled destination,
+  it returns before formatting or allocation. Startup messages still buffer
+  until the file destination is configured; GUI history, stdout verbosity,
+  fatal escalation and dialog callbacks retain their existing behavior.
+  Explicitly disabling file logging now discards its backlog instead of
+  retaining every message indefinitely for a possible later file. GUI history
+  is independent and remains available when enabled.
+- Corsair V2 hardware packets reuse their byte storage and pass the private
+  helpers' color vectors by reference. Full, zone, single-LED and keepalive
+  paths already share the hardware I/O lock. After capacity is established,
+  frame construction uses one vector allocation rather than three. The public
+  by-value driver method is retained. Packet bytes and hardware timing are
+  unchanged; the software-mode driver is not changed.
+- Device preview refreshes call Qt `update()` so repeated queued refreshes
+  can share a paint. The final preview still uses the latest device state.
+
+The real logger regression covers hidden, buffered, GUI, stdout, fatal,
+dialog and disabled-file cases. The real Corsair packet builder is tested
+against both endpoint layouts and empty, growing and shrinking LED arrays.
+An allocation assertion runs on native and address-sanitized builds; the
+thread-sanitized build retains packet correctness checks and uses the
+sanitizer's allocation interceptors.
+
+Focused software probes found two avoided allocations per hidden log call,
+two fewer allocations per steady-state Corsair frame, and equivalent final
+pixels when Qt combined a burst of preview refreshes. These are isolated
+software costs, not whole-application speedups or hardware throughput claims.
+A one-minute read-only Windows idle sample on a five-controller setup reported
+no CPU time at the process counter's resolution and about six thread context
+switches per second. It does not establish zero overhead or a gaming FPS gain.
+No hardware refresh interval, timer-resolution request or network protocol was
+changed for this pass. Physical reboot and sleep/resume acceptance still
+require checking the connected hardware.
+
 ## Profile colors after automatic rescan
 
 Automatic profile restoration now queues both the mode and its saved per-LED

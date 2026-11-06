@@ -30,6 +30,9 @@ public:
     void    SetLedsDirect(std::vector<RGBColor *> colors);
 
 private:
-    void    SetLedsDirectColourBlocks(std::vector<RGBColor *> colors);
-    void    SetLedsDirectTriplets(std::vector<RGBColor *> colors);
+    void    SetLedsDirectColourBlocks(const std::vector<RGBColor *>& colors);
+    void    SetLedsDirectTriplets(const std::vector<RGBColor *>& colors);
+
+    // The owning RGB controller serializes foreground and keepalive frames.
+    std::vector<uint8_t> led_data;
 };

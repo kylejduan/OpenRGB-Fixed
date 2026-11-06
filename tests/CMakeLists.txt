@@ -29,6 +29,15 @@ add_executable(corsair_v2_drain
     corsair_v2_drain.cpp
     "${OPENRGB_SOURCE}/Controllers/CorsairPeripheralV2Controller/CorsairPeripheralV2Controller.cpp"
     "${OPENRGB_SOURCE}/StringUtils.cpp")
+add_executable(corsair_v2_packet
+    corsair_v2_packet.cpp
+    "${OPENRGB_SOURCE}/Controllers/CorsairPeripheralV2Controller/CorsairPeripheralV2Controller.cpp"
+    "${OPENRGB_SOURCE}/Controllers/CorsairPeripheralV2Controller/CorsairPeripheralV2HardwareController.cpp"
+    "${OPENRGB_SOURCE}/StringUtils.cpp")
+add_executable(log_manager
+    log_manager.cpp
+    "${OPENRGB_SOURCE}/LogManager.cpp")
+target_compile_definitions(log_manager PRIVATE VERSION_STRING="fixture" GIT_COMMIT_ID="fixture" GIT_COMMIT_DATE="fixture")
 add_executable(logitech_receiver_watcher
     logitech_receiver_watcher.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechLightspeedController/LogitechLightspeedReceiverWatcher.cpp")
@@ -51,7 +60,7 @@ add_executable(logitech_lighting_control
     logitech_lighting_control.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
 
-foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime device_worker_notifications corsair_v2_keepalive corsair_v2_drain logitech_lighting_control background_worker logitech_receiver_watcher logitech_receiver_enumeration logitech_connection_query logitech_lightspeed_modes)
+foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime device_worker_notifications corsair_v2_keepalive corsair_v2_drain corsair_v2_packet log_manager logitech_lighting_control background_worker logitech_receiver_watcher logitech_receiver_enumeration logitech_connection_query logitech_lightspeed_modes)
     target_compile_features(${test_target} PRIVATE cxx_std_17)
     target_include_directories(${test_target} PRIVATE
         "${OPENRGB_SOURCE}"
@@ -77,13 +86,14 @@ foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime d
         target_link_options(${test_target} PRIVATE -fsanitize=address,undefined)
     endif()
     if(OPENRGB_FIXED_TSAN)
+        target_compile_definitions(${test_target} PRIVATE OPENRGB_FIXED_TSAN)
         if(MSVC OR NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             message(FATAL_ERROR "The thread sanitizer requires GCC or Clang on a Unix host")
         endif()
         target_compile_options(${test_target} PRIVATE -fsanitize=thread -fno-omit-frame-pointer)
         target_link_options(${test_target} PRIVATE -fsanitize=thread)
     endif()
-    if(NOT test_target MATCHES "^(corsair_v2_keepalive|corsair_v2_drain|device_worker_notifications|logitech_lighting_control|logitech_receiver_watcher|logitech_receiver_enumeration|logitech_connection_query)$")
+    if(NOT test_target MATCHES "^(log_manager|corsair_v2_keepalive|corsair_v2_drain|device_worker_notifications|logitech_lighting_control|logitech_receiver_watcher|logitech_receiver_enumeration|logitech_connection_query)$")
         add_test(NAME ${test_target} COMMAND ${test_target})
         set_tests_properties(${test_target} PROPERTIES TIMEOUT 20)
     endif()
@@ -135,4 +145,9 @@ endforeach()
 foreach(connection_case IN ITEMS connected error unrelated silent flood)
     add_test(NAME logitech_connection_${connection_case} COMMAND logitech_connection_query ${connection_case})
     set_tests_properties(logitech_connection_${connection_case} PROPERTIES TIMEOUT 20)
+endforeach()
+
+foreach(log_case IN ITEMS singleton buffered filtered console stdout critical disabled disabled_console)
+    add_test(NAME log_manager_${log_case} COMMAND log_manager ${log_case})
+    set_tests_properties(log_manager_${log_case} PROPERTIES TIMEOUT 20)
 endforeach()

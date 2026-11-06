@@ -35,19 +35,8 @@ LogManager::LogManager()
 
 LogManager* LogManager::get()
 {
-    static LogManager* _instance = nullptr;
-    static std::mutex instance_mutex;
-    std::lock_guard<std::mutex> grd(instance_mutex);
-
-    /*-----------------------------------------------------*\
-    | Create a new instance if one does not exist           |
-    \*-----------------------------------------------------*/
-    if(!_instance)
-    {
-        _instance = new LogManager();
-    }
-
-    return _instance;
+    static LogManager* instance = new LogManager();
+    return instance;
 }
 
 unsigned int LogManager::getLoglevel()
@@ -231,6 +220,10 @@ void LogManager::_flush()
         \*-------------------------------------------------*/
         log_stream.flush();
     }
+    else if(!log_file_enabled)
+    {
+        temp_messages.clear();
+    }
 }
 
 void LogManager::flush()
@@ -305,7 +298,10 @@ void LogManager::_append(const char* filename, int line, unsigned int level, con
     /*-----------------------------------------------------*\
     | Add the message to the logfile queue                  |
     \*-----------------------------------------------------*/
-    temp_messages.push_back(mes);
+    if(log_file_enabled || log_stream.is_open())
+    {
+        temp_messages.push_back(mes);
+    }
 
     if(log_console_enabled)
     {
@@ -330,12 +326,16 @@ void LogManager::clearMessages()
 
 void LogManager::append(const char* filename, int line, unsigned int level, const char* fmt, ...)
 {
+    std::lock_guard<std::recursive_mutex> grd(entry_mutex);
+    const bool no_file = !log_file_enabled && !log_stream.is_open();
+    if(level != LL_FATAL && level != LL_DIALOG && !log_console_enabled
+    && level > verbosity && (no_file || (log_stream.is_open() && level > loglevel)))
+    {
+        return;
+    }
     va_list va;
     va_start(va, fmt);
-
-    std::lock_guard<std::recursive_mutex> grd(entry_mutex);
     _append(filename, line, level, fmt, va);
-
     va_end(va);
 }
 

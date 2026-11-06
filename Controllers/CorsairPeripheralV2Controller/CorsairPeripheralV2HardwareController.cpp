@@ -40,15 +40,14 @@ void CorsairPeripheralV2HWController::SetLedsDirect(std::vector<RGBColor *>color
     }
 }
 
-void CorsairPeripheralV2HWController::SetLedsDirectColourBlocks(std::vector<RGBColor *>colors)
+void CorsairPeripheralV2HWController::SetLedsDirectColourBlocks(const std::vector<RGBColor *>& colors)
 {
     uint16_t count          = (uint16_t)colors.size();
     uint16_t green          = count;
     uint16_t blue           = (count * 2);
     uint16_t length         = (count * 3);
-    uint8_t* buffer         = new uint8_t[length];
-
-    memset(buffer, 0, length);
+    led_data.resize(length ? length : 1);
+    uint8_t* buffer         = led_data.data();
 
     for(std::size_t i = 0; i < count; i++)
     {
@@ -60,16 +59,14 @@ void CorsairPeripheralV2HWController::SetLedsDirectColourBlocks(std::vector<RGBC
     }
 
     SetLEDs(buffer, length);
-    delete[] buffer;
 }
 
-void CorsairPeripheralV2HWController::SetLedsDirectTriplets(std::vector<RGBColor *>colors)
+void CorsairPeripheralV2HWController::SetLedsDirectTriplets(const std::vector<RGBColor *>& colors)
 {
     uint16_t count          = (uint16_t)colors.size();
     uint16_t length         = (count * 3)   + CORSAIR_V2HW_DATA_OFFSET;
-    uint8_t* buffer         = new uint8_t[length];
-
-    memset(buffer, 0, length);
+    led_data.resize(length ? length : 1);
+    uint8_t* buffer         = led_data.data();
 
     buffer[0]               = CORSAIR_V2_MODE_DIRECT & 0xFF;
     buffer[1]               = CORSAIR_V2_MODE_DIRECT >> 8;
@@ -84,5 +81,4 @@ void CorsairPeripheralV2HWController::SetLedsDirectTriplets(std::vector<RGBColor
     }
 
     SetLEDs(buffer, length);
-    delete[] buffer;
 }
