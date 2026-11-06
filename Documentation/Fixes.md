@@ -45,6 +45,10 @@ Rebuild plugins against this fork. This does not change the network SDK protocol
 The `device_worker_notifications` tests cover publication, reentrant updates,
 coalescing, ordering and idle shutdown without hardware or Qt. These tests do
 not establish physical LED timing or a whole-application performance gain.
+Native MSVC probes measured lower worker cycle totals at low update rates,
+but higher totals at 144-240 updates per second across five synthetic devices.
+The event-driven design trades polling overhead for wakeup cost; it is not a
+universal active-throughput improvement.
 
 ## Corsair V2 hardware keepalive
 

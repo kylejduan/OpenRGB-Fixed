@@ -18,6 +18,15 @@ void* operator new[](size_t n){return ::operator new(n);}
 void operator delete[](void* p)noexcept{::operator delete(p);}
 void operator delete[](void* p,size_t)noexcept{::operator delete(p);}
 #endif
+#if defined(_MSC_VER)
+__declspec(noinline)
+#else
+__attribute__((noinline))
+#endif
+static size_t PublicArgumentCopy(std::vector<RGBColor*> colors)
+{
+    return colors.size();
+}
 static corsair_v2_device device{};
 const unsigned int CORSAIR_V2_DEVICE_COUNT=1;
 static const corsair_v2_device* devices[]={&device};
@@ -82,10 +91,14 @@ int main()
             // builds enforce the allocation budget; every build checks the bytes.
 #ifndef OPENRGB_FIXED_TSAN
             allocations=0;count_allocations=true;
+            // MSVC Debug also allocates an iterator proxy for a vector. Measure
+            // one public argument copy using this build's standard library.
+            for(int frame=0;frame<20;++frame)assert(PublicArgumentCopy(pointers)==pointers.size());
+            const size_t copy_budget=allocations.load();
+            allocations=0;
             for(int frame=0;frame<20;++frame)driver.SetLedsDirect(pointers);
             count_allocations=false;
-            // Preserve the public by-value method ABI: at most its one vector copy per frame.
-            assert(allocations.load()<=20);
+            assert(allocations.load()<=copy_budget);
 #endif
         }
     }
