@@ -34,6 +34,8 @@ compatibility still depends on upstream device support.
 - **Corsair V2 hardware lifecycle:** interruptible keepalive waits remove the
   long idle exit/rescan delay, frame writes are serialized, and disconnected
   handles or report floods cannot trap the input drain in an endless loop.
+- **Corsair V2 initialization:** the capability request starts with a defined
+  report ID and zeroed reserved bytes instead of uninitialized stack data.
 - **Colors after automatic rescan:** saved per-LED colors are queued with the
   restored mode, including devices whose mode update alone does not repaint.
 - **Shared Powerplay/mouse handles:** the final controller owner closes each

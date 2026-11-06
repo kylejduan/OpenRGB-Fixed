@@ -57,7 +57,7 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
     |   also need to set the packet length capabilities for     |
     |   the device being set up.                                |
     \*---------------------------------------------------------*/
-    uint8_t buffer[CORSAIR_V2_PACKET_SIZE];
+    uint8_t buffer[CORSAIR_V2_PACKET_SIZE] = {};
     buffer[1] = write_cmd;
     buffer[2] = CORSAIR_V2_CMD_GET;
     buffer[3] = 0x11;

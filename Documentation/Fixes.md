@@ -57,6 +57,16 @@ reading the public mode field concurrently with mode changes. Cleanup joins the
 device worker and keepalive before releasing the driver. Hardware transactions
 already in progress still have to finish.
 
+## Corsair V2 initialization
+
+The initial VID/capability request now clears its output buffer before filling
+the command fields. Previously only three bytes were initialized, leaving the
+mandatory HID report ID and reserved payload bytes with indeterminate values.
+The transport regression checks the actual request; filling uninitialized stack
+storage with a known pattern makes the old code fail and the correction pass.
+This adds a single buffer initialization during detection, with no periodic
+work. It does not establish the cause of a particular physical startup failure.
+
 ## Profile colors after automatic rescan
 
 Automatic profile restoration now queues both the mode and its saved per-LED

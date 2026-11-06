@@ -89,10 +89,23 @@ foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime d
     endif()
 endforeach()
 
+# Make initialization regressions deterministic instead of relying on the
+# contents of previously used stack memory. This applies only to the fixture.
+if(NOT MSVC)
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag("-ftrivial-auto-var-init=pattern" OPENRGB_FIXED_AUTO_VAR_INIT)
+    if(OPENRGB_FIXED_AUTO_VAR_INIT)
+        target_compile_options(corsair_v2_drain PRIVATE -ftrivial-auto-var-init=pattern)
+    endif()
+endif()
+
 foreach(drain_case IN ITEMS error flood)
     add_test(NAME corsair_drain_${drain_case} COMMAND corsair_v2_drain ${drain_case})
     set_tests_properties(corsair_drain_${drain_case} PROPERTIES TIMEOUT 20)
 endforeach()
+
+add_test(NAME corsair_initialization COMMAND corsair_v2_drain init)
+set_tests_properties(corsair_initialization PROPERTIES TIMEOUT 20)
 
 foreach(corsair_case IN ITEMS stop serialize arming pending)
     add_test(NAME corsair_keepalive_${corsair_case} COMMAND corsair_v2_keepalive ${corsair_case})
