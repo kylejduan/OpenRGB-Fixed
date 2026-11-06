@@ -51,6 +51,9 @@ compatibility still depends on upstream device support.
   receives the last loaded profile. A watched receiver that is unplugged and
   reconnected, or re-enumerated after resume, triggers a rescan that restores
   the last loaded profile.
+- **MSI MAG X870E TOMAHAWK MAX WIFI:** the Mystic Light 761 controller now
+  recognizes this MS-7E59 board by its full name, exposing its JAF and three
+  JARGB headers. Upstream lists only the non-MAX board name for MS-7E59.
 
 Read the [root-cause analysis, validation, and provenance](Documentation/Fixes.md).
 

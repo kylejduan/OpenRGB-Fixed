@@ -205,6 +205,28 @@ device thread through a virtual call while the derived constructor was still
 writing the vtable pointer. The thread is now started with a non-virtual call. Physical acceptance of the installed build is recorded in the
 [lighting RCCA](Logitech-Lighting-RCCA.md#reconnect-and-takeover-follow-up-2026-09-16).
 
+## MSI MAG X870E TOMAHAWK MAX WIFI
+
+The Mystic Light 761 controller selects a board configuration by its exact DMI
+name. The MAX revision of the MS-7E59 board reports
+`MSI MAG X870E TOMAHAWK MAX WIFI (MS-7E59)`, which was missing from the table.
+Detection found the USB controller (`0DB0:0076`) but logged
+`Found Board ... but does not have valid config` and registered nothing.
+
+The board now uses the configuration shared by every other 761 board: the JAF
+header and JARGB 1 to 3 in zone-based direct mode. Each JARGB header shows one
+direct color; its resizable length (0 to 30) only sets the length of hardware
+effects. Upstream master lists `MSI MAG X870E TOMAHAWK WIFI (MS-7E59)` and
+`MSI MAG X870E TOMAHAWK MAX WIFI PZ (MS-7E84)` but not this name.
+
+Hardware test, 2026-11-05, Windows 11 on this board with the fixed.7 build:
+detection registered `MSI MYSTIC LIGHT`; a static Direct color set on JARGB 1
+to 3 lit an ASUS ROG Loki power supply's ARGB fan on one of those headers; the
+color was saved to a profile, and after a clean exit and restart that profile
+loaded successfully on the board alongside Kingston Fury DDR5, Powerplay, a
+G502 X PLUS, and a Corsair K70 RGB PRO. Hardware effects and per-LED control
+were not tested. CI covers compilation only.
+
 ## Provenance
 
 - Imported upstream source archive SHA256:
