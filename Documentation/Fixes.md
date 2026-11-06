@@ -26,6 +26,51 @@ late. Cleanup now joins every hardware controller worker before deleting any
 controller or bus. It also serializes cleanup with the background work that
 uses controllers after detection, including startup profile application.
 
+## Idle controller workers
+
+Each controller worker waits on a condition variable when no LED or mode
+update is pending, instead of waking after a one-millisecond sleep to check
+again. Update publication and shutdown use the wait mutex, so a wakeup
+cannot be missed between checking the flags and entering the wait. The worker
+releases that mutex before device calls, so they can queue another update.
+
+Mode-before-LED order and reset-before/reset-after coalescing are retained,
+including requests arriving during an update being dropped in the default
+clear-after mode. Shutdown still waits for an active hardware transaction. Synchronization lives
+behind the existing worker pointer, preserving the controller's field layout.
+Plugins that compile their own copy of `RGBController.cpp` must use matching
+updated code; binary compatibility with such older plugins is not claimed.
+The `device_worker_notifications` tests cover publication, reentrant updates,
+coalescing, ordering and idle shutdown without hardware or Qt. These tests do
+not establish physical LED timing or a whole-application performance gain.
+
+## Corsair V2 hardware keepalive
+
+The hardware controller's keepalive retains its existing refresh intervals,
+but its idle wait is interruptible during shutdown. Exit and rescan no longer
+need to wait out the remaining 12.5-second sleep. Foreground full, zone and
+single-LED updates share an I/O mutex with keepalive frames. All three foreground
+send paths refresh the timestamp. A cached mode flag keeps the keepalive from
+reading the public mode field concurrently with mode changes. Cleanup joins the
+device worker and keepalive before releasing the driver. Hardware transactions
+already in progress still have to finish.
+
+## Profile colors after automatic rescan
+
+Automatic profile restoration now queues both the mode and its saved per-LED
+colors together. A mode update alone does not repaint Direct mode on every
+device. Modes that do not use per-LED colors retain their mode-only update;
+the bounds check for the extra LED update also handles empty mode lists.
+
+This automatic-restore helper deliberately does not signal UI callbacks from
+its background thread. Callback registration semantics remain unchanged.
+The standalone tests cover per-LED, effect, empty and invalid mode cases.
+
+The real lower Corsair driver's input drain also retains signed HID errors
+and stops after at most 64 reports. A disconnected device or a continuous
+report stream can no longer trap that drain in an unbounded loop. Tests use
+the real transport with a fake HID endpoint; physical recovery is separate.
+
 ## Evidence and limits
 
 The standalone C++ tests compile the actual protocol and worker implementations:

@@ -2284,7 +2284,7 @@ void ResourceManager::RestoreProfileAfterRescan()
     {
         for(RGBController* controller : rgb_controllers_hw)
         {
-            controller->UpdateMode();
+            controller->UpdateModeAndLEDsWithoutSignal();
         }
     }
 }

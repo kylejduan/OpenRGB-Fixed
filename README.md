@@ -29,6 +29,13 @@ compatibility still depends on upstream device support.
 
 ## What is fixed
 
+- **Idle controller workers:** workers wait for queued updates instead of
+  polling every millisecond, while retaining the existing update coalescing.
+- **Corsair V2 hardware lifecycle:** interruptible keepalive waits remove the
+  long idle exit/rescan delay, frame writes are serialized, and disconnected
+  handles or report floods cannot trap the input drain in an endless loop.
+- **Colors after automatic rescan:** saved per-LED colors are queued with the
+  restored mode, including devices whose mode update alone does not repaint.
 - **Shared Powerplay/mouse handles:** the final controller owner closes each
   receiver HID handle exactly once, preventing the rescan double-close.
 - **Failed detection retries:** failed controller objects are released, and

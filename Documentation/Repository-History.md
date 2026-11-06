@@ -1,5 +1,26 @@
 # Repository history and release metadata
 
+## November 2026 privacy cleanup
+
+The diagnostics capture directory was removed from every published branch and
+tag, including historical versions. Removing it only from the current tree
+did not remove a device identifier from older commits. The prior repository
+is retained privately for recovery; a clean public repository uses this same
+URL so old cached repository objects are not carried into the replacement.
+
+Application source, upstream attribution and license notices are preserved.
+Older release binaries and their checksums are retained unchanged. Those
+binaries may report a pre-cleanup commit identifier; their release notes point
+to the corresponding sanitized source tag. Version fixed.8 and later identify
+their sanitized source directly in the executable and build manifest.
+
+Existing clones should be replaced with a fresh clone after preserving any
+unpublished work. Do not merge old history back into the public repository.
+Private recovery archives are not part of the published source or releases.
+This cleanup cannot revoke copies already downloaded by third parties.
+
+## Earlier identity cleanup
+
 On 2026-09-13, this fork's commit author and committer fields were replaced with
 the maintainer's public handle and GitHub no-reply email. The `main` branch and
 both existing release tags were rewritten. Upstream source attribution and

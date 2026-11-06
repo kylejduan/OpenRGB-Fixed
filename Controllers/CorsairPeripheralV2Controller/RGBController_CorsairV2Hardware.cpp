@@ -12,8 +12,21 @@
 
 #include "LogManager.h"
 #include "RGBController_CorsairV2Hardware.h"
+#include <condition_variable>
+#include <cassert>
+#include <memory>
+#include <stdexcept>
 
 using namespace std::chrono_literals;
+
+struct RGBController_CorsairV2HW::KeepaliveState
+{
+    std::mutex              mutex;
+    std::condition_variable changed;
+    std::thread             worker;
+    bool                    direct = true;
+    std::chrono::milliseconds poll{0}, refresh{0};
+};
 
 /**------------------------------------------------------------------*\
     @name Corsair Peripherals V2 Hardware
@@ -27,7 +40,15 @@ using namespace std::chrono_literals;
 \*-------------------------------------------------------------------*/
 
 RGBController_CorsairV2HW::RGBController_CorsairV2HW(CorsairPeripheralV2Controller *controller_ptr)
+    : RGBController_CorsairV2HW(controller_ptr, CORSAIR_V2_SLEEP_PERIOD,
+                               std::chrono::milliseconds(CORSAIR_V2_UPDATE_PERIOD))
 {
+}
+
+RGBController_CorsairV2HW::RGBController_CorsairV2HW(CorsairPeripheralV2Controller *controller_ptr,
+                                                  std::chrono::milliseconds poll, std::chrono::milliseconds refresh)
+{
+    if(poll.count() <= 0 || refresh.count() <= 0) { throw std::invalid_argument("Keepalive intervals must be positive"); }
     controller                          = controller_ptr;
     const corsair_v2_device* corsair    = controller->GetDeviceData();
 
@@ -67,16 +88,26 @@ RGBController_CorsairV2HW::RGBController_CorsairV2HW(CorsairPeripheralV2Controll
     | to continuously send a keepalive packet every 50 sec  |
     \*-----------------------------------------------------*/
     keepalive_thread_run                = true;
-    keepalive_thread                    = new std::thread(&RGBController_CorsairV2HW::KeepaliveThread, this);
+    std::unique_ptr<KeepaliveState> state = std::make_unique<KeepaliveState>();
+    state->poll = poll;
+    state->refresh = refresh;
+    keepalive_thread = state.get();
+    state->worker = std::thread(&RGBController_CorsairV2HW::KeepaliveThread, this);
+    state.release();
 }
 
 RGBController_CorsairV2HW::~RGBController_CorsairV2HW()
 {
+    StopDeviceThread();
     /*-----------------------------------------------------*\
     | Close keepalive thread                                |
     \*-----------------------------------------------------*/
-    keepalive_thread_run = false;
-    keepalive_thread->join();
+    {
+        std::lock_guard<std::mutex> lock(keepalive_thread->mutex);
+        keepalive_thread_run = false;
+    }
+    keepalive_thread->changed.notify_one();
+    keepalive_thread->worker.join();
     delete keepalive_thread;
 
     /*---------------------------------------------------------*\
@@ -243,6 +274,15 @@ void RGBController_CorsairV2HW::ResizeZone(int /*zone*/, int /*new_size*/)
 
 void RGBController_CorsairV2HW::DeviceUpdateLEDs()
 {
+    assert(keepalive_thread != nullptr);
+    std::lock_guard<std::mutex> lock(keepalive_thread->mutex);
+    // SetCustomMode followed by an LED update does not call DeviceUpdateMode.
+    keepalive_thread->direct = active_mode == 0;
+    SendLEDs();
+}
+
+void RGBController_CorsairV2HW::SendLEDs()
+{
     last_update_time = std::chrono::steady_clock::now();
 
     controller->SetLedsDirect(buffer_map);
@@ -250,31 +290,34 @@ void RGBController_CorsairV2HW::DeviceUpdateLEDs()
 
 void RGBController_CorsairV2HW::UpdateZoneLEDs(int /*zone*/)
 {
-    controller->SetLedsDirect(buffer_map);
+    DeviceUpdateLEDs();
 }
 
 void RGBController_CorsairV2HW::UpdateSingleLED(int /*led*/)
 {
-    controller->SetLedsDirect(buffer_map);
+    DeviceUpdateLEDs();
 }
 
 void RGBController_CorsairV2HW::DeviceUpdateMode()
 {
-
+    assert(keepalive_thread != nullptr);
+    std::lock_guard<std::mutex> lock(keepalive_thread->mutex);
+    keepalive_thread->direct = active_mode == 0;
 }
 
 void RGBController_CorsairV2HW::KeepaliveThread()
 {
+    std::unique_lock<std::mutex> lock(keepalive_thread->mutex);
     while(keepalive_thread_run.load())
     {
-        if(active_mode == 0)
+        if(keepalive_thread->direct)
         {
             if((std::chrono::steady_clock::now() - last_update_time) >
-                std::chrono::milliseconds(CORSAIR_V2_UPDATE_PERIOD))
+                keepalive_thread->refresh)
             {
-                DeviceUpdateLEDs();
+                SendLEDs();
             }
         }
-        std::this_thread::sleep_for(CORSAIR_V2_SLEEP_PERIOD);
+        keepalive_thread->changed.wait_for(lock, keepalive_thread->poll, [this] { return !keepalive_thread_run.load(); });
     }
 }

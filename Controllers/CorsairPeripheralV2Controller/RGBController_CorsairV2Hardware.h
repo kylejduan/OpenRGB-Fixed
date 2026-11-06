@@ -20,6 +20,8 @@ class RGBController_CorsairV2HW : public RGBController
 {
 public:
     RGBController_CorsairV2HW(CorsairPeripheralV2Controller* controller_ptr);
+    RGBController_CorsairV2HW(CorsairPeripheralV2Controller* controller_ptr,
+                            std::chrono::milliseconds poll, std::chrono::milliseconds refresh);
     ~RGBController_CorsairV2HW();
 
     void SetupZones();
@@ -38,9 +40,11 @@ private:
     RGBColor                                null_color              = 0;
     std::vector<RGBColor *>                 buffer_map;
 
-    std::thread*                            keepalive_thread;
+    struct KeepaliveState;
+    KeepaliveState*                         keepalive_thread = nullptr;
     std::atomic<bool>                       keepalive_thread_run;
     std::chrono::time_point
         <std::chrono::steady_clock>         last_update_time;
 
+    void SendLEDs(); // Caller holds the keepalive I/O mutex.
 };

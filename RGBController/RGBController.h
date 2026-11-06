@@ -391,6 +391,7 @@ public:
     //void                    UpdateSingleLED(int led);
 
     void                    UpdateMode();
+    void                    UpdateModeAndLEDsWithoutSignal();
     void                    SaveMode();
 
     void                    DeviceCallThreadFunction();
@@ -416,7 +417,8 @@ public:
     void                    SetCustomMode();
 
 private:
-    std::thread*            DeviceCallThread;
+    struct DeviceCallState;
+    DeviceCallState*        DeviceCallThread;
     std::atomic<bool>       CallFlag_UpdateLEDs;
     std::atomic<bool>       CallFlag_UpdateMode;
     std::atomic<bool>       DeviceThreadRunning;

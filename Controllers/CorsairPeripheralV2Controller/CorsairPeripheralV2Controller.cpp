@@ -292,14 +292,19 @@ void CorsairPeripheralV2Controller::ClearPacketBuffer()
         return;
     }
 
-    uint8_t result          = 0;
+    int result              = 0;
     uint8_t buffer[CORSAIR_V2_PACKET_SIZE];
 
-    do
+    // A disconnected handle returns -1, not a report length. Bound draining
+    // too, so an unsolicited report stream cannot monopolize this thread.
+    for(unsigned int reports = 0; reports < 64; reports++)
     {
         result = hid_read_timeout(dev, buffer, pkt_sze, CORSAIR_V2_TIMEOUT_SHORT);
+        if(result <= 0)
+        {
+            break;
+        }
     }
-    while(result > 0);
 }
 
 void CorsairPeripheralV2Controller::SetLEDs(uint8_t *data, uint16_t data_size)

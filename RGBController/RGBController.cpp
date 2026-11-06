@@ -11,9 +11,22 @@
 \*---------------------------------------------------------*/
 
 #include <cstring>
+#include <condition_variable>
+#include <memory>
 #include "RGBController.h"
 
 using namespace std::chrono_literals;
+
+/*---------------------------------------------------------*\
+| Keep worker synchronization behind the existing pointer, |
+| so the controller's existing field layout is unchanged.   |
+\*---------------------------------------------------------*/
+struct RGBController::DeviceCallState
+{
+    std::mutex              mutex;
+    std::condition_variable changed;
+    std::thread             worker;
+};
 
 mode::mode()
 {
@@ -70,7 +83,10 @@ RGBController::RGBController()
     | Call non-virtually: the derived constructor is still  |
     | writing the vtable pointer while this thread starts   |
     \*-----------------------------------------------------*/
-    DeviceCallThread = new std::thread([this] { RGBController::DeviceCallThreadFunction(); });
+    std::unique_ptr<DeviceCallState> state = std::make_unique<DeviceCallState>();
+    DeviceCallThread = state.get();
+    state->worker = std::thread([this] { RGBController::DeviceCallThreadFunction(); });
+    state.release();
 }
 
 RGBController::~RGBController()
@@ -2059,14 +2075,39 @@ void RGBController::SignalUpdate()
 }
 void RGBController::UpdateLEDs()
 {
-    CallFlag_UpdateLEDs = true;
+    {
+        std::lock_guard<std::mutex> lock(DeviceCallThread->mutex);
+        CallFlag_UpdateLEDs = true;
+    }
+    DeviceCallThread->changed.notify_one();
 
     SignalUpdate();
 }
 
 void RGBController::UpdateMode()
 {
-    CallFlag_UpdateMode = true;
+    {
+        std::lock_guard<std::mutex> lock(DeviceCallThread->mutex);
+        CallFlag_UpdateMode = true;
+    }
+    DeviceCallThread->changed.notify_one();
+}
+
+void RGBController::UpdateModeAndLEDsWithoutSignal()
+{
+    // Automatic restore runs before GUI device pages are rebuilt. Preserve
+    // its non-signalling behavior; callbacks are not a cross-thread lifetime API.
+    const bool update_leds = active_mode >= 0 && (std::size_t)active_mode < modes.size()
+                         && modes[active_mode].color_mode == MODE_COLORS_PER_LED;
+    {
+        std::lock_guard<std::mutex> lock(DeviceCallThread->mutex);
+        CallFlag_UpdateMode = true;
+        if(update_leds)
+        {
+            CallFlag_UpdateLEDs = true;
+        }
+    }
+    DeviceCallThread->changed.notify_one();
 }
 
 void RGBController::SaveMode()
@@ -2121,6 +2162,21 @@ void RGBController::DeviceCallThreadFunction()
 {
     while(DeviceThreadRunning.load() == true)
     {
+        {
+            std::unique_lock<std::mutex> lock(DeviceCallThread->mutex);
+            DeviceCallThread->changed.wait(lock, [this]
+            {
+                return(!DeviceThreadRunning.load() || CallFlag_UpdateMode.load() || CallFlag_UpdateLEDs.load());
+            });
+            if(!DeviceThreadRunning.load())
+            {
+                break;
+            }
+        }
+        /*-------------------------------------------------*\
+        | Never hold the wake mutex during a device call:  |
+        | callbacks may queue another update themselves.  |
+        \*-------------------------------------------------*/
         if(CallFlag_UpdateMode.load() == true)
         {
             if(flags & CONTROLLER_FLAG_RESET_BEFORE_UPDATE)
@@ -2147,19 +2203,19 @@ void RGBController::DeviceCallThreadFunction()
                 CallFlag_UpdateLEDs = false;
             }
         }
-        else
-        {
-           std::this_thread::sleep_for(1ms);
-        }
     }
 }
 
 void RGBController::StopDeviceThread()
 {
-    DeviceThreadRunning = false;
-    if(DeviceCallThread->joinable())
     {
-        DeviceCallThread->join();
+        std::lock_guard<std::mutex> lock(DeviceCallThread->mutex);
+        DeviceThreadRunning = false;
+    }
+    DeviceCallThread->changed.notify_one();
+    if(DeviceCallThread->worker.joinable())
+    {
+        DeviceCallThread->worker.join();
     }
 }
 

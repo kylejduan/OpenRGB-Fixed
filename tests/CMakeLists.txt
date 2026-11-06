@@ -16,6 +16,19 @@ add_executable(logitech_receiver_lifetime
 add_executable(device_worker_lifetime
     device_worker_lifetime.cpp
     "${OPENRGB_SOURCE}/RGBController/RGBController.cpp")
+add_executable(device_worker_notifications
+    device_worker_notifications.cpp
+    "${OPENRGB_SOURCE}/RGBController/RGBController.cpp")
+add_executable(corsair_v2_keepalive
+    corsair_v2_keepalive.cpp
+    "${OPENRGB_SOURCE}/RGBController/RGBController.cpp"
+    "${OPENRGB_SOURCE}/Controllers/CorsairPeripheralV2Controller/RGBController_CorsairV2Hardware.cpp"
+    "${OPENRGB_SOURCE}/RGBController/RGBControllerKeyNames.cpp"
+    "${OPENRGB_SOURCE}/KeyboardLayoutManager/KeyboardLayoutManager.cpp")
+add_executable(corsair_v2_drain
+    corsair_v2_drain.cpp
+    "${OPENRGB_SOURCE}/Controllers/CorsairPeripheralV2Controller/CorsairPeripheralV2Controller.cpp"
+    "${OPENRGB_SOURCE}/StringUtils.cpp")
 add_executable(logitech_receiver_watcher
     logitech_receiver_watcher.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechLightspeedController/LogitechLightspeedReceiverWatcher.cpp")
@@ -38,13 +51,15 @@ add_executable(logitech_lighting_control
     logitech_lighting_control.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
 
-foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime logitech_lighting_control background_worker logitech_receiver_watcher logitech_receiver_enumeration logitech_connection_query logitech_lightspeed_modes)
+foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime device_worker_notifications corsair_v2_keepalive corsair_v2_drain logitech_lighting_control background_worker logitech_receiver_watcher logitech_receiver_enumeration logitech_connection_query logitech_lightspeed_modes)
     target_compile_features(${test_target} PRIVATE cxx_std_17)
     target_include_directories(${test_target} PRIVATE
         "${OPENRGB_SOURCE}"
         "${OPENRGB_SOURCE}/RGBController"
         "${OPENRGB_SOURCE}/Controllers/LogitechController"
         "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechLightspeedController"
+        "${OPENRGB_SOURCE}/Controllers/CorsairPeripheralV2Controller"
+        "${OPENRGB_SOURCE}/KeyboardLayoutManager"
         "${OPENRGB_SOURCE}/dependencies/hidapi-win/include"
         "${OPENRGB_SOURCE}/dependencies/json")
     target_compile_definitions(${test_target} PRIVATE HID_API_NO_EXPORT_DEFINE)
@@ -68,10 +83,25 @@ foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime l
         target_compile_options(${test_target} PRIVATE -fsanitize=thread -fno-omit-frame-pointer)
         target_link_options(${test_target} PRIVATE -fsanitize=thread)
     endif()
-    if(NOT test_target MATCHES "^(logitech_lighting_control|logitech_receiver_watcher|logitech_receiver_enumeration|logitech_connection_query)$")
+    if(NOT test_target MATCHES "^(corsair_v2_keepalive|corsair_v2_drain|device_worker_notifications|logitech_lighting_control|logitech_receiver_watcher|logitech_receiver_enumeration|logitech_connection_query)$")
         add_test(NAME ${test_target} COMMAND ${test_target})
         set_tests_properties(${test_target} PROPERTIES TIMEOUT 20)
     endif()
+endforeach()
+
+foreach(drain_case IN ITEMS error flood)
+    add_test(NAME corsair_drain_${drain_case} COMMAND corsair_v2_drain ${drain_case})
+    set_tests_properties(corsair_drain_${drain_case} PROPERTIES TIMEOUT 20)
+endforeach()
+
+foreach(corsair_case IN ITEMS stop serialize arming pending)
+    add_test(NAME corsair_keepalive_${corsair_case} COMMAND corsair_v2_keepalive ${corsair_case})
+    set_tests_properties(corsair_keepalive_${corsair_case} PROPERTIES TIMEOUT 20)
+endforeach()
+
+foreach(worker_case IN ITEMS wake wake_default reentry coalesce ordering ordering_default reset_after stop stop_default contention profile profile_effect profile_invalid profile_empty)
+    add_test(NAME device_worker_${worker_case} COMMAND device_worker_notifications ${worker_case})
+    set_tests_properties(device_worker_${worker_case} PROPERTIES TIMEOUT 20)
 endforeach()
 
 foreach(lighting_case IN ITEMS static mode color power power_control power_changed power_retry slow_ack replies short_ack stale selector queue_boundary queue_busy errors short write timeout legacy shared control_read power_read init_locked init_slow init_8070 init_8070_slow init_8070_unrelated)
