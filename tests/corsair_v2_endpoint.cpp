@@ -47,12 +47,16 @@ extern "C" int hid_write(hid_device*,const unsigned char* bytes,size_t size)
         if(first && scenario=="write_error")return -1;
         if(first && scenario=="short_write")return 64;
         if(scenario=="flood"){flood=true;return 1025;}
+        if((scenario=="silent" || (scenario=="silent_fallback" && bytes[4]==34)))
+        {opened=true;replies.push_back({0,command,0});return 1025;}
         if(first && scenario=="timeout"){opened=true;replies.push_back({0,command,0});return 1025;}
         if(first && scenario=="read_error"){opened=true;replies.push_back({-1,command,0});return 1025;}
         if(first && scenario=="stale")replies.push_back({65,CORSAIR_V2_CMD_SET,1});
         if(first && scenario=="short_reply")replies.push_back({2,command,0});
         unsigned char status=0;
-        if(scenario=="busy_forever" || opened || !software_mode)status=3;
+        if(opened || !software_mode)status=3;
+        if(scenario=="busy_forever")status=bytes[4]==34?3:1;
+        if(scenario=="busy_fallback" && bytes[4]==34)status=3;
         if(bytes[4]==CORSAIR_V2_LIGHT_CTRL2 && scenario.substr(0,9)=="fallback_")status=static_cast<unsigned char>(scenario.back()-'0');
         if(status==0)opened=true;
         replies.push_back({jumbo?1024:65,command,status});
@@ -78,7 +82,7 @@ extern "C" int hid_write(hid_device*,const unsigned char* bytes,size_t size)
 extern "C" int hid_read_timeout(hid_device*,unsigned char* bytes,size_t size,int timeout)
 {
     assert(timeout>=0 && timeout<=CORSAIR_V2_TIMEOUT);
-    if(flood){++probe_reads;assert(probe_reads<=24);std::memset(bytes,0,size);bytes[1]=CORSAIR_V2_CMD_GET;bytes[2]=1;return 3;}
+    if(flood){++probe_reads;assert(probe_reads<=48);std::memset(bytes,0,size);bytes[1]=CORSAIR_V2_CMD_GET;bytes[2]=1;return 3;}
     if(replies.empty())return 0;
     const Reply reply=replies.front();replies.pop_front();
     if(reply.length<=0)return reply.length;
@@ -104,7 +108,12 @@ int main(int argc,char** argv)
     software_mode=scenario!="hardware_mode";
     Driver driver;
     assert(software_mode && "Software ownership must precede lighting-resource negotiation");
-    if(scenario.substr(0,9)=="fallback_")
+    if(scenario=="busy_fallback" || scenario=="silent_fallback")
+    {
+        assert(driver.endpoint()==CORSAIR_V2_LIGHT_CTRL1);
+        assert(endpoints==std::vector<unsigned int>({34,34,34,1}));
+    }
+    else if(scenario.substr(0,9)=="fallback_")
     {
         assert(driver.endpoint()==CORSAIR_V2_LIGHT_CTRL1);
         assert(endpoints==std::vector<unsigned int>({34,1}));
@@ -112,10 +121,14 @@ int main(int argc,char** argv)
     else
     {
         assert(driver.endpoint()==CORSAIR_V2_LIGHT_CTRL2 && "A busy or unanswered preferred resource is not unsupported");
-        assert(std::all_of(endpoints.begin(),endpoints.end(),[](unsigned int e){return e==34;}));
-        if(scenario=="busy_forever" || scenario=="flood")assert(endpoints.size()==3);
-        else if(scenario=="busy" || scenario=="timeout" || scenario=="read_error" || scenario=="write_error" || scenario=="short_write")assert(endpoints.size()==2);
-        else assert(endpoints.size()==1);
+        if(scenario=="busy_forever")assert(endpoints==std::vector<unsigned int>({34,34,34,1}));
+        else if(scenario=="flood" || scenario=="silent")assert(endpoints==std::vector<unsigned int>({34,34,34,1,1,1}));
+        else
+        {
+            assert(std::all_of(endpoints.begin(),endpoints.end(),[](unsigned int e){return e==34;}));
+            if(scenario=="busy" || scenario=="timeout" || scenario=="read_error" || scenario=="write_error" || scenario=="short_write")assert(endpoints.size()==2);
+            else assert(endpoints.size()==1);
+        }
     }
     assert(!opened);
     if(scenario=="busy")assert(closes>=2);

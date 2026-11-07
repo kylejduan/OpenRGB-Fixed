@@ -124,8 +124,8 @@ Fixed.10 establishes software ownership before probing lighting resources. It
 also closes the handle and retries the same resource when it is busy.
 Initialization uses a separate reply buffer, checks the returned command and
 length, and treats missing or malformed replies as transport failures. Such
-failures do not select a different lighting format. A valid explicit rejection
-still permits fallback for devices that require resource `0x01`. Each resource
+failures only select a different lighting format if the legacy resource accepts
+a probe. A valid explicit rejection still permits fallback for devices that require resource `0x01`. Each resource
 gets at most three attempts, with bounded reads and deadlines. These checks run
 only during initialization; regular frame timing and keepalive intervals are
 unchanged. Startup logs record the selected resource and successful recovery.

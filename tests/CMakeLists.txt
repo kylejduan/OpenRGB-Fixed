@@ -156,7 +156,7 @@ foreach(log_case IN ITEMS singleton buffered filtered console stdout critical di
     set_tests_properties(log_manager_${log_case} PROPERTIES TIMEOUT 20)
 endforeach()
 
-foreach(endpoint_case IN ITEMS hardware_mode busy busy_forever timeout read_error write_error short_write stale short_reply flood fallback_1 fallback_5 fallback_6 max_report)
+foreach(endpoint_case IN ITEMS hardware_mode busy busy_forever busy_fallback silent silent_fallback timeout read_error write_error short_write stale short_reply flood fallback_1 fallback_5 fallback_6 max_report)
     add_test(NAME corsair_endpoint_${endpoint_case} COMMAND corsair_v2_endpoint ${endpoint_case})
     set_tests_properties(corsair_endpoint_${endpoint_case} PROPERTIES TIMEOUT 20)
 endforeach()

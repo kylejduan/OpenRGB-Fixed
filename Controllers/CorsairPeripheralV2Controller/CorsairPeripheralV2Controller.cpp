@@ -107,18 +107,20 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
     {
         const int endpoint_status = OpenLightingEndpoint();
         // A busy handle or an unanswered probe does not mean this resource
-        // is unsupported. Keep its format unless the device rejects it.
-        if(endpoint_status > 0 && endpoint_status != 0x03)
+        // is unsupported. Only a confirmed legacy resource may replace it.
+        if(endpoint_status != 0)
         {
+            const bool explicitly_rejected = endpoint_status > 0 && endpoint_status != 0x03;
             light_ctrl = CORSAIR_V2_LIGHT_CTRL1;
-            if(OpenLightingEndpoint() != 0)
+            const int fallback_status = OpenLightingEndpoint();
+            if(fallback_status != 0)
             {
-                LOG_WARNING("[%s] Fallback lighting endpoint could not be confirmed", device_name.c_str());
+                if(!explicitly_rejected)
+                {
+                    light_ctrl = CORSAIR_V2_LIGHT_CTRL2;
+                }
+                LOG_WARNING("[%s] Lighting endpoint could not be confirmed; retaining selected format", device_name.c_str());
             }
-        }
-        else if(endpoint_status != 0)
-        {
-            LOG_WARNING("[%s] Lighting endpoint could not be confirmed; retaining preferred format", device_name.c_str());
         }
         StopTransaction(0);
         LOG_INFO("[%s] Lighting Endpoint set to %02X", device_name.c_str(), light_ctrl);
