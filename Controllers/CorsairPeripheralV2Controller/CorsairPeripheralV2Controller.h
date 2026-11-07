@@ -101,6 +101,8 @@ protected:
 
 private:
     void                            ClearPacketBuffer();
+    int                             ProbeLightingEndpoint();
+    int                             OpenLightingEndpoint();
     unsigned int                    GetAddress(uint8_t address);
     unsigned char                   StartTransaction(uint8_t opt1);
     void                            StopTransaction(uint8_t opt1);

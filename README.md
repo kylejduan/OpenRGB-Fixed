@@ -38,6 +38,10 @@ compatibility still depends on upstream device support.
 - **Corsair V2 hardware lifecycle:** interruptible keepalive waits remove the
   long idle exit/rescan delay, frame writes are serialized, and disconnected
   handles or report floods cannot trap the input drain in an endless loop.
+- **Corsair V2 startup recovery:** software ownership is established before
+  resource probing, and a busy lighting handle is closed and retried instead
+  of selecting an incompatible lighting format. Startup replies are
+  checked, and HID buffers include the largest negotiated report size.
 - **Corsair V2 initialization:** the capability request starts with a defined
   report ID and zeroed reserved bytes instead of uninitialized stack data.
 - **Colors after automatic rescan:** saved per-LED colors are queued with the

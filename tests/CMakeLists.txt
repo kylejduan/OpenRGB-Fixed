@@ -34,6 +34,10 @@ add_executable(corsair_v2_packet
     "${OPENRGB_SOURCE}/Controllers/CorsairPeripheralV2Controller/CorsairPeripheralV2Controller.cpp"
     "${OPENRGB_SOURCE}/Controllers/CorsairPeripheralV2Controller/CorsairPeripheralV2HardwareController.cpp"
     "${OPENRGB_SOURCE}/StringUtils.cpp")
+add_executable(corsair_v2_endpoint
+    corsair_v2_endpoint.cpp
+    "${OPENRGB_SOURCE}/Controllers/CorsairPeripheralV2Controller/CorsairPeripheralV2Controller.cpp"
+    "${OPENRGB_SOURCE}/StringUtils.cpp")
 add_executable(log_manager
     log_manager.cpp
     "${OPENRGB_SOURCE}/LogManager.cpp")
@@ -60,7 +64,7 @@ add_executable(logitech_lighting_control
     logitech_lighting_control.cpp
     "${OPENRGB_SOURCE}/Controllers/LogitechController/LogitechProtocolCommon.cpp")
 
-foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime device_worker_notifications corsair_v2_keepalive corsair_v2_drain corsair_v2_packet log_manager logitech_lighting_control background_worker logitech_receiver_watcher logitech_receiver_enumeration logitech_connection_query logitech_lightspeed_modes)
+foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime device_worker_notifications corsair_v2_keepalive corsair_v2_drain corsair_v2_packet corsair_v2_endpoint log_manager logitech_lighting_control background_worker logitech_receiver_watcher logitech_receiver_enumeration logitech_connection_query logitech_lightspeed_modes)
     target_compile_features(${test_target} PRIVATE cxx_std_17)
     target_include_directories(${test_target} PRIVATE
         "${OPENRGB_SOURCE}"
@@ -93,7 +97,7 @@ foreach(test_target IN ITEMS logitech_receiver_lifetime device_worker_lifetime d
         target_compile_options(${test_target} PRIVATE -fsanitize=thread -fno-omit-frame-pointer)
         target_link_options(${test_target} PRIVATE -fsanitize=thread)
     endif()
-    if(NOT test_target MATCHES "^(log_manager|corsair_v2_keepalive|corsair_v2_drain|device_worker_notifications|logitech_lighting_control|logitech_receiver_watcher|logitech_receiver_enumeration|logitech_connection_query)$")
+    if(NOT test_target MATCHES "^(corsair_v2_endpoint|log_manager|corsair_v2_keepalive|corsair_v2_drain|device_worker_notifications|logitech_lighting_control|logitech_receiver_watcher|logitech_receiver_enumeration|logitech_connection_query)$")
         add_test(NAME ${test_target} COMMAND ${test_target})
         set_tests_properties(${test_target} PROPERTIES TIMEOUT 20)
     endif()
@@ -150,4 +154,9 @@ endforeach()
 foreach(log_case IN ITEMS singleton buffered filtered console stdout critical disabled disabled_console failed_file failed_file_console)
     add_test(NAME log_manager_${log_case} COMMAND log_manager ${log_case})
     set_tests_properties(log_manager_${log_case} PROPERTIES TIMEOUT 20)
+endforeach()
+
+foreach(endpoint_case IN ITEMS hardware_mode busy busy_forever timeout read_error write_error short_write stale short_reply flood fallback_1 fallback_5 fallback_6 max_report)
+    add_test(NAME corsair_endpoint_${endpoint_case} COMMAND corsair_v2_endpoint ${endpoint_case})
+    set_tests_properties(corsair_endpoint_${endpoint_case} PROPERTIES TIMEOUT 20)
 endforeach()

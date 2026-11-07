@@ -112,6 +112,35 @@ No hardware refresh interval, timer-resolution request or network protocol was
 changed for this pass. Physical reboot and sleep/resume acceptance still
 require checking the connected hardware.
 
+## Corsair V2 busy-handle startup recovery
+
+On a K70 RGB PRO V2, a failed reboot selected lighting resource `0x01`, while a
+working restart of OpenRGB selected `0x22` with the same packet size and device.
+Probing while the keyboard was in onboard mode and pre-opening lighting handle
+zero both reproduced status `0x03` on the real keyboard. That status does not
+establish that the preferred lighting resource is unsupported.
+
+Fixed.10 establishes software ownership before probing lighting resources. It
+also closes the handle and retries the same resource when it is busy.
+Initialization uses a separate reply buffer, checks the returned command and
+length, and treats missing or malformed replies as transport failures. Such
+failures do not select a different lighting format. A valid explicit rejection
+still permits fallback for devices that require resource `0x01`. Each resource
+gets at most three attempts, with bounded reads and deadlines. These checks run
+only during initialization; regular frame timing and keepalive intervals are
+unchanged. Startup logs record the selected resource and successful recovery.
+
+The K70 negotiates 1025-byte output reports. The transport's frame and drain
+buffers now accommodate that size, including the report ID. Regression tests
+exercise busy handles, timeouts, read/write failures, short/stale replies,
+unsolicited-report floods, explicit fallback, and full-sized reports. The old
+code fails the recovery assertions and AddressSanitizer detects its one-byte
+stack-buffer overrun with the full-sized-report fixture.
+
+These tests and the controlled real-device reproduction establish the targeted
+failure and recovery path. A successful warm restart alone does not establish
+that every physical reboot or sleep/resume scenario is fixed.
+
 ## Profile colors after automatic rescan
 
 Automatic profile restoration now queues both the mode and its saved per-LED

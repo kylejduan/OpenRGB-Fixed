@@ -94,6 +94,10 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
                   device_name.c_str());
     }
 
+    // Lighting resources cannot be opened while the K70 is in onboard mode.
+    // Both concrete drivers need software ownership before probing resources.
+    SetRenderMode(CORSAIR_V2_MODE_SW);
+
     /*---------------------------------------------------------*\
     | Check lighting control endpoints                          |
     |   If lighting control endpoint 2 is unavailable           |
@@ -101,14 +105,23 @@ CorsairPeripheralV2Controller::CorsairPeripheralV2Controller(hid_device* dev_han
     \*---------------------------------------------------------*/
     if(light_ctrl == CORSAIR_V2_LIGHT_CTRL2)
     {
-        result = StartTransaction(0);
-        if(result > 0)
+        const int endpoint_status = OpenLightingEndpoint();
+        // A busy handle or an unanswered probe does not mean this resource
+        // is unsupported. Keep its format unless the device rejects it.
+        if(endpoint_status > 0 && endpoint_status != 0x03)
         {
             light_ctrl = CORSAIR_V2_LIGHT_CTRL1;
-            StartTransaction(0);
+            if(OpenLightingEndpoint() != 0)
+            {
+                LOG_WARNING("[%s] Fallback lighting endpoint could not be confirmed", device_name.c_str());
+            }
+        }
+        else if(endpoint_status != 0)
+        {
+            LOG_WARNING("[%s] Lighting endpoint could not be confirmed; retaining preferred format", device_name.c_str());
         }
         StopTransaction(0);
-        LOG_DEBUG("[%s] Lighting Endpoint set to %02X", device_name.c_str(), light_ctrl);
+        LOG_INFO("[%s] Lighting Endpoint set to %02X", device_name.c_str(), light_ctrl);
     }
 }
 
@@ -245,6 +258,59 @@ unsigned int CorsairPeripheralV2Controller::GetAddress(uint8_t address)
     return temp;
 }
 
+// Initialization alone needs reply correlation and bounded recovery. Keep the
+// established per-frame transaction timing unchanged.
+int CorsairPeripheralV2Controller::ProbeLightingEndpoint()
+{
+    uint8_t request[CORSAIR_V2_WRITE_SIZE] = {};
+    request[1] = write_cmd;
+    request[2] = CORSAIR_V2_CMD_START_TX;
+    request[4] = light_ctrl;
+    if(hid_write(dev, request, sizeof(request)) < static_cast<int>(sizeof(request)))
+    {
+        return -1;
+    }
+
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(CORSAIR_V2_TIMEOUT);
+    for(unsigned int reports = 0; reports < 8; ++reports)
+    {
+        const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(deadline - std::chrono::steady_clock::now()).count();
+        if(remaining <= 0) { break; }
+        uint8_t reply[CORSAIR_V2_PACKET_SIZE] = {};
+        const int received = hid_read_timeout(dev, reply, sizeof(reply), static_cast<int>(remaining));
+        if(received <= 0) { break; }
+        // Replies do not echo the wired magic byte: the K70 returns 00 0D.
+        if(received >= 3 && reply[1] == CORSAIR_V2_CMD_START_TX)
+        {
+            return reply[2];
+        }
+    }
+    return -1;
+}
+
+int CorsairPeripheralV2Controller::OpenLightingEndpoint()
+{
+    int status = -1;
+    for(unsigned int attempt = 0; attempt < 3; ++attempt)
+    {
+        ClearPacketBuffer();
+        status = ProbeLightingEndpoint();
+        if(status >= 0 && status != 0x03)
+        {
+            if(status == 0 && attempt > 0)
+            {
+                LOG_INFO("[%s] Recovered lighting endpoint %02X on initialization attempt %u",
+                         device_name.c_str(), light_ctrl, attempt + 1);
+            }
+            break;
+        }
+        // Error 03 means the handle is already open. It can survive a host
+        // restart; close it and retry this resource instead of changing format.
+        StopTransaction(0);
+    }
+    return status;
+}
+
 unsigned char CorsairPeripheralV2Controller::StartTransaction(uint8_t opt1)
 {
     uint8_t buffer[CORSAIR_V2_WRITE_SIZE];
@@ -293,13 +359,13 @@ void CorsairPeripheralV2Controller::ClearPacketBuffer()
     }
 
     int result              = 0;
-    uint8_t buffer[CORSAIR_V2_PACKET_SIZE];
+    uint8_t buffer[CORSAIR_V2_PACKET_SIZE + 1];
 
     // A disconnected handle returns -1, not a report length. Bound draining
     // too, so an unsolicited report stream cannot monopolize this thread.
     for(unsigned int reports = 0; reports < 64; reports++)
     {
-        result = hid_read_timeout(dev, buffer, pkt_sze, CORSAIR_V2_TIMEOUT_SHORT);
+        result = hid_read_timeout(dev, buffer, std::min<std::size_t>(pkt_sze, sizeof(buffer)), CORSAIR_V2_TIMEOUT_SHORT);
         if(result <= 0)
         {
             break;
@@ -313,8 +379,8 @@ void CorsairPeripheralV2Controller::SetLEDs(uint8_t *data, uint16_t data_size)
     const uint8_t offset2   = 4;
     uint16_t remaining      = data_size;
 
-    uint8_t buffer[CORSAIR_V2_PACKET_SIZE];
-    memset(buffer, 0, CORSAIR_V2_PACKET_SIZE);
+    uint8_t buffer[CORSAIR_V2_PACKET_SIZE + 1];
+    memset(buffer, 0, sizeof(buffer));
 
     ClearPacketBuffer();
     StartTransaction(0);
@@ -342,7 +408,7 @@ void CorsairPeripheralV2Controller::SetLEDs(uint8_t *data, uint16_t data_size)
 
     if(!skip_reads)
     {
-        hid_read_timeout(dev, buffer, pkt_sze, CORSAIR_V2_TIMEOUT_SHORT);
+        hid_read_timeout(dev, buffer, std::min<std::size_t>(pkt_sze, sizeof(buffer)), CORSAIR_V2_TIMEOUT_SHORT);
     }
 
     remaining              -= copy_bytes;
@@ -367,7 +433,7 @@ void CorsairPeripheralV2Controller::SetLEDs(uint8_t *data, uint16_t data_size)
 
         if(!skip_reads)
         {
-            hid_read_timeout(dev, buffer, pkt_sze, CORSAIR_V2_TIMEOUT_SHORT);
+            hid_read_timeout(dev, buffer, std::min<std::size_t>(pkt_sze, sizeof(buffer)), CORSAIR_V2_TIMEOUT_SHORT);
         }
 
         remaining          -= copy_bytes;
